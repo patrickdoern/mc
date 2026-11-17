@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
+        if !Bundle.main.bundlePath.hasSuffix(".app") { NSApp.applicationIconImage = Bundle.module.url(forResource: "AppIcon", withExtension: "icns").flatMap(NSImage.init(contentsOf:)) }
         let startPaths = CommandLine.arguments.dropFirst().map { ($0 as NSString).expandingTildeInPath }
         mainWindow = MainWindowController(startPaths: Array(startPaths.prefix(2)))
         mainWindow?.showWindow(nil)

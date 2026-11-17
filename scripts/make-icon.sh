@@ -26,6 +26,6 @@ for size in 16 32 128 256 512; do
   sips -z $size $size "$work/icon_1024.png" --out "$iconset/icon_${size}x${size}.png" >/dev/null
   sips -z $((size * 2)) $((size * 2)) "$work/icon_1024.png" --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
 done
-iconutil -c icns "$iconset" -o icon/AppIcon.icns
+iconutil -c icns "$iconset" -o ../Sources/MC/Resources/AppIcon.icns
 rm -rf "$work"
-echo icon/AppIcon.icns
+echo Sources/MC/Resources/AppIcon.icns

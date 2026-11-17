@@ -14,7 +14,7 @@ let package = Package(
             swiftSettings: homebrewInclude,
             linkerSettings: [.unsafeFlags(["-L/opt/homebrew/lib"]), .linkedLibrary("ssh2")]
         ),
-        .executableTarget(name: "MC", dependencies: ["MCCore"], swiftSettings: homebrewInclude),
+        .executableTarget(name: "MC", dependencies: ["MCCore"], resources: [.copy("Resources/AppIcon.icns")], swiftSettings: homebrewInclude),
         .testTarget(name: "MCCoreTests", dependencies: ["MCCore"], swiftSettings: homebrewInclude),
     ],
     swiftLanguageModes: [.v5]
