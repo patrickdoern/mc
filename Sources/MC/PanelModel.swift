@@ -1,0 +1,279 @@
+import Foundation
+import MCCore
+
+enum SortKey: Int {
+    case name, fileExtension, size, date
+}
+
+enum ListFormat: Int, CaseIterable {
+    case full, sizeOnly, permissions, namesOnly
+
+    var title: String {
+        switch self {
+        case .full: return "Name, Größe, Datum"
+        case .sizeOnly: return "Name, Größe"
+        case .permissions: return "Name, Rechte, Größe"
+        case .namesOnly: return "Nur Name"
+        }
+    }
+}
+
+final class PanelModel {
+    static let parentName = ".."
+
+    private(set) var fileSystem: FileSystem
+    private(set) var path: String
+    private(set) var rows: [FileEntry] = []
+    private(set) var marked: Set<String> = []
+    private(set) var sortKey: SortKey
+    private(set) var ascending: Bool
+    private(set) var showHidden: Bool
+    private(set) var dirsFirst: Bool
+    private(set) var caseSensitive: Bool
+    private(set) var format: ListFormat
+    private(set) var filter = ""
+    private(set) var isLoading = false
+    private(set) var searchText: String?
+    private(set) var directorySizes: [String: Int64] = [:]
+    var cursor = 0
+    var onChange: (() -> Void)?
+    var onFailure: ((Error) -> Void)?
+
+    private var entries: [FileEntry] = []
+    private var generation = 0
+
+    init(fileSystem: FileSystem, path: String, sortKey: SortKey, ascending: Bool, showHidden: Bool, dirsFirst: Bool, caseSensitive: Bool, format: ListFormat) {
+        self.fileSystem = fileSystem
+        self.path = path
+        self.sortKey = sortKey
+        self.ascending = ascending
+        self.showHidden = showHidden
+        self.dirsFirst = dirsFirst
+        self.caseSensitive = caseSensitive
+        self.format = format
+    }
+
+    var isLocal: Bool { fileSystem is LocalFileSystem }
+
+    var title: String {
+        let location = isLocal ? path : fileSystem.identity.replacingOccurrences(of: "sftp://", with: "") + ":" + path
+        return filter.isEmpty ? location : location + " [\(filter)]"
+    }
+
+    var hasParentRow: Bool { path != "/" }
+
+    var currentEntry: FileEntry? { rows.indices.contains(cursor) ? rows[cursor] : nil }
+
+    var selectedNames: [String] {
+        if !marked.isEmpty { return rows.map(\.name).filter(marked.contains) }
+        guard let entry = currentEntry, !isParentRow(cursor) else { return [] }
+        return [entry.name]
+    }
+
+    var markedBytes: Int64 { rows.filter { marked.contains($0.name) && !$0.isDirectory }.reduce(0) { $0 + $1.size } }
+
+    func isParentRow(_ index: Int) -> Bool { hasParentRow && index == 0 }
+
+    func navigate(to newPath: String, on newSystem: FileSystem? = nil, selecting name: String? = nil) {
+        generation += 1
+        let token = generation
+        let system = newSystem ?? fileSystem
+        let keepMarks = newPath == path && newSystem == nil
+        isLoading = true
+        onChange?()
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = Result { try system.list(newPath) }
+            DispatchQueue.main.async { [self] in
+                guard token == generation else { return }
+                isLoading = false
+                switch result {
+                case .success(let listing):
+                    let keptMarks = keepMarks ? marked.intersection(listing.map(\.name)) : []
+                    fileSystem = system
+                    path = newPath
+                    entries = listing
+                    marked = keptMarks
+                    if !keepMarks { directorySizes = [:] }
+                    rebuild(selecting: name)
+                case .failure(let error):
+                    onFailure?(error)
+                }
+                onChange?()
+            }
+        }
+    }
+
+    func reload(selecting name: String? = nil) {
+        navigate(to: path, selecting: name ?? currentEntry?.name)
+    }
+
+    func goUp() {
+        guard hasParentRow else { return }
+        navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path))
+    }
+
+    func enterCursor() -> FileEntry? {
+        guard let entry = currentEntry else { return nil }
+        if isParentRow(cursor) {
+            goUp()
+        } else if entry.isDirectory {
+            navigate(to: PosixPath.join(path, entry.name))
+        } else {
+            return entry
+        }
+        return nil
+    }
+
+    func fullPath(of name: String) -> String { PosixPath.join(path, name) }
+
+    func moveCursor(by delta: Int) {
+        cursor = min(max(cursor + delta, 0), max(rows.count - 1, 0))
+        onChange?()
+    }
+
+    func setCursor(_ index: Int) {
+        cursor = min(max(index, 0), max(rows.count - 1, 0))
+        onChange?()
+    }
+
+    func toggleMarkAndAdvance() {
+        guard let entry = currentEntry, !isParentRow(cursor) else { return moveCursor(by: 1) }
+        if !marked.insert(entry.name).inserted { marked.remove(entry.name) }
+        moveCursor(by: 1)
+    }
+
+    func mark(matching pattern: String, select: Bool) {
+        for (index, entry) in rows.enumerated() where !isParentRow(index) && fnmatch(pattern, entry.name, FNM_CASEFOLD) == 0 {
+            if select { marked.insert(entry.name) } else { marked.remove(entry.name) }
+        }
+        onChange?()
+    }
+
+    func markAll() {
+        marked = Set(rows.indices.filter { !isParentRow($0) }.map { rows[$0].name })
+        onChange?()
+    }
+
+    func invertMarks() {
+        marked = Set(rows.indices.filter { !isParentRow($0) }.map { rows[$0].name }).subtracting(marked)
+        onChange?()
+    }
+
+    func clearMarks() {
+        marked = []
+        onChange?()
+    }
+
+    func calculateDirectorySizes() {
+        let candidates = marked.isEmpty ? [currentEntry].compactMap { $0 } : rows.filter { marked.contains($0.name) }
+        let names = candidates.filter { $0.isDirectory && $0.name != Self.parentName }.map(\.name)
+        let system = fileSystem
+        let base = path
+        let token = generation
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            for name in names {
+                let size = DirectorySize.total(of: PosixPath.join(base, name), on: system) { self?.generation != token }
+                DispatchQueue.main.async {
+                    guard let self, token == self.generation else { return }
+                    self.directorySizes[name] = size
+                    self.onChange?()
+                }
+            }
+        }
+    }
+
+    func markDifferences(against other: PanelModel) {
+        let counterparts = Dictionary(other.rows.filter { $0.name != Self.parentName }.map { ($0.name, $0) }) { first, _ in first }
+        marked = Set(rows.filter { entry in
+            guard entry.name != Self.parentName else { return false }
+            guard let counterpart = counterparts[entry.name] else { return true }
+            guard !entry.isDirectory else { return false }
+            return entry.size != counterpart.size || (entry.modified ?? .distantPast) > (counterpart.modified ?? .distantPast).addingTimeInterval(1)
+        }.map(\.name))
+        onChange?()
+    }
+
+    func sort(by key: SortKey) {
+        if sortKey == key { ascending.toggle() } else { sortKey = key; ascending = true }
+        rebuild(selecting: currentEntry?.name)
+        onChange?()
+    }
+
+    func applySortOptions(key: SortKey, ascending: Bool, dirsFirst: Bool, caseSensitive: Bool) {
+        sortKey = key
+        self.ascending = ascending
+        self.dirsFirst = dirsFirst
+        self.caseSensitive = caseSensitive
+        rebuild(selecting: currentEntry?.name)
+        onChange?()
+    }
+
+    func setFormat(_ newFormat: ListFormat) {
+        format = newFormat
+        onChange?()
+    }
+
+    func setFilter(_ pattern: String) {
+        filter = pattern
+        rebuild(selecting: currentEntry?.name)
+        onChange?()
+    }
+
+    func toggleHidden() {
+        showHidden.toggle()
+        rebuild(selecting: currentEntry?.name)
+        onChange?()
+    }
+
+    func beginSearch() {
+        searchText = ""
+        onChange?()
+    }
+
+    func endSearch() {
+        searchText = nil
+        onChange?()
+    }
+
+    func updateSearch(_ text: String) {
+        searchText = text
+        if let index = rows.indices.first(where: { !isParentRow($0) && rows[$0].name.range(of: text, options: [.anchored, .caseInsensitive]) != nil }) {
+            cursor = index
+        }
+        onChange?()
+    }
+
+    private func rebuild(selecting name: String?) {
+        let patterns = filter.split(separator: " ").map(String.init)
+        let visible = entries.filter { entry in
+            (showHidden || !entry.isHidden) && (entry.isDirectory || patterns.isEmpty || patterns.contains { fnmatch($0, entry.name, FNM_CASEFOLD) == 0 })
+        }
+        rows = visible.sorted(by: areInOrder)
+        if hasParentRow { rows.insert(FileEntry(name: Self.parentName, isDirectory: true), at: 0) }
+        if let name, let index = rows.firstIndex(where: { $0.name == name }) {
+            cursor = index
+        } else {
+            cursor = min(cursor, max(rows.count - 1, 0))
+        }
+    }
+
+    private func areInOrder(_ first: FileEntry, _ second: FileEntry) -> Bool {
+        if dirsFirst && first.isDirectory != second.isDirectory { return first.isDirectory }
+        let nameOptions: String.CompareOptions = caseSensitive ? [.numeric] : [.caseInsensitive, .numeric]
+        let byName = { (first.name.compare(second.name, options: nameOptions) == .orderedAscending) }
+        let result: Bool
+        switch sortKey {
+        case .name:
+            result = byName()
+        case .fileExtension:
+            result = first.fileExtension == second.fileExtension ? byName() : first.fileExtension < second.fileExtension
+        case .size:
+            result = first.size == second.size ? byName() : first.size < second.size
+        case .date:
+            let firstDate = first.modified ?? .distantPast
+            let secondDate = second.modified ?? .distantPast
+            result = firstDate == secondDate ? byName() : firstDate < secondDate
+        }
+        return ascending ? result : !result
+    }
+}
