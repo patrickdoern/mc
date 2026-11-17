@@ -10,6 +10,8 @@
     <string>digital.doern.mc</string>
     <key>CFBundleExecutable</key>
     <string>MC</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
