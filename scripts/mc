@@ -1,0 +1,15 @@
+#!/bin/zsh
+app="/Applications/macOS Commander.app"
+if [[ ! -d "$app" ]]; then
+    echo "mc: macOS Commander ist nicht installiert ($app)" >&2
+    exit 1
+fi
+paths=()
+for argument in "${@:-.}"; do
+    if [[ ! -e "$argument" ]]; then
+        echo "mc: $argument existiert nicht" >&2
+        exit 1
+    fi
+    paths+=("${argument:A}")
+done
+exec open -a "$app" "${paths[@]}"

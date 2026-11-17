@@ -150,6 +150,25 @@ final class MainWindowController: NSWindowController {
         }
     }
 
+    func edit(path: String) {
+        openEditor(system: LocalFileSystem.shared, path: path, readOnly: false)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func open(paths: [String]) {
+        let targets = paths.map { path -> (directory: String, name: String?) in
+            var isDirectory: ObjCBool = false
+            FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
+            return isDirectory.boolValue ? (path, nil) : (PosixPath.parent(path), PosixPath.name(path))
+        }
+        let destinations = targets.count >= 2 ? panels : [activePanel]
+        for (panel, target) in zip(destinations, targets) {
+            panel.model.navigate(to: target.directory, on: LocalFileSystem.shared, selecting: target.name)
+        }
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     private func open(_ entry: FileEntry, in model: PanelModel) {
         if model.isLocal {
             NSWorkspace.shared.open(URL(fileURLWithPath: model.fullPath(of: entry.name)))

@@ -14,6 +14,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private var blockAnchor: Int?
     private var lastSearch = ""
     private var lastReplacement = ""
+    private var language: String?
 
     var hasUnsavedChanges: Bool { window?.isDocumentEdited ?? false }
 
@@ -31,6 +32,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.setFrameAutosaveName("EditorWindow")
         window.tabbingMode = .disallowed
         configureText(text)
+        language = text.utf16.count <= SyntaxHighlighter.maximumLength ? SyntaxHighlighter.languageName(forFile: PosixPath.name(path), firstLine: String(text.prefix { $0 != "\n" })) : nil
+        applyHighlighting()
         let scroll = NSScrollView()
         scroll.documentView = textView
         scroll.hasVerticalScroller = true
@@ -69,10 +72,22 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @objc private func themeDidChange(_ notification: Notification) {
         textView.applyEditorStyle()
         textView.enclosingScrollView?.backgroundColor = Theme.background
+        applyHighlighting()
     }
 
     @objc private func textDidChange(_ notification: Notification) {
         window?.isDocumentEdited = true
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(applyHighlighting), object: nil)
+        perform(#selector(applyHighlighting), with: nil, afterDelay: 0.3)
+    }
+
+    @objc private func applyHighlighting() {
+        guard let language, let storage = textView.textStorage, storage.length <= SyntaxHighlighter.maximumLength else { return }
+        let tokens = SyntaxHighlighter.tokens(in: storage.string, language: language)
+        storage.beginEditing()
+        storage.addAttribute(.foregroundColor, value: Theme.editorText, range: NSRange(location: 0, length: storage.length))
+        for token in tokens { storage.addAttribute(.foregroundColor, value: Theme.syntaxColor(token.kind), range: token.range) }
+        storage.endEditing()
     }
 
     @discardableResult
@@ -228,7 +243,7 @@ final class EditorTextView: NSTextView {
         font = Theme.font
         textColor = Theme.editorText
         backgroundColor = Theme.background
-        insertionPointColor = .white
+        insertionPointColor = Theme.editorText
         selectedTextAttributes = [.backgroundColor: Theme.editorSelection, .foregroundColor: NSColor.white]
         isRichText = false
         isAutomaticQuoteSubstitutionEnabled = false

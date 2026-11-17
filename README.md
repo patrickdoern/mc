@@ -9,6 +9,18 @@ open build/MC.app --args ~/Downloads ~/projects
 
 Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch nach `vendor/` (nur Xcode und Netzwerk nötig). `./scripts/bundle.sh` erzeugt `build/MC.app`, `./scripts/install.sh` installiert sie nach `/Applications/macOS Commander.app`. Die App ist eine einzelne Datei ohne Homebrew, läuft ab macOS 14 auf Apple Silicon. Ohne `vendor/` greift `swift build` auf `brew install libssh2` zurück. Tests: `swift test`; die SFTP-Tests laufen nur mit `MC_TEST_SSH_DIR` (Ordner mit `clientkey`, sshd auf 127.0.0.1:2222).
 
+## Kommandozeile
+
+`./scripts/install.sh` legt `mc` und `mcedit` nach `~/.local/bin`:
+
+```bash
+mc                    # aktuellen Ordner im aktiven Panel öffnen
+mc ordner1 ordner2    # linkes und rechtes Panel setzen
+mcedit datei.txt      # Datei direkt im Editor öffnen (neue Dateien werden angelegt)
+```
+
+Beides funktioniert auch bei laufender App. Ordner lassen sich außerdem aufs Dock-Icon ziehen.
+
 ## Tasten
 
 | Taste | Aktion |
@@ -19,7 +31,7 @@ Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch n
 | Ctrl-S | Schnellsuche |
 | ⌘L / ⇧⌘H / ⌘K | Pfad / Home / SFTP verbinden |
 | F2 | Benutzermenü (Einträge aus `~/.config/macos-commander/menu`, Format wie mc, Makros `%f %d %s %D %F`) |
-| F3 / F4 | Anzeigen / Bearbeiten (⇧F4 neue Datei) |
+| F3 / F4 | Anzeigen / Bearbeiten (⇧F4 neue Datei), beides mit Syntax-Highlighting |
 | F5 / F6 | Kopieren / Verschieben (⇧F6 Umbenennen) |
 | F7 / F8 | Ordner anlegen / Löschen (lokal Papierkorb, ⇧F8 endgültig) |
 | F9 / F10 | Menüzeile (Links, Datei, Befehl, Optionen, Rechts) / Beenden; `exit` in der Kommandozeile beendet ebenfalls |

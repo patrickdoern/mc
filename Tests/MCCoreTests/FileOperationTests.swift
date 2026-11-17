@@ -166,3 +166,33 @@ private func read(_ path: String) throws -> String {
         #expect(PosixPath.name("/a/b.txt") == "b.txt")
     }
 }
+
+@Suite struct SyntaxHighlightingTests {
+    private func kinds(_ text: String, _ language: String) -> [(String, TokenKind)] {
+        let string = text as NSString
+        return SyntaxHighlighter.tokens(in: text, language: language).map { (string.substring(with: $0.range), $0.kind) }
+    }
+
+    @Test func detectsLanguages() {
+        #expect(SyntaxHighlighter.languageName(forFile: "main.swift", firstLine: "") == "swift")
+        #expect(SyntaxHighlighter.languageName(forFile: "run", firstLine: "#!/usr/bin/env python3") == "python")
+        #expect(SyntaxHighlighter.languageName(forFile: "notes.txt", firstLine: "") == nil)
+    }
+
+    @Test func commentMarkersInsideStringsStayStrings() {
+        let tokens = kinds(#"let url = "http://x" // note"#, "swift")
+        #expect(tokens.contains { $0.0 == #""http://x""# && $0.1 == .string })
+        #expect(tokens.contains { $0.0 == "// note" && $0.1 == .comment })
+        #expect(tokens.contains { $0.0 == "let" && $0.1 == .keyword })
+    }
+
+    @Test func highlightsJsonKeysAndNumbers() {
+        let tokens = kinds(#"{"name": "x", "count": 42}"#, "json")
+        #expect(tokens.contains { $0.0 == #""name""# && $0.1 == .property })
+        #expect(tokens.contains { $0.0 == "42" && $0.1 == .number })
+    }
+
+    @Test func unterminatedBlockCommentRunsToEnd() {
+        #expect(kinds("a /* open\nstill", "c").contains { $0.1 == .comment && $0.0.hasSuffix("still") })
+    }
+}

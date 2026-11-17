@@ -1,0 +1,20 @@
+#!/bin/zsh
+app="/Applications/macOS Commander.app"
+if [[ ! -d "$app" ]]; then
+    echo "mcedit: macOS Commander ist nicht installiert ($app)" >&2
+    exit 1
+fi
+if (( $# == 0 )); then
+    echo "Aufruf: mcedit <Datei>..." >&2
+    exit 1
+fi
+query=""
+for argument in "$@"; do
+    if [[ -d "$argument" ]]; then
+        echo "mcedit: $argument ist ein Ordner" >&2
+        exit 1
+    fi
+    encoded="$(/usr/bin/python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "${argument:A}")"
+    query+="${query:+&}path=$encoded"
+done
+exec open "macos-commander://edit?$query"

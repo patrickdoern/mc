@@ -1,4 +1,5 @@
 import AppKit
+import MCCore
 
 struct Palette {
     let background: NSColor
@@ -99,6 +100,32 @@ enum Theme {
     static var commandText: NSColor { palette.commandText }
     static var editorText: NSColor { palette.editorText }
     static var editorSelection: NSColor { palette.editorSelection }
+
+    static func syntaxColor(_ kind: TokenKind) -> NSColor {
+        func rgb(_ hex: UInt32) -> NSColor {
+            NSColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        }
+        switch (Settings.scheme, kind) {
+        case (0, .keyword): return rgb(0xFFE066)
+        case (0, .string): return rgb(0x7FFF9F)
+        case (0, .comment): return rgb(0x9AA6E8)
+        case (0, .number): return rgb(0xFF9AF0)
+        case (0, .type): return rgb(0x8FE8FF)
+        case (0, .property): return rgb(0xFFB066)
+        case (2, .keyword): return rgb(0xAD3DA4)
+        case (2, .string): return rgb(0xC41A16)
+        case (2, .comment): return rgb(0x707F8C)
+        case (2, .number): return rgb(0x1C00CF)
+        case (2, .type): return rgb(0x3E8087)
+        case (2, .property): return rgb(0x326D74)
+        case (_, .keyword): return rgb(0xFF7AB2)
+        case (_, .string): return rgb(0xFF8170)
+        case (_, .comment): return rgb(0x7F8C98)
+        case (_, .number): return rgb(0xD9C97C)
+        case (_, .type): return rgb(0x5DD8FF)
+        case (_, .property): return rgb(0x78C2B3)
+        }
+    }
 
     static let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
     static let boldFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)

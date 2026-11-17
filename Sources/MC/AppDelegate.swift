@@ -2,6 +2,8 @@ import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWindow: MainWindowController?
+    private var pendingPaths: [String] = []
+    private var pendingEdits: [String] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
@@ -9,7 +11,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let startPaths = CommandLine.arguments.dropFirst().map { ($0 as NSString).expandingTildeInPath }
         mainWindow = MainWindowController(startPaths: Array(startPaths.prefix(2)))
         mainWindow?.showWindow(nil)
+        if !pendingPaths.isEmpty { mainWindow?.open(paths: pendingPaths) }
+        pendingEdits.forEach { mainWindow?.edit(path: $0) }
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        let files = urls.filter(\.isFileURL).map(\.path)
+        if !files.isEmpty {
+            if let mainWindow { mainWindow.open(paths: files) } else { pendingPaths += files }
+        }
+        for url in urls where url.scheme == "macos-commander" && url.host == "edit" {
+            let paths = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.filter { $0.name == "path" }.compactMap(\.value) ?? []
+            for path in paths {
+                if let mainWindow { mainWindow.edit(path: path) } else { pendingEdits.append(path) }
+            }
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
