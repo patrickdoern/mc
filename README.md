@@ -7,7 +7,7 @@ Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateiop
 open build/MC.app --args ~/Downloads ~/projects
 ```
 
-Zum Bauen: `brew install libssh2`. `./scripts/bundle.sh` packt libssh2 und OpenSSL ins Bundle, die fertige App braucht kein Homebrew. Tests: `swift test`; die SFTP-Tests laufen nur mit `MC_TEST_SSH_DIR` (Ordner mit `clientkey`, sshd auf 127.0.0.1:2222).
+Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch nach `vendor/` (nur Xcode und Netzwerk nötig). `./scripts/bundle.sh` erzeugt `build/MC.app`, `./scripts/install.sh` installiert sie nach `/Applications/macOS Commander.app`. Die App ist eine einzelne Datei ohne Homebrew, läuft ab macOS 14 auf Apple Silicon. Ohne `vendor/` greift `swift build` auf `brew install libssh2` zurück. Tests: `swift test`; die SFTP-Tests laufen nur mit `MC_TEST_SSH_DIR` (Ordner mit `clientkey`, sshd auf 127.0.0.1:2222).
 
 ## Tasten
 
@@ -47,4 +47,8 @@ Nicht enthalten: FTP/Shell-Verbindungen, Codierung, Darstellungsbits, Tasten ler
 MC_SIGN_IDENTITY="Developer ID Application: …" MC_NOTARY_PROFILE=<profil> ./scripts/dist.sh
 ```
 
-Erzeugt ein signiertes, notarisiertes `build/macOS-Commander.dmg`. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Die gebündelten Bibliotheken bestimmen die Mindestversion von macOS (derzeit 27.0, arm64). Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
+Erzeugt ein signiertes, notarisiertes `build/macOS-Commander.dmg`. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
+
+### Auf einen anderen Mac kopieren
+
+`/Applications/macOS Commander.app` per `rsync`, `scp` oder USB-Stick kopieren, dann startet sie direkt. Kommt sie per AirDrop, Download oder Cloud, markiert macOS sie als Quarantäne, und Gatekeeper blockiert sie ohne Notarisierung. Dann einmal `xattr -dr com.apple.quarantine "/Applications/macOS Commander.app"` ausführen.
