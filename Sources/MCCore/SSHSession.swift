@@ -162,15 +162,26 @@ final class SSHSession {
             }
         }
         if methods.contains("password") {
+            let account = "\(user)@\(settings.hostName):\(settings.port)"
+            if let saved = interaction.storedPassword(for: account) {
+                if login(user, password: saved) { return }
+                interaction.deletePassword(for: account)
+            }
             for _ in 0..<3 {
-                guard let password = interaction.requestSecret("Passwort für \(user)@\(settings.hostName):") else { throw OperationAborted() }
-                if libssh2_userauth_password_ex(handle, user, UInt32(user.utf8.count), password, UInt32(password.utf8.count), nil) == 0 { return }
+                guard let entry = interaction.requestPassword("Passwort für \(user)@\(settings.hostName):", account: account) else { throw OperationAborted() }
+                guard login(user, password: entry.password) else { continue }
+                if entry.remember { interaction.savePassword(entry.password, for: account) }
+                return
             }
         } else if methods.contains("keyboard-interactive") {
             try authenticateInteractively(settings)
             if isAuthenticated { return }
         }
         throw FileError("Anmeldung an \(settings.hostName) als \(user) fehlgeschlagen")
+    }
+
+    private func login(_ user: String, password: String) -> Bool {
+        libssh2_userauth_password_ex(handle, user, UInt32(user.utf8.count), password, UInt32(password.utf8.count), nil) == 0
     }
 
     private func authenticateWithAgent(_ settings: SSHSettings) {

@@ -168,6 +168,15 @@ extension MainWindowController {
         popUp(menu)
     }
 
+    @objc func showSavedPasswords(_ sender: Any?) {
+        let menu = NSMenu()
+        for account in Keychain.accounts() {
+            menu.addItem(ClosureMenuItem("Passwort vergessen: \(account)") { Keychain.delete(account: account) })
+        }
+        if menu.items.isEmpty { menu.addItem(NSMenuItem(title: "Keine gespeicherten Passwörter", action: nil, keyEquivalent: "")) }
+        popUp(menu)
+    }
+
     @objc func userMenu(_ sender: Any?) {
         let model = activePanel.model
         guard requireLocal(model, "Das Benutzermenü") else { return }

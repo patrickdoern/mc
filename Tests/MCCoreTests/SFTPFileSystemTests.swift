@@ -11,6 +11,10 @@ private final class TrustingInteraction: SSHInteraction {
     }
 
     func requestSecret(_ prompt: String) -> String? { nil }
+    func requestPassword(_ prompt: String, account: String) -> PasswordEntry? { nil }
+    func storedPassword(for account: String) -> String? { nil }
+    func savePassword(_ password: String, for account: String) {}
+    func deletePassword(for account: String) {}
 }
 
 private let fixtureDirectory = ProcessInfo.processInfo.environment["MC_TEST_SSH_DIR"]

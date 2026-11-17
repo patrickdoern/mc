@@ -60,7 +60,7 @@ extension MainWindowController {
         add([
             ("Benutzermenü   F2", userMenu), ("Verzeichnisbaum", { _ in self.activePanel.setMode(.tree) }), ("Datei suchen …", findFiles), ("Panels vertauschen   ⌘U", swapPanels),
             ("Verzeichnisse vergleichen", compareDirectories), ("Dateien vergleichen", compareFiles), ("Verzeichnisgrößen anzeigen", showDirectorySizes), nil,
-            ("Befehlschronik …", showCommandHistory), ("Verzeichnis-Hotlist …", showHotlist), ("Aktive Verbindungen …", showConnections), nil,
+            ("Befehlschronik …", showCommandHistory), ("Verzeichnis-Hotlist …", showHotlist), ("Aktive Verbindungen …", showConnections), ("Gespeicherte Passwörter …", showSavedPasswords), nil,
             ("Benutzermenü bearbeiten", editUserMenu),
         ], to: menu)
         return menu

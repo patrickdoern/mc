@@ -92,6 +92,24 @@ enum Dialogs {
         return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
     }
 
+    static func password(_ message: String) -> PasswordEntry? {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Abbrechen")
+        let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+        let remember = NSButton(checkboxWithTitle: "Im Schlüsselbund sichern", target: nil, action: nil)
+        let stack = NSStackView(views: [field, remember])
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        stack.frame = NSRect(origin: .zero, size: stack.fittingSize)
+        alert.accessoryView = stack
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        return PasswordEntry(password: field.stringValue, remember: remember.state == .on)
+    }
+
     static func confirm(title: String, message: String, confirm: String, destructive: Bool = false) -> Bool {
         let alert = NSAlert()
         alert.messageText = title
@@ -181,6 +199,22 @@ final class DialogInteraction: SSHInteraction {
 
     func requestSecret(_ prompt: String) -> String? {
         onMain { Dialogs.secret(prompt) }
+    }
+
+    func requestPassword(_ prompt: String, account: String) -> PasswordEntry? {
+        onMain { Dialogs.password(prompt) }
+    }
+
+    func storedPassword(for account: String) -> String? {
+        Keychain.password(for: account)
+    }
+
+    func savePassword(_ password: String, for account: String) {
+        Keychain.save(password, for: account)
+    }
+
+    func deletePassword(for account: String) {
+        Keychain.delete(account: account)
     }
 
     private func onMain<T>(_ work: () -> T) -> T {
