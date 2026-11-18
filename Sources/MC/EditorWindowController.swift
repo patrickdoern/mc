@@ -71,6 +71,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         textView.applyEditorStyle()
         textView.isEditable = !readOnly
         textView.allowsUndo = true
+        textView.extraTrailingWidth = 24
         textView.onFunctionKey = { [weak self] number, shifted in self?.perform(functionKey: number, shifted: shifted) ?? false }
         textView.onDeleteLine = { [weak self] in self?.deleteLine(nil) }
         textView.onEscape = { [weak self] in self?.close() }
@@ -218,6 +219,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     @objc func toggleWrap(_ sender: Any?) {
         wraps.toggle()
+        textView.extraTrailingWidth = wraps ? 0 : 24
         guard let container = textView.textContainer, let scroll = textView.enclosingScrollView else { return }
         container.widthTracksTextView = wraps
         textView.isHorizontallyResizable = !wraps
@@ -342,8 +344,17 @@ final class EditorTextView: NSTextView {
     var onFunctionKey: ((Int, Bool) -> Bool)?
     var onDeleteLine: (() -> Void)?
     var onEscape: (() -> Void)?
+    var extraTrailingWidth: CGFloat = 0
 
     private static let functionKeys: [NSEvent.SpecialKey] = [.f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10]
+
+    override func setFrameSize(_ newSize: NSSize) {
+        var size = newSize
+        if extraTrailingWidth > 0, let visible = enclosingScrollView?.contentSize.width, newSize.width > visible + 0.5 {
+            size.width += extraTrailingWidth
+        }
+        super.setFrameSize(size)
+    }
 
     func applyEditorStyle() {
         font = Theme.font
