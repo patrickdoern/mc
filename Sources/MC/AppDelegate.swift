@@ -17,16 +17,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        let files = urls.filter(\.isFileURL).map(\.path)
-        if !files.isEmpty {
-            if let mainWindow { mainWindow.open(paths: files) } else { pendingPaths += files }
-        }
-        for url in urls where url.scheme == "moonlight-commander" && url.host == "edit" {
-            let paths = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.filter { $0.name == "path" }.compactMap(\.value) ?? []
-            for path in paths {
-                if let mainWindow { mainWindow.edit(path: path) } else { pendingEdits.append(path) }
+        for url in urls {
+            if url.isFileURL {
+                var isDirectory: ObjCBool = false
+                FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
+                if isDirectory.boolValue { navigate(to: [url.path]) } else { edit(url.path) }
+            } else if url.scheme == "moonlight-commander" {
+                let paths = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.filter { $0.name == "path" }.compactMap(\.value) ?? []
+                for path in paths {
+                    if url.host == "edit" { edit(path) } else if url.host == "open" { navigate(to: [path]) }
+                }
             }
         }
+    }
+
+    private func navigate(to paths: [String]) {
+        if let mainWindow { mainWindow.open(paths: paths) } else { pendingPaths += paths }
+    }
+
+    private func edit(_ path: String) {
+        if let mainWindow { mainWindow.edit(path: path) } else { pendingEdits.append(path) }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {

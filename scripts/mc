@@ -4,12 +4,13 @@ if [[ ! -d "$app" ]]; then
     echo "mc: Moonlight Commander ist nicht installiert ($app)" >&2
     exit 1
 fi
-paths=()
+query=""
 for argument in "${@:-.}"; do
     if [[ ! -e "$argument" ]]; then
         echo "mc: $argument existiert nicht" >&2
         exit 1
     fi
-    paths+=("${argument:A}")
+    encoded="$(/usr/bin/python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "${argument:A}")"
+    query+="${query:+&}path=$encoded"
 done
-exec open -a "$app" "${paths[@]}"
+exec open "moonlight-commander://open?$query"
