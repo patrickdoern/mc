@@ -157,7 +157,7 @@ final class SSHSession {
             authenticateWithAgent(settings)
             if isAuthenticated { return }
             for file in settings.identityFiles where FileManager.default.fileExists(atPath: file) {
-                authenticateWithKeyFile(file, user: user)
+                try authenticateWithKeyFile(file, user: user)
                 if isAuthenticated { return }
             }
         }
@@ -200,9 +200,9 @@ final class SSHSession {
         }
     }
 
-    private func authenticateWithKeyFile(_ file: String, user: String) {
-        guard libssh2_userauth_publickey_fromfile_ex(handle, user, UInt32(user.utf8.count), nil, file, nil) == LIBSSH2_ERROR_FILE,
-              let passphrase = interaction.requestSecret("Passphrase für \(PosixPath.name(file)):") else { return }
+    private func authenticateWithKeyFile(_ file: String, user: String) throws {
+        guard libssh2_userauth_publickey_fromfile_ex(handle, user, UInt32(user.utf8.count), nil, file, nil) == LIBSSH2_ERROR_FILE else { return }
+        guard let passphrase = interaction.requestSecret("Passphrase für \(PosixPath.name(file)):") else { throw OperationAborted() }
         _ = libssh2_userauth_publickey_fromfile_ex(handle, user, UInt32(user.utf8.count), nil, file, passphrase)
     }
 
@@ -217,16 +217,20 @@ final class SSHSession {
             for index in 0..<Int(count) {
                 let prompt = prompts[index]
                 let text = prompt.text.map { String(decoding: UnsafeBufferPointer(start: $0, count: Int(prompt.length)), as: UTF8.self) } ?? ""
-                let answer = interactive.interaction.requestSecret("\(interactive.label): \(text)") ?? ""
+                let entered = interactive.interaction.requestSecret("\(interactive.label): \(text)")
+                if entered == nil { interactive.cancelled = true }
+                let answer = entered ?? ""
                 responses[index] = LIBSSH2_USERAUTH_KBDINT_RESPONSE(text: strdup(answer), length: UInt32(answer.utf8.count))
             }
         }
+        if context.cancelled { throw OperationAborted() }
     }
 }
 
 private final class KeyboardInteractiveContext {
     let interaction: SSHInteraction
     let label: String
+    var cancelled = false
 
     init(interaction: SSHInteraction, label: String) {
         self.interaction = interaction

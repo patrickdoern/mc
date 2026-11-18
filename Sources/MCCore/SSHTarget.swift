@@ -54,6 +54,7 @@ public struct SSHSettings {
 
     public static func resolve(_ target: SSHTarget) throws -> SSHSettings {
         var arguments = ["-G"]
+        if let config = ProcessInfo.processInfo.environment["MC_SSH_CONFIG"] { arguments += ["-F", config] }
         if let user = target.user { arguments += ["-l", user] }
         if let port = target.port { arguments += ["-p", String(port)] }
         arguments.append(target.alias)
