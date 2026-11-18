@@ -37,6 +37,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.delegate = self
         window.title = PosixPath.name(path) + (readOnly ? " (nur lesen)" : "")
         window.representedFilename = fileSystem is LocalFileSystem ? path : ""
+        window.minSize = NSSize(width: 640, height: 320)
         window.setFrameAutosaveName("EditorWindow")
         window.tabbingMode = .disallowed
         configureText(text)
