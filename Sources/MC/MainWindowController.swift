@@ -12,7 +12,7 @@ final class MainWindowController: NSWindowController {
     private(set) var activePanel: PanelView
     private var menuLine: MenuLineView?
     private var promptLine: ShellInputView?
-    private var contentStack: NSStackView?
+    private let body = NSView()
     private var terminal: ShellTerminal?
     private let quickLook = QuickLook()
     private var keyBar: KeyBar?
@@ -63,8 +63,11 @@ final class MainWindowController: NSWindowController {
         self.keyBar = keyBar
         let promptLine = ShellInputView(commandLine: commandLine) { [unowned self] in prompt }
         self.promptLine = promptLine
-        let content = NSStackView(views: [menuLine, panelStack, promptLine, keyBar])
-        contentStack = content
+        panelStack.translatesAutoresizingMaskIntoConstraints = false
+        body.addSubview(panelStack)
+        pin(panelStack, to: body)
+        body.setContentHuggingPriority(.defaultLow, for: .vertical)
+        let content = NSStackView(views: [menuLine, body, promptLine, keyBar])
         content.orientation = .vertical
         content.spacing = 0
         window.contentView = content
@@ -114,6 +117,15 @@ final class MainWindowController: NSWindowController {
         }
         defaults.set(activePanel.model.showHidden, forKey: "showHidden")
         defaults.set(panels.firstIndex { $0 === activePanel } ?? 0, forKey: "activePanel")
+    }
+
+    private func pin(_ view: NSView, to container: NSView) {
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            view.topAnchor.constraint(equalTo: container.topAnchor),
+            view.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
     }
 
     func applyLayout() {
@@ -465,9 +477,9 @@ final class MainWindowController: NSWindowController {
         if terminal == nil {
             let created = ShellTerminal(directory: model.isLocal ? model.path : NSHomeDirectory())
             created.onExit = { [weak self] in self?.terminalExited() }
-            created.setContentHuggingPriority(.defaultLow, for: .vertical)
-            created.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
-            contentStack?.insertArrangedSubview(created, at: 1)
+            created.translatesAutoresizingMaskIntoConstraints = false
+            body.addSubview(created)
+            pin(created, to: body)
             terminal = created
         }
         panelStack.isHidden = true
