@@ -24,7 +24,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     private var result: Int?
     private var columns = 46
     private var onButton: ((Int?) -> Void)?
-    private var sheetPanel: NSPanel?
+    private var dismissOverlay: (() -> Void)?
     private var frames: [Int: NSRect] = [:]
     private var textLines: [(String, CGFloat)] = []
     private var labels: [(String, CGFloat)] = []
@@ -88,22 +88,17 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
 
     func presentSheet(on window: NSWindow, onButton: @escaping (Int?) -> Void) {
         layoutDialog()
-        let panel = ClassicPanel(contentRect: NSRect(origin: .zero, size: frame.size), styleMask: [.borderless], backing: .buffered, defer: false)
-        panel.contentView = self
-        panel.backgroundColor = colors.background
         self.onButton = onButton
-        sheetPanel = panel
         focus = items.firstIndex { $0.kind == .button && $0.isDefault } ?? 0
-        window.beginSheet(panel)
+        dismissOverlay = ClassicOverlay.present(self, in: window)
         applyFocus()
     }
 
     func dismissSheet(from window: NSWindow) {
-        guard let panel = sheetPanel else { return }
-        sheetPanel = nil
+        guard let dismiss = dismissOverlay else { return }
+        dismissOverlay = nil
         onButton = nil
-        window.endSheet(panel)
-        panel.orderOut(nil)
+        dismiss()
     }
 
     func isChecked(_ itemIndex: Int) -> Bool { items[itemIndex].checked }

@@ -23,8 +23,7 @@ final class FindDialog: NSView {
     private var top = 0
     private var focus = 0
     private var timer: Timer?
-    private var panel: ClassicPanel?
-    private weak var host: NSWindow?
+    private var dismissOverlay: (() -> Void)?
     private var buttonFrames: [NSRect] = []
     private var listFrame = NSRect.zero
 
@@ -56,13 +55,7 @@ final class FindDialog: NSView {
     }
 
     func present(on window: NSWindow) {
-        host = window
-        let panel = ClassicPanel(contentRect: NSRect(origin: .zero, size: frame.size), styleMask: [.borderless], backing: .buffered, defer: false)
-        panel.contentView = self
-        panel.backgroundColor = colors.background
-        self.panel = panel
-        window.beginSheet(panel)
-        panel.makeFirstResponder(self)
+        dismissOverlay = ClassicOverlay.present(self, in: window)
     }
 
     private func drain() {
@@ -85,11 +78,8 @@ final class FindDialog: NSView {
         lock.unlock()
         timer?.invalidate()
         timer = nil
-        if let host, let panel {
-            host.endSheet(panel)
-            panel.orderOut(nil)
-        }
-        panel = nil
+        dismissOverlay?()
+        dismissOverlay = nil
         onClose?()
     }
 
