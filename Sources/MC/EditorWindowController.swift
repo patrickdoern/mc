@@ -363,7 +363,7 @@ final class EditorTextView: NSTextView {
         textColor = Theme.editorText
         backgroundColor = Theme.background
         insertionPointColor = Theme.editorText
-        selectedTextAttributes = [.backgroundColor: Theme.editorSelection, .foregroundColor: NSColor.white]
+        selectedTextAttributes = [.backgroundColor: Theme.editorSelection]
         isRichText = false
         isAutomaticQuoteSubstitutionEnabled = false
         isAutomaticDashSubstitutionEnabled = false
