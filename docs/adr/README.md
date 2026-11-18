@@ -9,3 +9,7 @@ Entscheidungen, die nicht aus dem Code ablesbar sind. Ein akzeptiertes ADR wird 
 | [0003](0003-verteilung-ausserhalb-des-app-stores.md) | Moonlight Commander wird mit Developer ID außerhalb des App Stores verteilt und bringt seine Bibliotheken mit | Accepted |
 | [0004](0004-libssh2-und-openssl-statisch-aus-quellen.md) | libssh2 und OpenSSL werden aus geprüften Quellen statisch mit Deployment-Target macOS 14 gebaut | Accepted |
 | [0005](0005-terminal-ueber-swiftterm.md) | Das Terminal nutzt SwiftTerm in der letzten Version ohne unstabile Abhängigkeiten | Accepted |
+| [0006](0006-dialoge-und-popups-im-norton-stil.md) | Alle Dialoge, Popups und Fortschrittsanzeigen sind eigene Views im Norton/mc-Stil | Accepted |
+| [0007](0007-live-aktualisierung-nur-fuer-lokale-panels.md) | Nur lokale Panels aktualisieren sich selbst, über FSEvents | Accepted |
+| [0008](0008-sftp-passwoerter-im-schluesselbund.md) | SFTP-Passwörter liegen ausschließlich im macOS-Schlüsselbund | Accepted |
+| [0009](0009-tastenkuerzel-muessen-auf-deutscher-tastatur-gehen.md) | Eigene Tastenkürzel müssen auf einer deutschen Tastatur direkt erreichbar sein | Accepted |
