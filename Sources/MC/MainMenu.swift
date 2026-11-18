@@ -78,6 +78,7 @@ enum MainMenu {
         menu.addItem(item("Versteckte Dateien", #selector(MainWindowController.toggleHidden(_:)), ".", [.command, .shift]))
         menu.addItem(item("Aktualisieren (F9)", #selector(MainWindowController.refresh(_:)), "r"))
         menu.addItem(item("Terminal ein/aus", #selector(MainWindowController.toggleTerminal(_:)), "o", .control))
+        menu.addItem(item("Verzeichnis-Hotlist", #selector(MainWindowController.showHotlist(_:)), "d"))
         menu.addItem(item("Panels tauschen", #selector(MainWindowController.swapPanels(_:)), "u"))
         return menu
     }
