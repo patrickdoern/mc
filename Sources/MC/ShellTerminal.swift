@@ -3,10 +3,7 @@ import SwiftTerm
 
 final class ShellTerminal: LocalProcessTerminalView, LocalProcessTerminalViewDelegate {
     var onExit: (() -> Void)?
-    private(set) var directory: String
-
     init(directory: String) {
-        self.directory = directory
         super.init(frame: .zero)
         processDelegate = self
         font = Theme.font
@@ -18,12 +15,53 @@ final class ShellTerminal: LocalProcessTerminalView, LocalProcessTerminalViewDel
 
     required init?(coder: NSCoder) { fatalError() }
 
-    func run(_ command: String, in newDirectory: String) {
-        if newDirectory != directory {
-            send(txt: "cd \(Shell.quote(newDirectory))\n")
-            directory = newDirectory
+    private var knownShellPid: pid_t = 0
+
+    private var shellPid: pid_t {
+        if knownShellPid == 0 { knownShellPid = Self.childShell() }
+        return knownShellPid
+    }
+
+    var isIdle: Bool {
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        guard shellPid > 0, proc_pidinfo(shellPid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return false }
+        return info.e_tpgid == info.pbi_pgid
+    }
+
+    var workingDirectory: String? {
+        var info = proc_vnodepathinfo()
+        let size = Int32(MemoryLayout<proc_vnodepathinfo>.size)
+        guard proc_pidinfo(shellPid, PROC_PIDVNODEPATHINFO, 0, &info, size) == size else { return nil }
+        return withUnsafePointer(to: &info.pvi_cdir.vip_path) {
+            $0.withMemoryRebound(to: CChar.self, capacity: Int(MAXPATHLEN)) { String(cString: $0) }
         }
+    }
+
+    func follow(_ newDirectory: String) {
+        guard isIdle, workingDirectory != Self.resolved(newDirectory) else { return }
+        send(txt: "\u{15}cd \(Shell.quote(newDirectory))\n")
+    }
+
+    func run(_ command: String) {
         send(txt: command + "\n")
+    }
+
+    private static func childShell() -> pid_t {
+        var pids = [pid_t](repeating: 0, count: 64)
+        proc_listchildpids(getpid(), &pids, Int32(pids.count * MemoryLayout<pid_t>.size))
+        return pids.first { pid in
+            guard pid > 0 else { return false }
+            var name = [CChar](repeating: 0, count: 64)
+            return proc_name(pid, &name, UInt32(name.count)) > 0 && String(cString: name) == "zsh"
+        } ?? 0
+    }
+
+    private static func resolved(_ path: String) -> String {
+        realpath(path, nil).map { resolved in
+            defer { free(resolved) }
+            return String(cString: resolved)
+        } ?? path
     }
 
     func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}

@@ -302,7 +302,7 @@ extension MainWindowController {
         )
         let menu = NSMenu()
         for entry in UserMenu.load() {
-            let item = ClosureMenuItem(entry.title) { [unowned self] in runInTerminal(UserMenu.expand(entry.script, context: context), in: model.path) }
+            let item = ClosureMenuItem(entry.title) { [unowned self] in runInTerminal(UserMenu.expand(entry.script, context: context)) }
             item.keyEquivalent = entry.key
             item.keyEquivalentModifierMask = []
             menu.addItem(item)

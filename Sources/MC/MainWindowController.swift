@@ -477,7 +477,9 @@ final class MainWindowController: NSWindowController {
 
     private func showTerminal() {
         let model = activePanel.model
-        if terminal == nil {
+        if let terminal {
+            if model.isLocal { terminal.follow(model.path) }
+        } else {
             let created = ShellTerminal(directory: model.isLocal ? model.path : NSHomeDirectory())
             created.onExit = { [weak self] in self?.terminalExited() }
             created.translatesAutoresizingMaskIntoConstraints = false
@@ -508,9 +510,9 @@ final class MainWindowController: NSWindowController {
         reloadPanels()
     }
 
-    func runInTerminal(_ command: String, in directory: String) {
+    func runInTerminal(_ command: String) {
         showTerminal()
-        terminal?.run(command, in: directory)
+        terminal?.run(command)
     }
 
     private func executeCommand() {
@@ -525,7 +527,7 @@ final class MainWindowController: NSWindowController {
             return
         }
         guard model.isLocal else { return Dialogs.show(error: FileError("Befehle laufen nur in lokalen Ordnern")) }
-        runInTerminal(command, in: model.path)
+        runInTerminal(command)
     }
 
     private func refreshQuickLook() {

@@ -38,7 +38,7 @@ Beides funktioniert auch bei laufender App. Ordner lassen sich außerdem aufs Do
 | F7 / F8 | Ordner anlegen / Löschen (lokal Papierkorb, ⇧F8 endgültig) |
 | F9 / F10 | Menüzeile (Links, Datei, Befehl, Optionen, Rechts) / Beenden; `exit` in der Kommandozeile beendet ebenfalls |
 | Tippen | schreibt in die Kommandozeile; Tab vervollständigt Befehle und Dateinamen, Enter führt im Terminal aus (Ordner des aktiven Panels), `cd` wechselt das Panel |
-| Ctrl-O | Terminal ein/aus (echte Shell, interaktive Programme wie `vim` und `top` laufen) |
+| Ctrl-O | Terminal ein/aus (echte Shell, interaktive Programme wie `vim` und `top` laufen; beim Einblenden wechselt eine untätige Shell in den Ordner des aktiven Panels) |
 | ⌘Y | Quick Look für die Datei unter dem Cursor |
 | ⌘Enter | Dateiname unter dem Cursor in die Kommandozeile einfügen |
 | Ctrl-P / Ctrl-N | Befehlsverlauf |
