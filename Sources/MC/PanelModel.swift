@@ -42,6 +42,9 @@ final class PanelModel {
 
     private var entries: [FileEntry] = []
     private var generation = 0
+    private var watcher: DirectoryWatcher?
+    private var watchedPath: String?
+    private var refreshPending = false
 
     init(fileSystem: FileSystem, path: String, sortKey: SortKey, ascending: Bool, showHidden: Bool, dirsFirst: Bool, caseSensitive: Bool, format: ListFormat) {
         self.fileSystem = fileSystem
@@ -75,13 +78,13 @@ final class PanelModel {
 
     func isParentRow(_ index: Int) -> Bool { hasParentRow && index == 0 }
 
-    func navigate(to newPath: String, on newSystem: FileSystem? = nil, selecting name: String? = nil) {
+    func navigate(to newPath: String, on newSystem: FileSystem? = nil, selecting name: String? = nil, quiet: Bool = false) {
         generation += 1
         let token = generation
         let system = newSystem ?? fileSystem
         let keepMarks = newPath == path && newSystem == nil
         isLoading = true
-        onChange?()
+        if !quiet { onChange?() }
         DispatchQueue.global(qos: .userInitiated).async {
             let result = Result { try system.list(newPath) }
             DispatchQueue.main.async { [self] in
@@ -96,16 +99,40 @@ final class PanelModel {
                     marked = keptMarks
                     if !keepMarks { directorySizes = [:] }
                     rebuild(selecting: name)
+                    watchDirectory()
                 case .failure(let error):
                     if newSystem == nil, newPath == path, path != "/" {
                         navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path))
                         return
                     }
-                    onFailure?(error)
+                    if !quiet { onFailure?(error) }
                 }
                 onChange?()
+                if refreshPending {
+                    refreshPending = false
+                    refreshQuietly()
+                }
             }
         }
+    }
+
+    private func watchDirectory() {
+        guard isLocal else {
+            watcher = nil
+            watchedPath = nil
+            return
+        }
+        guard watchedPath != path else { return }
+        watchedPath = path
+        watcher = DirectoryWatcher(path: path) { [weak self] in self?.refreshQuietly() }
+    }
+
+    private func refreshQuietly() {
+        guard !isLoading else {
+            refreshPending = true
+            return
+        }
+        navigate(to: path, selecting: currentEntry?.name, quiet: true)
     }
 
     func reload(selecting name: String? = nil) {
