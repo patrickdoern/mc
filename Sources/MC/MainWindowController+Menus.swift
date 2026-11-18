@@ -41,7 +41,7 @@ extension MainWindowController {
     private func fileMenu() -> NSMenu {
         let menu = NSMenu()
         add([
-            ("Ansicht   F3", viewFile), ("Datei anzeigen …", viewFileByName), ("Bearbeiten   F4", editFile), ("Neue Datei …   ⇧F4", newFile), ("Kopieren   F5", copyFiles), nil,
+            ("Ansicht   F3", viewFile), ("Quick Look   ⌘Y", quickLookFile), ("Datei anzeigen …", viewFileByName), ("Bearbeiten   F4", editFile), ("Neue Datei …   ⇧F4", newFile), ("Kopieren   F5", copyFiles), nil,
             ("Chmod …", changePermissions), ("Link …", makeHardLink), ("Symbolischer Link …", makeSymbolicLink), ("Relativer symbolischer Link …", makeRelativeSymbolicLink),
             ("Symbolischen Link bearbeiten …", editSymbolicLink), ("Chown …", changeOwner), nil,
             ("Umbenennen/Verschieben   F6", moveFiles), ("Umbenennen   ⇧F6", renameFile), ("Neues Verzeichnis erstellen   F7", makeDirectory),
@@ -58,10 +58,10 @@ extension MainWindowController {
     private func commandMenu() -> NSMenu {
         let menu = NSMenu()
         add([
-            ("Benutzermenü   F2", userMenu), ("Verzeichnisbaum", { _ in self.activePanel.setMode(.tree) }), ("Datei suchen …", findFiles), ("Panels vertauschen   ⌘U", swapPanels),
+            ("Benutzermenü   F2", userMenu), ("Terminal ein/aus   Ctrl-O", toggleTerminal), ("Verzeichnisbaum", { _ in self.activePanel.setMode(.tree) }), ("Datei suchen …", findFiles), ("Externes Panelisieren …", panelizeCommand), ("Panels vertauschen   ⌘U", swapPanels),
             ("Verzeichnisse vergleichen", compareDirectories), ("Dateien vergleichen", compareFiles), ("Verzeichnisgrößen anzeigen", showDirectorySizes), nil,
-            ("Befehlschronik …", showCommandHistory), ("Verzeichnis-Hotlist …", showHotlist), ("Aktive Verbindungen …", showConnections), ("Gespeicherte Passwörter …", showSavedPasswords), nil,
-            ("Benutzermenü bearbeiten", editUserMenu),
+            ("Befehlschronik …", showCommandHistory), ("Verzeichnis-Hotlist …", showHotlist), ("Aktive Verbindungen …", showConnections), ("Hintergrundaufgaben …", showBackgroundJobs), ("Gespeicherte Passwörter …", showSavedPasswords), nil,
+            ("Benutzermenü bearbeiten", editUserMenu), ("Dateizuordnung bearbeiten", editFileActions),
         ], to: menu)
         return menu
     }

@@ -6,13 +6,15 @@ python3 - "$work" <<'PY'
 import sys
 from PIL import Image, ImageDraw
 work = sys.argv[1]
-source = Image.open("icon/logo.webp").convert("RGB")
-luma = source.convert("L").point(lambda value: 255 if value < 90 else 0)
-left, top, right, bottom = luma.getbbox()
+source = Image.open("icon/logo.png").convert("RGB")
+red, green, blue = source.split()
+mask_blue = Image.new("L", source.size, 0)
+mask_blue.putdata([255 if b - r > 90 and b > 200 else 0 for r, b in zip(red.getdata(), blue.getdata())])
+left, top, right, bottom = mask_blue.getbbox()
 side = min(right - left, bottom - top) - 2
 crop = source.crop((left + 1, top + 1, left + 1 + side, top + 1 + side)).resize((824 * 4, 824 * 4), Image.LANCZOS)
 mask = Image.new("L", crop.size, 0)
-ImageDraw.Draw(mask).rounded_rectangle((0, 0, crop.size[0] - 1, crop.size[1] - 1), radius=int(crop.size[0] * 0.2237), fill=255)
+ImageDraw.Draw(mask).rounded_rectangle((0, 0, crop.size[0] - 1, crop.size[1] - 1), radius=int(crop.size[0] * 0.235), fill=255)
 body = crop.convert("RGBA")
 body.putalpha(mask)
 body = body.resize((824, 824), Image.LANCZOS)

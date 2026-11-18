@@ -6,7 +6,7 @@ enum SortKey: Int {
 }
 
 enum ListFormat: Int, CaseIterable {
-    case full, sizeOnly, permissions, namesOnly
+    case full, sizeOnly, permissions, namesOnly, brief
 
     var title: String {
         switch self {
@@ -14,6 +14,7 @@ enum ListFormat: Int, CaseIterable {
         case .sizeOnly: return "Name, Größe"
         case .permissions: return "Name, Rechte, Größe"
         case .namesOnly: return "Nur Name"
+        case .brief: return "Kurz (mehrspaltig)"
         }
     }
 }
@@ -56,11 +57,11 @@ final class PanelModel {
     var isLocal: Bool { fileSystem is LocalFileSystem }
 
     var title: String {
-        let location = isLocal ? path : fileSystem.identity.replacingOccurrences(of: "sftp://", with: "") + ":" + path
+        let location = isLocal ? path : fileSystem.displayName + ":" + path
         return filter.isEmpty ? location : location + " [\(filter)]"
     }
 
-    var hasParentRow: Bool { path != "/" }
+    var hasParentRow: Bool { path != "/" || fileSystem.exitLocation != nil }
 
     var currentEntry: FileEntry? { rows.indices.contains(cursor) ? rows[cursor] : nil }
 
@@ -109,6 +110,10 @@ final class PanelModel {
 
     func goUp() {
         guard hasParentRow else { return }
+        if path == "/", let exit = fileSystem.exitLocation {
+            navigate(to: exit.path, on: exit.system, selecting: exit.selecting)
+            return
+        }
         navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path))
     }
 

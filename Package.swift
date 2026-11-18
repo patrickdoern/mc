@@ -14,6 +14,9 @@ let headerSearch: [SwiftSetting] = [.unsafeFlags(["-Xcc", "-I" + includePath])]
 let package = Package(
     name: "MC",
     platforms: [.macOS(.v14)],
+    dependencies: [
+        .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", exact: "1.5.1"),
+    ],
     targets: [
         .systemLibrary(name: "CLibSSH2"),
         .target(
@@ -22,7 +25,7 @@ let package = Package(
             swiftSettings: headerSearch,
             linkerSettings: [.unsafeFlags(["-L" + libraryPath])] + sshLibraries
         ),
-        .executableTarget(name: "MC", dependencies: ["MCCore"], resources: [.copy("Resources/AppIcon.icns")], swiftSettings: headerSearch),
+        .executableTarget(name: "MC", dependencies: ["MCCore", .product(name: "SwiftTerm", package: "SwiftTerm")], resources: [.copy("Resources/AppIcon.icns")], swiftSettings: headerSearch),
         .testTarget(name: "MCCoreTests", dependencies: ["MCCore"], swiftSettings: headerSearch),
     ],
     swiftLanguageModes: [.v5]

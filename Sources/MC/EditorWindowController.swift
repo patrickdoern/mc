@@ -7,7 +7,13 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private let fileSystem: FileSystem
     private let path: String
     private let readOnly: Bool
-    private let encoding: String.Encoding
+    private var encoding: String.Encoding
+    private var rawData: Data
+    private var isHex = false
+    private var textBeforeHex = ""
+    private var wraps = false
+    private var searchUsesRegex = false
+    private var searchIsCaseSensitive = false
     private let permissions: UInt16
     private let textView = EditorTextView()
     private var blockRange: NSRange?
@@ -18,10 +24,12 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     var hasUnsavedChanges: Bool { window?.isDocumentEdited ?? false }
 
-    init(fileSystem: FileSystem, path: String, text: String, encoding: String.Encoding, permissions: UInt16, readOnly: Bool) {
+    init(fileSystem: FileSystem, path: String, data: Data, permissions: UInt16, readOnly: Bool) {
+        let (text, encoding) = Self.decode(data)
         self.fileSystem = fileSystem
         self.path = path
         self.readOnly = readOnly
+        self.rawData = data
         self.encoding = encoding
         self.permissions = permissions
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 920, height: 660), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
@@ -40,7 +48,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         scroll.hasHorizontalScroller = true
         scroll.drawsBackground = true
         scroll.backgroundColor = Theme.background
-        let keyBar = KeyBar(labels: readOnly ? ["Hilfe", "", "", "", "", "", "Suchen", "", "", "Ende"] : ["Hilfe", "Sichern", "Markier", "Ersetz", "Kopier", "Versch", "Suchen", "Lösch", "", "Ende"]) { [weak self] number in
+        let keyBar = KeyBar(labels: readOnly ? ["Hilfe", "Umbruch", "Ende", "Hex", "Gehe zu", "", "Suchen", "Codierg", "", "Ende"] : ["Hilfe", "Sichern", "Markier", "Ersetz", "Kopier", "Versch", "Suchen", "Lösch", "", "Ende"]) { [weak self] number in
             self?.perform(functionKey: number, shifted: false)
         }
         let stack = NSStackView(views: [scroll, keyBar])
@@ -94,14 +102,19 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private func perform(functionKey number: Int, shifted: Bool) -> Bool {
         switch (number, shifted) {
         case (1, _): showHelp()
-        case (2, _) where !readOnly: saveDocument(nil)
-        case (3, _) where !readOnly: toggleBlock()
-        case (4, _) where !readOnly: replaceText(nil)
-        case (5, _) where !readOnly: copyBlock()
+        case (2, _) where readOnly: toggleWrap(nil)
+        case (2, _): saveDocument(nil)
+        case (3, _) where readOnly: close()
+        case (3, _): toggleBlock()
+        case (4, _) where readOnly: toggleHex(nil)
+        case (4, _): replaceText(nil)
+        case (5, _) where readOnly: goToLine(nil)
+        case (5, _): copyBlock()
         case (6, _) where !readOnly: moveBlock()
         case (7, false): findText(nil)
         case (7, true): findNext(nil)
-        case (8, _) where !readOnly: deleteBlock()
+        case (8, _) where readOnly: chooseEncoding(nil)
+        case (8, _): deleteBlock()
         case (10, _): close()
         default: return false
         }
@@ -137,36 +150,129 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             Dialogs.show(error: error)
             return false
         }
+        rawData = data
         window?.isDocumentEdited = false
         return true
     }
 
     @objc func findText(_ sender: Any?) {
-        guard let term = Dialogs.prompt(title: "Suchen", message: "Suchbegriff:", value: lastSearch, confirm: "Suchen") else { return }
-        lastSearch = term
+        guard let input = Dialogs.searchForm(title: "Suchen", fields: [("Suchen:", lastSearch)], checks: [("Regulärer Ausdruck", searchUsesRegex), ("Groß-/Kleinschreibung beachten", searchIsCaseSensitive)], confirm: "Suchen") else { return }
+        guard !input.values[0].isEmpty else { return }
+        lastSearch = input.values[0]
+        searchUsesRegex = input.checks[0]
+        searchIsCaseSensitive = input.checks[1]
         findNext(nil)
+    }
+
+    private func expression() -> NSRegularExpression? {
+        do {
+            return try NSRegularExpression(pattern: searchUsesRegex ? lastSearch : NSRegularExpression.escapedPattern(for: lastSearch), options: searchIsCaseSensitive ? [.anchorsMatchLines] : [.anchorsMatchLines, .caseInsensitive])
+        } catch {
+            Dialogs.show(error: error)
+            return nil
+        }
+    }
+
+    private func nextMatch(from start: Int) -> NSTextCheckingResult? {
+        guard let regex = expression() else { return nil }
+        let text = textView.string
+        let length = (text as NSString).length
+        return regex.firstMatch(in: text, range: NSRange(location: start, length: length - start)) ?? regex.firstMatch(in: text, range: NSRange(location: 0, length: length))
     }
 
     @objc func findNext(_ sender: Any?) {
         guard !lastSearch.isEmpty else { return findText(nil) }
-        let text = textView.string as NSString
-        let start = textView.selectedRange().upperBound
-        var found = text.range(of: lastSearch, options: .caseInsensitive, range: NSRange(location: start, length: text.length - start))
-        if found.location == NSNotFound { found = text.range(of: lastSearch, options: .caseInsensitive) }
-        guard found.location != NSNotFound else { return NSSound.beep() }
-        textView.setSelectedRange(found)
-        textView.scrollRangeToVisible(found)
+        guard let match = nextMatch(from: textView.selectedRange().upperBound) else { return NSSound.beep() }
+        textView.setSelectedRange(match.range)
+        textView.scrollRangeToVisible(match.range)
     }
 
     @objc func replaceText(_ sender: Any?) {
-        guard !readOnly, let term = Dialogs.prompt(title: "Ersetzen", message: "Suchbegriff:", value: lastSearch, confirm: "Weiter") else { return }
-        guard let replacement = Dialogs.prompt(title: "Ersetzen", message: "\(term) ersetzen durch:", value: lastReplacement, confirm: "Alle ersetzen") else { return }
-        lastSearch = term
-        lastReplacement = replacement
-        let updated = textView.string.replacingOccurrences(of: term, with: replacement, options: .caseInsensitive)
-        guard updated != textView.string, textView.shouldChangeText(in: NSRange(location: 0, length: (textView.string as NSString).length), replacementString: updated) else { return NSSound.beep() }
-        textView.textStorage?.replaceCharacters(in: NSRange(location: 0, length: textView.textStorage?.length ?? 0), with: updated)
-        textView.didChangeText()
+        guard !readOnly, !isHex, let input = Dialogs.searchForm(
+            title: "Ersetzen",
+            fields: [("Suchen:", lastSearch), ("Ersetzen durch:", lastReplacement)],
+            checks: [("Regulärer Ausdruck ($1 für Gruppen)", searchUsesRegex), ("Groß-/Kleinschreibung beachten", searchIsCaseSensitive), ("Alle ersetzen", true)],
+            confirm: "Ersetzen"
+        ), !input.values[0].isEmpty else { return }
+        lastSearch = input.values[0]
+        lastReplacement = input.values[1]
+        searchUsesRegex = input.checks[0]
+        searchIsCaseSensitive = input.checks[1]
+        guard let regex = expression() else { return }
+        let template = searchUsesRegex ? lastReplacement : NSRegularExpression.escapedTemplate(for: lastReplacement)
+        let text = textView.string
+        let full = NSRange(location: 0, length: (text as NSString).length)
+        if input.checks[2] {
+            let count = regex.numberOfMatches(in: text, range: full)
+            guard count > 0, textView.shouldChangeText(in: full, replacementString: nil) else { return NSSound.beep() }
+            textView.textStorage?.replaceCharacters(in: full, with: regex.stringByReplacingMatches(in: text, range: full, withTemplate: template))
+            textView.didChangeText()
+            Dialogs.info(title: "Ersetzen", message: "\(count) Ersetzung\(count == 1 ? "" : "en")")
+        } else if let match = nextMatch(from: textView.selectedRange().location) {
+            textView.insertText(regex.replacementString(for: match, in: text, offset: 0, template: template), replacementRange: match.range)
+        } else {
+            NSSound.beep()
+        }
+    }
+
+    @objc func toggleWrap(_ sender: Any?) {
+        wraps.toggle()
+        guard let container = textView.textContainer, let scroll = textView.enclosingScrollView else { return }
+        container.widthTracksTextView = wraps
+        textView.isHorizontallyResizable = !wraps
+        scroll.hasHorizontalScroller = !wraps
+        let width = wraps ? scroll.contentSize.width : CGFloat.greatestFiniteMagnitude
+        container.containerSize = NSSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+        textView.setFrameSize(NSSize(width: wraps ? scroll.contentSize.width : textView.frame.width, height: textView.frame.height))
+    }
+
+    @objc func toggleHex(_ sender: Any?) {
+        guard readOnly else { return }
+        isHex.toggle()
+        if isHex {
+            textBeforeHex = textView.string
+            textView.string = HexDump.render(rawData)
+            textView.textColor = Theme.editorText
+        } else {
+            textView.string = textBeforeHex
+            applyHighlighting()
+        }
+        window?.title = PosixPath.name(path) + (isHex ? " (Hex)" : " (nur lesen)")
+    }
+
+    @objc func chooseEncoding(_ sender: Any?) {
+        guard !isHex else { return }
+        guard !hasUnsavedChanges else { return Dialogs.show(error: FileError("Die Codierung lässt sich nur ohne ungespeicherte Änderungen wechseln")) }
+        let encodings: [(String, String.Encoding)] = [("UTF-8", .utf8), ("ISO-8859-1 (Latin 1)", .isoLatin1), ("Windows-1252", .windowsCP1252), ("Mac Roman", .macOSRoman), ("UTF-16", .utf16)]
+        guard let result = Dialogs.form(title: "Codierung", popup: ("Zeichensatz:", encodings.map(\.0), encodings.firstIndex { $0.1 == encoding } ?? 0), confirm: "Übernehmen") else { return }
+        let chosen = encodings[result.choice].1
+        guard let text = String(data: rawData, encoding: chosen) else { return Dialogs.show(error: FileError("Die Datei lässt sich nicht als \(encodings[result.choice].0) lesen")) }
+        encoding = chosen
+        textView.string = text
+        applyHighlighting()
+        if !readOnly { window?.isDocumentEdited = false }
+    }
+
+    @objc func insertFile(_ sender: Any?) {
+        guard !readOnly, let text = Dialogs.prompt(title: "Datei einfügen", message: "Pfad der Datei:", value: PosixPath.parent(path) + "/", confirm: "Einfügen") else { return }
+        do {
+            let data = try fileSystem.readAll(PosixPath.resolve(text, relativeTo: PosixPath.parent(path), home: fileSystem.homePath))
+            textView.insertText(Self.decode(data).0, replacementRange: textView.selectedRange())
+        } catch {
+            Dialogs.show(error: error)
+        }
+    }
+
+    @objc func saveBlock(_ sender: Any?) {
+        let selection = textView.selectedRange()
+        guard let range = selection.length > 0 ? selection : blockRange else { return NSSound.beep() }
+        guard let text = Dialogs.prompt(title: "Block sichern", message: "Speichern als:", value: PosixPath.parent(path) + "/", confirm: "Sichern") else { return }
+        let block = (textView.string as NSString).substring(with: range)
+        do {
+            try fileSystem.writeAll(block.data(using: encoding) ?? Data(block.utf8), to: PosixPath.resolve(text, relativeTo: PosixPath.parent(path), home: fileSystem.homePath), permissions: permissions)
+        } catch {
+            Dialogs.show(error: error)
+        }
     }
 
     @objc func goToLine(_ sender: Any?) {
@@ -225,7 +331,9 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func showHelp() {
-        Dialogs.info(title: "Editor-Tasten", message: "F2 Sichern · F3 Block markieren (Anfang/Ende) · F4 Ersetzen · F5 Block kopieren · F6 Block verschieben · F7 Suchen · ⇧F7 Weitersuchen · F8 Block löschen · Ctrl-Y Zeile löschen · F10/Esc Beenden")
+        Dialogs.info(title: readOnly ? "Viewer-Tasten" : "Editor-Tasten", message: readOnly
+            ? "F2 Zeilenumbruch · F3/F10/Esc Ende · F4 Hex-Ansicht · F5 Gehe zu Zeile · F7 Suchen (⇧F7 weiter) · F8 Codierung wählen"
+            : "F2 Sichern · F3 Block markieren (Anfang/Ende) · F4 Ersetzen (auch Regex) · F5 Block kopieren · F6 Block verschieben · F7 Suchen (⇧F7 weiter) · F8 Block löschen · Ctrl-Y Zeile löschen · F10/Esc Ende · Menü Bearbeiten: Datei einfügen, Block sichern, Codierung")
     }
 }
 

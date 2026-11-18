@@ -9,6 +9,7 @@ enum PanelCommand {
     case markPattern(select: Bool)
     case execute
     case insertName
+    case complete
 }
 
 enum PanelMode {
@@ -110,6 +111,9 @@ final class PanelView: NSView {
     private var listTop: CGFloat { margin + rowHeight }
     private var visibleRows: Int { max(Int((bounds.height - listTop - margin - rowHeight - 4) / rowHeight), 1) }
     private var columns: Int { Int((bounds.width - 2 * margin - 8) / charWidth) }
+    private var briefColumns: Int { model.format == .brief ? (columns >= 90 ? 3 : 2) : 1 }
+    private var cellColumns: Int { columns / briefColumns }
+    private var pageSize: Int { visibleRows * briefColumns }
 
     private var itemCount: Int {
         switch mode {
@@ -163,10 +167,10 @@ final class PanelView: NSView {
     }
 
     private func drawList() {
-        for offset in 0..<visibleRows {
+        for offset in 0..<pageSize {
             let index = topIndex + offset
             guard index < model.rows.count else { break }
-            drawRow(index, y: listTop + CGFloat(offset) * rowHeight)
+            drawRow(index, column: offset / visibleRows, y: listTop + CGFloat(offset % visibleRows) * rowHeight)
         }
     }
 
@@ -179,24 +183,25 @@ final class PanelView: NSView {
             return [(size, 8)]
         case .permissions:
             return [(isParent ? "" : Formatting.permissions(entry.permissions), 9), (size, 8)]
-        case .namesOnly:
+        case .namesOnly, .brief:
             return []
         }
     }
 
-    private func drawRow(_ index: Int, y: CGFloat) {
+    private func drawRow(_ index: Int, column: Int, y: CGFloat) {
         let entry = model.rows[index]
         let isParent = model.isParentRow(index)
         let isMarked = model.marked.contains(entry.name)
         let isCursor = index == model.cursor
-        let x = margin + 6
+        let x = margin + 6 + CGFloat(column * cellColumns) * charWidth
         if isCursor {
             (isActive ? Theme.cursor : Theme.inactiveCursor).setFill()
-            NSRect(x: margin + 2, y: y, width: bounds.width - 2 * margin - 4, height: rowHeight).fill()
+            let width = briefColumns > 1 ? CGFloat(cellColumns) * charWidth - 2 : bounds.width - 2 * margin - 4
+            NSRect(x: x - 4, y: y, width: width, height: rowHeight).fill()
         }
         let color = isCursor && isActive ? Theme.cursorText : isMarked ? Theme.marked : entry.isDirectory ? Theme.directory : Theme.text
         let trailing = trailingColumns(for: entry, isParent: isParent)
-        let nameWidth = columns - trailing.reduce(0) { $0 + $1.width + 1 }
+        let nameWidth = briefColumns > 1 ? cellColumns - 1 : columns - trailing.reduce(0) { $0 + $1.width + 1 }
         var label = entry.isDirectory ? "/" + entry.name : entry.name
         if entry.isSymlink && !entry.isDirectory { label = "@" + label }
         draw(abbreviated(label, columns: nameWidth), at: NSPoint(x: x, y: y), color: color, font: entry.isDirectory || isMarked ? Theme.boldFont : Theme.font)
@@ -276,6 +281,10 @@ final class PanelView: NSView {
         case .tree: cursor = tree?.cursor
         case .quickView, .info: cursor = nil
         }
+        if mode == .list, briefColumns > 1 {
+            topIndex = (model.cursor / pageSize) * pageSize
+            return
+        }
         if let cursor {
             if cursor < topIndex { topIndex = cursor }
             if cursor >= topIndex + visibleRows { topIndex = cursor - visibleRows + 1 }
@@ -286,7 +295,8 @@ final class PanelView: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
         let point = convert(event.locationInWindow, from: nil)
-        let index = topIndex + Int((point.y - listTop) / rowHeight)
+        let column = mode == .list && briefColumns > 1 ? min(Int((point.x - margin) / (CGFloat(cellColumns) * charWidth)), briefColumns - 1) : 0
+        let index = topIndex + column * visibleRows + Int((point.y - listTop) / rowHeight)
         guard point.y >= listTop, index < itemCount else { return }
         switch mode {
         case .list:
@@ -304,6 +314,10 @@ final class PanelView: NSView {
     override func scrollWheel(with event: NSEvent) {
         let lines = Int((-event.scrollingDeltaY / (event.hasPreciseScrollingDeltas ? rowHeight : 1)).rounded())
         guard lines != 0 else { return }
+        if mode == .list, briefColumns > 1 {
+            model.moveCursor(by: lines.signum() * visibleRows)
+            return
+        }
         topIndex = max(min(topIndex + lines, max(itemCount - visibleRows, 0)), 0)
         needsDisplay = true
     }
@@ -402,6 +416,10 @@ final class PanelView: NSView {
                 guard !commandLine.isEmpty else { return false }
                 commandLine.deleteLast()
                 return true
+            case .tab:
+                guard !commandLine.isEmpty else { return false }
+                onCommand?(.complete)
+                return true
             default:
                 return false
             }
@@ -419,8 +437,10 @@ final class PanelView: NSView {
             if modifiers.contains(.command) { model.goUp() } else { extendOrMove(-1, shifted: shifted) }
         case .downArrow:
             if modifiers.contains(.command) { open() } else { extendOrMove(1, shifted: shifted) }
-        case .pageUp: model.moveCursor(by: -(visibleRows - 1))
-        case .pageDown: model.moveCursor(by: visibleRows - 1)
+        case .leftArrow where briefColumns > 1: model.moveCursor(by: -visibleRows)
+        case .rightArrow where briefColumns > 1: model.moveCursor(by: visibleRows)
+        case .pageUp: model.moveCursor(by: -(briefColumns > 1 ? pageSize : visibleRows - 1))
+        case .pageDown: model.moveCursor(by: briefColumns > 1 ? pageSize : visibleRows - 1)
         case .home: model.setCursor(0)
         case .end: model.setCursor(model.rows.count - 1)
         case .carriageReturn, .enter: open()

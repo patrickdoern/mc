@@ -12,11 +12,17 @@ final class MainWindowController: NSWindowController {
     private(set) var activePanel: PanelView
     private var menuLine: MenuLineView?
     private var promptLine: ShellInputView?
+    private var contentStack: NSStackView?
+    private var terminal: ShellTerminal?
+    private let quickLook = QuickLook()
     private var keyBar: KeyBar?
     var finders: [FindWindowController] = []
-    private var outputs: [CommandOutputWindowController] = []
     private var editors: [EditorWindowController] = []
-    lazy var runner = OperationRunner(window: window!)
+    lazy var runner: OperationRunner = {
+        let runner = OperationRunner(window: window!)
+        runner.onStatusChange = { [weak self] in self?.commandLine.status = $0 }
+        return runner
+    }()
 
     var hasUnsavedEditors: Bool { editors.contains(where: \.hasUnsavedChanges) }
 
@@ -55,6 +61,7 @@ final class MainWindowController: NSWindowController {
         let promptLine = ShellInputView(commandLine: commandLine) { [unowned self] in prompt }
         self.promptLine = promptLine
         let content = NSStackView(views: [menuLine, panelStack, promptLine, keyBar])
+        contentStack = content
         content.orientation = .vertical
         content.spacing = 0
         window.contentView = content
@@ -71,6 +78,7 @@ final class MainWindowController: NSWindowController {
                 redraw?()
                 promptLine.needsDisplay = true
                 self?.panels.forEach { $0.refreshPreview(); if $0.mode != .list { $0.needsDisplay = true } }
+                self?.refreshQuickLook()
             }
             panel.model.reload()
         }
@@ -99,7 +107,7 @@ final class MainWindowController: NSWindowController {
     func applyLayout() {
         panelStack.orientation = Settings.verticalLayout ? .vertical : .horizontal
         menuLine?.isHidden = !Settings.showMenuLine
-        promptLine?.isHidden = !Settings.showCommandLine
+        promptLine?.isHidden = !Settings.showCommandLine || terminal?.isHidden == false
         keyBar?.isHidden = !Settings.showKeyBar
     }
 
@@ -129,6 +137,7 @@ final class MainWindowController: NSWindowController {
         case .markPattern(let select): markPattern(select: select)
         case .execute: executeCommand()
         case .insertName: insertCurrentName()
+        case .complete: completeCommand()
         }
     }
 
@@ -170,7 +179,11 @@ final class MainWindowController: NSWindowController {
     }
 
     private func open(_ entry: FileEntry, in model: PanelModel) {
-        if model.isLocal {
+        if model.isLocal, let command = FileActions.command(for: entry.name, kind: "open") {
+            launch(command, for: entry.name, in: model)
+        } else if model.isLocal, ArchiveFileSystem.isArchive(entry.name) {
+            enterArchive(model.fullPath(of: entry.name), in: model)
+        } else if model.isLocal {
             NSWorkspace.shared.open(URL(fileURLWithPath: model.fullPath(of: entry.name)))
         } else {
             openEditor(model: model, name: entry.name, readOnly: true)
@@ -205,16 +218,21 @@ final class MainWindowController: NSWindowController {
         let verb = inPlace ? "Umbenennen" : move ? "Verschieben" : "Kopieren"
         let subject = names.count == 1 ? "„\(names[0])“" : "\(names.count) Objekte"
         let proposal = inPlace ? names[0] : PosixPath.join(target.path, "")
-        guard let text = Dialogs.prompt(title: verb, message: "\(verb) \(subject) nach:", value: proposal, confirm: verb) else { return }
-        let destination = PosixPath.resolve(text, relativeTo: target.path, home: target.fileSystem.homePath)
+        guard let text = Dialogs.prompt(title: verb, message: "\(verb) \(subject) nach (Maske möglich, z. B. *.bak):", value: proposal, confirm: verb) else { return }
+        let resolved = PosixPath.resolve(text, relativeTo: target.path, home: target.fileSystem.homePath)
+        let mask = NameMask.isMask(PosixPath.name(resolved)) ? PosixPath.name(resolved) : nil
+        let destination = mask == nil ? resolved : PosixPath.parent(resolved)
         let sourceSystem = source.fileSystem
         let targetSystem = target.fileSystem
         let sourceDirectory = source.path
         runner.run(title: verb + " …", { operation in
             let existing = try? targetSystem.stat(destination)
-            let intoDirectory = existing?.isDirectory == true || text.hasSuffix("/") || names.count > 1
+            let intoDirectory = mask != nil || existing?.isDirectory == true || text.hasSuffix("/") || names.count > 1
             if intoDirectory { try targetSystem.makeDirectories(destination) }
-            let transfers = names.map { Transfer(source: PosixPath.join(sourceDirectory, $0), destination: intoDirectory ? PosixPath.join(destination, $0) : destination) }
+            let transfers = names.map { name in
+                let targetName = mask.map { NameMask.apply($0, to: PosixPath.name(name)) } ?? PosixPath.name(name)
+                return Transfer(source: PosixPath.join(sourceDirectory, name), destination: intoDirectory ? PosixPath.join(destination, targetName) : destination)
+            }
             if move {
                 try operation.move(transfers, from: sourceSystem, to: targetSystem)
             } else {
@@ -275,7 +293,13 @@ final class MainWindowController: NSWindowController {
     private func openCurrent(readOnly: Bool) {
         let model = activePanel.model
         guard let entry = model.currentEntry, !model.isParentRow(model.cursor) else { return }
-        if entry.isDirectory { _ = model.enterCursor() } else { openEditor(model: model, name: entry.name, readOnly: readOnly) }
+        if entry.isDirectory {
+            _ = model.enterCursor()
+        } else if model.isLocal, let command = FileActions.command(for: entry.name, kind: readOnly ? "view" : "edit") {
+            launch(command, for: entry.name, in: model)
+        } else {
+            openEditor(model: model, name: entry.name, readOnly: readOnly)
+        }
     }
 
     private func openEditor(model: PanelModel, name: String, readOnly: Bool) {
@@ -288,9 +312,9 @@ final class MainWindowController: NSWindowController {
         runner.run(title: "Lade \(name) …", { _ in
             let entry = try? system.stat(path)
             if let entry, entry.size > 50_000_000 { throw FileError("\(name) ist zu groß für den Editor (über 50 MB)") }
-            let (text, encoding) = entry == nil ? ("", String.Encoding.utf8) : EditorWindowController.decode(try system.readAll(path))
+            let data = entry == nil ? Data() : try system.readAll(path)
             DispatchQueue.main.sync {
-                loaded.value = EditorWindowController(fileSystem: system, path: path, text: text, encoding: encoding, permissions: entry?.permissions ?? 0o644, readOnly: readOnly)
+                loaded.value = EditorWindowController(fileSystem: system, path: path, data: data, permissions: entry?.permissions ?? 0o644, readOnly: readOnly)
             }
         }, completion: { [weak self] in
             guard let self, let editor = loaded.value else { return }
@@ -343,19 +367,122 @@ final class MainWindowController: NSWindowController {
         return model.path.hasPrefix(NSHomeDirectory()) ? "~" + model.path.dropFirst(NSHomeDirectory().count) : model.path
     }
 
+    private func completeCommand() {
+        let model = activePanel.model
+        let completion = CommandCompletion.complete(
+            text: commandLine.text, directory: model.path, fileSystem: model.fileSystem,
+            home: model.fileSystem.homePath, searchPath: ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin"
+        )
+        guard !completion.candidates.isEmpty else { return NSSound.beep() }
+        if completion.candidates.count == 1 {
+            let only = completion.candidates[0]
+            commandLine.replaceWord(completion.word, with: only + (only.hasSuffix("/") ? "" : " "))
+            return
+        }
+        commandLine.replaceWord(completion.word, with: completion.commonPrefix)
+        let menu = NSMenu()
+        for candidate in completion.candidates.prefix(30) {
+            menu.addItem(ClosureMenuItem(candidate) { [weak self] in
+                self?.commandLine.replaceWord(completion.commonPrefix, with: candidate + (candidate.hasSuffix("/") ? "" : " "))
+            })
+        }
+        popUp(menu)
+    }
+
     private func insertCurrentName() {
         guard let entry = activePanel.model.currentEntry, !activePanel.model.isParentRow(activePanel.model.cursor) else { return }
         commandLine.append(Shell.quote(entry.name) + " ")
     }
 
-    func runShell(_ command: String, in directory: String) {
-        let output = CommandOutputWindowController(command: command, directory: directory)
-        output.onClose = { [weak self] closed in
-            self?.outputs.removeAll { $0 === closed }
-            self?.reloadPanels()
+    func enterArchive(_ path: String, in model: PanelModel) {
+        let archive = Box<ArchiveFileSystem>()
+        runner.run(title: "Öffne \(PosixPath.name(path)) …", { _ in
+            archive.value = try ArchiveFileSystem(path: path)
+        }, completion: {
+            guard let system = archive.value else { return }
+            model.navigate(to: "/", on: system)
+        })
+    }
+
+    private func launch(_ command: String, for name: String, in model: PanelModel) {
+        let other = inactivePanel.model
+        let context = UserMenuContext(currentName: name, directory: model.path, selection: model.selectedNames, otherDirectory: other.path, otherName: other.currentEntry?.name ?? "")
+        let expanded = UserMenu.expand(command, context: context)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-l", "-c", expanded]
+        process.currentDirectoryURL = URL(fileURLWithPath: model.path)
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = output
+        process.terminationHandler = { finished in
+            guard finished.terminationStatus != 0 else { return }
+            let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            DispatchQueue.main.async { Dialogs.show(error: FileError("\(expanded)\n\n\(text)")) }
         }
-        outputs.append(output)
-        output.showWindow(nil)
+        do {
+            try process.run()
+        } catch {
+            Dialogs.show(error: error)
+        }
+    }
+
+    @objc func quickLookFile(_ sender: Any?) {
+        let model = activePanel.model
+        guard let entry = model.currentEntry, !model.isParentRow(model.cursor), !entry.isDirectory else { return }
+        if quickLook.isVisible { return quickLook.hide() }
+        if model.isLocal { return quickLook.show(URL(fileURLWithPath: model.fullPath(of: entry.name))) }
+        let system = model.fileSystem
+        let path = model.fullPath(of: entry.name)
+        let target = FileManager.default.temporaryDirectory.appendingPathComponent("moonlight-quicklook").appendingPathComponent(entry.name)
+        runner.run(title: "Lade \(entry.name) …", { _ in
+            try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try system.readAll(path).write(to: target)
+        }, completion: { [weak self] in
+            if FileManager.default.fileExists(atPath: target.path) { self?.quickLook.show(target) }
+        })
+    }
+
+    @objc func toggleTerminal(_ sender: Any?) {
+        if let terminal, !terminal.isHidden { hideTerminal() } else { showTerminal() }
+    }
+
+    private func showTerminal() {
+        let model = activePanel.model
+        if terminal == nil {
+            let created = ShellTerminal(directory: model.isLocal ? model.path : NSHomeDirectory())
+            created.onExit = { [weak self] in self?.terminalExited() }
+            created.setContentHuggingPriority(.defaultLow, for: .vertical)
+            created.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+            contentStack?.insertArrangedSubview(created, at: 1)
+            terminal = created
+        }
+        panelStack.isHidden = true
+        terminal?.isHidden = false
+        applyLayout()
+        window?.makeFirstResponder(terminal)
+    }
+
+    private func hideTerminal() {
+        terminal?.isHidden = true
+        panelStack.isHidden = false
+        applyLayout()
+        window?.makeFirstResponder(activePanel)
+        reloadPanels()
+    }
+
+    private func terminalExited() {
+        terminal?.removeFromSuperview()
+        terminal = nil
+        panelStack.isHidden = false
+        applyLayout()
+        window?.makeFirstResponder(activePanel)
+        reloadPanels()
+    }
+
+    func runInTerminal(_ command: String, in directory: String) {
+        showTerminal()
+        terminal?.run(command, in: directory)
     }
 
     private func executeCommand() {
@@ -370,7 +497,13 @@ final class MainWindowController: NSWindowController {
             return
         }
         guard model.isLocal else { return Dialogs.show(error: FileError("Befehle laufen nur in lokalen Ordnern")) }
-        runShell(command, in: model.path)
+        runInTerminal(command, in: model.path)
+    }
+
+    private func refreshQuickLook() {
+        let model = activePanel.model
+        guard quickLook.isVisible, model.isLocal, let entry = model.currentEntry, !model.isParentRow(model.cursor), !entry.isDirectory else { return }
+        quickLook.update(URL(fileURLWithPath: model.fullPath(of: entry.name)))
     }
 
     func reloadPanels() {
@@ -388,12 +521,13 @@ final class MainWindowController: NSWindowController {
         Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP verbinden
         F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren · F6 Verschieben (⇧F6 Umbenennen)
         F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden
-        Tippen schreibt in die Kommandozeile · Enter führt aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf
+        Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf
+        Ctrl-O Terminal ein/aus · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner
         Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste.
         """)
     }
 }
 
-private final class Box<Value> {
+final class Box<Value> {
     var value: Value?
 }

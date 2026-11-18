@@ -4,6 +4,7 @@ import MCCore
 final class FindWindowController: NSWindowController, NSWindowDelegate, NSTableViewDataSource, NSTableViewDelegate {
     var onSelect: ((String) -> Void)?
     var onClose: ((FindWindowController) -> Void)?
+    var onPanelize: (([String]) -> Void)?
 
     private let table = ResultsTable()
     private let status = NSTextField(labelWithString: "Suche läuft …")
@@ -31,7 +32,9 @@ final class FindWindowController: NSWindowController, NSWindowDelegate, NSTableV
         let scroll = NSScrollView()
         scroll.documentView = table
         scroll.hasVerticalScroller = true
-        let stack = NSStackView(views: [scroll, status])
+        let panelize = NSButton(title: "Als Panel anzeigen", target: self, action: #selector(panelizeResults))
+        let footer = NSStackView(views: [status, NSView(), panelize])
+        let stack = NSStackView(views: [scroll, footer])
         stack.orientation = .vertical
         stack.edgeInsets = NSEdgeInsets(top: 0, left: 8, bottom: 6, right: 8)
         window.contentView = stack
@@ -71,6 +74,11 @@ final class FindWindowController: NSWindowController, NSWindowDelegate, NSTableV
             timer?.invalidate()
             timer = nil
         }
+    }
+
+    @objc private func panelizeResults() {
+        guard !results.isEmpty else { return }
+        onPanelize?(results)
     }
 
     @objc private func selectResult() {

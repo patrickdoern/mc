@@ -28,6 +28,7 @@ enum MainMenu {
         menu.addItem(item("Gehe zu Pfad …", #selector(MainWindowController.goToPath(_:)), "l"))
         menu.addItem(item("Home-Ordner", #selector(MainWindowController.goHome(_:)), "h", [.command, .shift]))
         menu.addItem(.separator())
+        menu.addItem(item("Quick Look", #selector(MainWindowController.quickLookFile(_:)), "y"))
         menu.addItem(item("Anzeigen (F3)", #selector(MainWindowController.viewFile(_:)), "3", .option))
         menu.addItem(item("Bearbeiten (F4)", #selector(MainWindowController.editFile(_:)), "4", .option))
         menu.addItem(item("Neue Datei …", #selector(MainWindowController.newFile(_:)), "n"))
@@ -57,6 +58,11 @@ enum MainMenu {
         menu.addItem(item("Weitersuchen", #selector(EditorWindowController.findNext(_:)), "g"))
         menu.addItem(item("Ersetzen …", #selector(EditorWindowController.replaceText(_:)), "f", [.command, .option]))
         menu.addItem(item("Gehe zu Zeile …", #selector(EditorWindowController.goToLine(_:)), "l", [.command, .option]))
+        menu.addItem(item("Datei einfügen …", #selector(EditorWindowController.insertFile(_:)), "i", [.command, .option]))
+        menu.addItem(item("Block sichern …", #selector(EditorWindowController.saveBlock(_:)), "b", [.command, .option]))
+        menu.addItem(item("Codierung …", #selector(EditorWindowController.chooseEncoding(_:)), "e", [.command, .option]))
+        menu.addItem(item("Hex-Ansicht", #selector(EditorWindowController.toggleHex(_:)), "h", [.command, .option]))
+        menu.addItem(item("Zeilenumbruch", #selector(EditorWindowController.toggleWrap(_:)), "w", [.command, .option]))
         menu.addItem(item("Zeile löschen", #selector(EditorWindowController.deleteLine(_:)), "k", [.command, .shift]))
         return menu
     }
@@ -70,6 +76,7 @@ enum MainMenu {
         menu.addItem(.separator())
         menu.addItem(item("Versteckte Dateien", #selector(MainWindowController.toggleHidden(_:)), ".", [.command, .shift]))
         menu.addItem(item("Aktualisieren (F9)", #selector(MainWindowController.refresh(_:)), "r"))
+        menu.addItem(item("Terminal ein/aus", #selector(MainWindowController.toggleTerminal(_:)), "o", .control))
         menu.addItem(item("Panels tauschen", #selector(MainWindowController.swapPanels(_:)), "u"))
         return menu
     }

@@ -23,8 +23,22 @@ public protocol FileWriter: AnyObject {
     func abort()
 }
 
+public struct ExitLocation {
+    public let system: FileSystem
+    public let path: String
+    public let selecting: String?
+
+    public init(system: FileSystem, path: String, selecting: String?) {
+        self.system = system
+        self.path = path
+        self.selecting = selecting
+    }
+}
+
 public protocol FileSystem: AnyObject {
     var identity: String { get }
+    var displayName: String { get }
+    var exitLocation: ExitLocation? { get }
     var homePath: String { get }
     func list(_ path: String) throws -> [FileEntry]
     func stat(_ path: String) throws -> FileEntry
@@ -41,6 +55,10 @@ public protocol FileSystem: AnyObject {
 }
 
 public extension FileSystem {
+    var displayName: String { identity.replacingOccurrences(of: "sftp://", with: "") }
+
+    var exitLocation: ExitLocation? { nil }
+
     func exists(_ path: String) -> Bool { (try? stat(path)) != nil }
 
     func makeDirectories(_ path: String) throws {

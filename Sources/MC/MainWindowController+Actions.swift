@@ -126,9 +126,39 @@ extension MainWindowController {
             model.navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path))
             self?.window?.makeKeyAndOrderFront(nil)
         }
+        finder.onPanelize = { [weak self] paths in
+            model.navigate(to: "/", on: PanelizedFileSystem(base: model.fileSystem, paths: paths, title: "Suchergebnis"))
+            self?.window?.makeKeyAndOrderFront(nil)
+        }
         finder.onClose = { [weak self] closed in self?.finders.removeAll { $0 === closed } }
         finders.append(finder)
         finder.showWindow(nil)
+    }
+
+    @objc func panelizeCommand(_ sender: Any?) {
+        let model = activePanel.model
+        guard requireLocal(model, "Externes Panelisieren"),
+              let values = Dialogs.fields(title: "Externes Panelisieren", message: "Befehl, der Pfade ausgibt (eine Zeile pro Datei), in \(model.path):", fields: [("Befehl:", "find . -type f -mtime -1")], confirm: "Ausführen"),
+              !values[0].isEmpty else { return }
+        let command = values[0]
+        let directory = model.path
+        let found = Box<[String]>()
+        runner.run(title: "Führe aus …", { _ in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+            process.arguments = ["-l", "-c", command]
+            process.currentDirectoryURL = URL(fileURLWithPath: directory)
+            let output = Pipe()
+            process.standardOutput = output
+            process.standardError = FileHandle.nullDevice
+            try process.run()
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            found.value = String(decoding: data, as: UTF8.self).split(separator: "\n").map { PosixPath.resolve(String($0), relativeTo: directory, home: NSHomeDirectory()) }.filter { LocalFileSystem.shared.exists($0) }
+        }, completion: {
+            guard let paths = found.value, !paths.isEmpty else { return Dialogs.show(error: FileError("Der Befehl hat keine vorhandenen Pfade geliefert")) }
+            model.navigate(to: "/", on: PanelizedFileSystem(base: LocalFileSystem.shared, paths: paths, title: command))
+        })
     }
 
     @objc func showCommandHistory(_ sender: Any?) {
@@ -159,10 +189,19 @@ extension MainWindowController {
         popUp(menu)
     }
 
+    @objc func showBackgroundJobs(_ sender: Any?) {
+        let menu = NSMenu()
+        for job in runner.backgroundJobs {
+            menu.addItem(ClosureMenuItem("Abbrechen: \(job.title)" + (job.percent.map { " (\($0) %)" } ?? "")) { job.operation.cancel() })
+        }
+        if menu.items.isEmpty { menu.addItem(NSMenuItem(title: "Keine Hintergrundaufgaben", action: nil, keyEquivalent: "")) }
+        popUp(menu)
+    }
+
     @objc func showConnections(_ sender: Any?) {
         let menu = NSMenu()
         for (side, panel) in zip(["Links", "Rechts"], panelViews) where !panel.model.isLocal {
-            menu.addItem(ClosureMenuItem("\(side): \(panel.model.fileSystem.identity) trennen") { panel.model.navigate(to: NSHomeDirectory(), on: LocalFileSystem.shared) })
+            menu.addItem(ClosureMenuItem("\(side): \(panel.model.fileSystem.displayName) schließen") { panel.model.navigate(to: NSHomeDirectory(), on: LocalFileSystem.shared) })
         }
         if menu.items.isEmpty { menu.addItem(NSMenuItem(title: "Keine aktiven Verbindungen", action: nil, keyEquivalent: "")) }
         popUp(menu)
@@ -190,12 +229,25 @@ extension MainWindowController {
         )
         let menu = NSMenu()
         for entry in UserMenu.load() {
-            let item = ClosureMenuItem(entry.title) { [unowned self] in runShell(UserMenu.expand(entry.script, context: context), in: model.path) }
+            let item = ClosureMenuItem(entry.title) { [unowned self] in runInTerminal(UserMenu.expand(entry.script, context: context), in: model.path) }
             item.keyEquivalent = entry.key
             item.keyEquivalentModifierMask = []
             menu.addItem(item)
         }
         popUp(menu)
+    }
+
+    @objc func editFileActions(_ sender: Any?) {
+        let url = FileActions.fileURL
+        if !FileManager.default.fileExists(atPath: url.path) {
+            do {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FileActions.defaultText.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                return Dialogs.show(error: error)
+            }
+        }
+        openEditor(system: LocalFileSystem.shared, path: url.path, readOnly: false)
     }
 
     @objc func editUserMenu(_ sender: Any?) {
@@ -211,7 +263,7 @@ extension MainWindowController {
         openEditor(system: LocalFileSystem.shared, path: url.path, readOnly: false)
     }
 
-    private func popUp(_ menu: NSMenu) {
+    func popUp(_ menu: NSMenu) {
         guard let content = window?.contentView else { return }
         menu.popUp(positioning: nil, at: NSPoint(x: content.bounds.midX - 120, y: content.bounds.midY + 80), in: content)
     }

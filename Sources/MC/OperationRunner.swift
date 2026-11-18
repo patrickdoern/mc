@@ -2,42 +2,83 @@ import AppKit
 import MCCore
 
 final class OperationRunner {
+    final class Job {
+        let title: String
+        let operation: FileOperation
+        fileprivate let sheet: ProgressSheet
+        fileprivate(set) var percent: Int?
+        fileprivate(set) var isBackground = false
+
+        fileprivate init(title: String, operation: FileOperation, sheet: ProgressSheet) {
+            self.title = title
+            self.operation = operation
+            self.sheet = sheet
+        }
+    }
+
     private let window: NSWindow
-    private var sheet: ProgressSheet?
-    private var operation: FileOperation?
+    private(set) var jobs: [Job] = []
+    var onStatusChange: ((String) -> Void)?
 
     init(window: NSWindow) {
         self.window = window
     }
 
+    var backgroundJobs: [Job] { jobs.filter(\.isBackground) }
+
     func run(title: String, _ work: @escaping (FileOperation) throws -> Void, completion: @escaping () -> Void) {
         let sheet = ProgressSheet(title: title)
-        self.sheet = sheet
+        var job: Job?
         let operation = FileOperation(handlers: OperationHandlers(
-            progress: { progress in DispatchQueue.main.async { sheet.update(progress) } },
+            progress: { progress in
+                DispatchQueue.main.async {
+                    sheet.update(progress)
+                    job?.percent = progress.bytesTotal > 0 ? Int(progress.bytesDone * 100 / progress.bytesTotal) : progress.filesTotal > 0 ? progress.filesDone * 100 / progress.filesTotal : nil
+                    self.publishStatus()
+                }
+            },
             resolveConflict: { info in Settings.confirmOverwrite ? DispatchQueue.main.sync { Dialogs.conflict(info) } : .overwrite },
             resolveFailure: { path, error in DispatchQueue.main.sync { Dialogs.failure(path: path, error: error) } }
         ))
-        self.operation = operation
+        let created = Job(title: title, operation: operation, sheet: sheet)
+        job = created
+        jobs.append(created)
         sheet.onCancel = { operation.cancel() }
-        let reveal = DispatchWorkItem { [window] in sheet.present(on: window) }
+        sheet.onBackground = { [weak self] in
+            created.isBackground = true
+            sheet.dismiss(from: self?.window)
+            self?.publishStatus()
+        }
+        let reveal = DispatchWorkItem { [window] in
+            if !created.isBackground { sheet.present(on: window) }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: reveal)
         DispatchQueue.global(qos: .userInitiated).async {
             let result = Result { try work(operation) }
             DispatchQueue.main.async { [self] in
                 reveal.cancel()
                 sheet.dismiss(from: window)
-                self.sheet = nil
-                self.operation = nil
+                jobs.removeAll { $0 === created }
+                publishStatus()
                 if case .failure(let error) = result, !(error is OperationAborted) { Dialogs.show(error: error) }
                 completion()
             }
+        }
+    }
+
+    private func publishStatus() {
+        let background = backgroundJobs
+        switch background.count {
+        case 0: onStatusChange?("")
+        case 1: onStatusChange?("⟳ \(background[0].title)" + (background[0].percent.map { " \($0) %" } ?? ""))
+        default: onStatusChange?("⟳ \(background.count) Hintergrundaufgaben")
         }
     }
 }
 
 private final class ProgressSheet {
     var onCancel: (() -> Void)?
+    var onBackground: (() -> Void)?
     private let panel: NSWindow
     private let pathLabel = NSTextField(labelWithString: "")
     private let detailLabel = NSTextField(labelWithString: "")
@@ -55,7 +96,9 @@ private final class ProgressSheet {
         bar.startAnimation(nil)
         let cancel = NSButton(title: "Abbrechen", target: self, action: #selector(cancel))
         cancel.keyEquivalent = "\u{1b}"
-        let stack = NSStackView(views: [titleLabel, pathLabel, bar, detailLabel, cancel])
+        let background = NSButton(title: "Im Hintergrund", target: self, action: #selector(moveToBackground))
+        let buttons = NSStackView(views: [background, cancel])
+        let stack = NSStackView(views: [titleLabel, pathLabel, bar, detailLabel, buttons])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 8
@@ -74,8 +117,9 @@ private final class ProgressSheet {
         window.beginSheet(panel)
     }
 
-    func dismiss(from window: NSWindow) {
-        guard presented else { return }
+    func dismiss(from window: NSWindow?) {
+        guard presented, let window else { return }
+        presented = false
         window.endSheet(panel)
         panel.orderOut(nil)
     }
@@ -96,5 +140,9 @@ private final class ProgressSheet {
 
     @objc private func cancel() {
         onCancel?()
+    }
+
+    @objc private func moveToBackground() {
+        onBackground?()
     }
 }

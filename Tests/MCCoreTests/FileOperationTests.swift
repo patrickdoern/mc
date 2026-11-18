@@ -167,6 +167,128 @@ private func read(_ path: String) throws -> String {
     }
 }
 
+@Suite struct ArchiveTests {
+    private func makeArchive(format: String) throws -> (root: String, archive: String) {
+        let root = try makeSandbox()
+        try write("alpha", to: root + "/src/a.txt")
+        try write("beta [x]*", to: root + "/src/sub/b [1].txt")
+        try FileManager.default.createSymbolicLink(atPath: root + "/src/link", withDestinationPath: "a.txt")
+        let archive = root + "/test." + format
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/bsdtar")
+        process.currentDirectoryURL = URL(fileURLWithPath: root + "/src")
+        process.arguments = format == "zip" ? ["--format", "zip", "-cf", archive, "a.txt", "sub", "link"] : ["-cf", archive, "a.txt", "sub", "link"]
+        try process.run()
+        process.waitUntilExit()
+        return (root, archive)
+    }
+
+    @Test(arguments: ["tar", "zip"]) func listsAndReadsMembers(format: String) throws {
+        let (_, path) = try makeArchive(format: format)
+        let archive = try ArchiveFileSystem(path: path)
+        #expect(try archive.list("/").map(\.name).sorted() == ["a.txt", "link", "sub"])
+        #expect(try archive.stat("/sub").isDirectory)
+        #expect(try archive.list("/sub").map(\.name) == ["b [1].txt"])
+        #expect(try archive.stat("/a.txt").size == 5)
+        #expect(try String(decoding: archive.readAll("/a.txt"), as: UTF8.self) == "alpha")
+        #expect(try String(decoding: archive.readAll("/sub/b [1].txt"), as: UTF8.self) == "beta [x]*")
+    }
+
+    @Test func exposesSymlinksAndIsReadOnly() throws {
+        let (_, path) = try makeArchive(format: "tar")
+        let archive = try ArchiveFileSystem(path: path)
+        #expect(try archive.stat("/link").isSymlink)
+        #expect(try archive.readLink("/link") == "a.txt")
+        #expect(throws: FileError.self) { try archive.removeFile("/a.txt") }
+        #expect(archive.exitLocation?.selecting == "test.tar")
+    }
+
+    @Test func copiesOutOfArchive() throws {
+        let (root, path) = try makeArchive(format: "tar")
+        let archive = try ArchiveFileSystem(path: path)
+        let handlers = OperationHandlers(progress: { _ in }, resolveConflict: { _ in .overwrite }, resolveFailure: { _, _ in .abort })
+        try FileOperation(handlers: handlers).copy([Transfer(source: "/sub", destination: root + "/out")], from: archive, to: LocalFileSystem.shared)
+        #expect(try read(root + "/out/b [1].txt") == "beta [x]*")
+    }
+
+    @Test func recognisesArchiveNames() {
+        #expect(ArchiveFileSystem.isArchive("Backup.TAR.GZ"))
+        #expect(ArchiveFileSystem.isArchive("x.zip"))
+        #expect(!ArchiveFileSystem.isArchive("notes.txt"))
+    }
+}
+
+@Suite struct PanelizedTests {
+    @Test func listsResultsRelativeToCommonRootAndCopiesFlat() throws {
+        let root = try makeSandbox()
+        try write("one", to: root + "/a/x.txt")
+        try write("two", to: root + "/b/deep/y.txt")
+        let results = PanelizedFileSystem(base: LocalFileSystem.shared, paths: [root + "/a/x.txt", root + "/b/deep/y.txt", root + "/gone.txt"], title: "Suche")
+        #expect(try results.list("/").map(\.name).sorted() == ["a/x.txt", "b/deep/y.txt"])
+        #expect(try String(decoding: results.readAll("/b/deep/y.txt"), as: UTF8.self) == "two")
+        let handlers = OperationHandlers(progress: { _ in }, resolveConflict: { _ in .overwrite }, resolveFailure: { _, _ in .abort })
+        try LocalFileSystem.shared.makeDirectory(root + "/out")
+        try FileOperation(handlers: handlers).copy([Transfer(source: "/a/x.txt", destination: root + "/out/x.txt")], from: results, to: LocalFileSystem.shared)
+        #expect(try read(root + "/out/x.txt") == "one")
+        try FileOperation(handlers: handlers).delete(["/a/x.txt"], on: results, trash: false)
+        #expect(!LocalFileSystem.shared.exists(root + "/a/x.txt"))
+        #expect(results.exitLocation?.path == root)
+        #expect(throws: FileError.self) { try results.makeDirectory("/new") }
+    }
+}
+
+@Suite struct CompletionTests {
+    let fileSystem = LocalFileSystem.shared
+
+    private func complete(_ text: String, in root: String) -> Completion {
+        CommandCompletion.complete(text: text, directory: root, fileSystem: fileSystem, home: "/nonexistent", searchPath: "/bin:/usr/bin")
+    }
+
+    @Test func completesFilesAndDirectories() throws {
+        let root = try makeSandbox()
+        try write("x", to: root + "/alpha.txt")
+        try write("x", to: root + "/my file.txt")
+        try write("x", to: root + "/alpine/inner.txt")
+        let candidates = complete("ls al", in: root).candidates
+        #expect(candidates == ["alpha.txt", "alpine/"])
+        #expect(complete("ls al", in: root).commonPrefix == "alp")
+        #expect(complete("cat my", in: root).candidates == ["my\\ file.txt"])
+        #expect(complete("cat alpine/", in: root).candidates == ["alpine/inner.txt"])
+        #expect(complete("cat my\\ f", in: root).candidates == ["my\\ file.txt"])
+    }
+
+    @Test func completesCommandsFromPath() {
+        let candidates = complete("ech", in: "/tmp").candidates
+        #expect(candidates.contains("echo"))
+        #expect(complete("ex", in: "/tmp").candidates.contains("exit"))
+    }
+}
+
+@Suite struct HexDumpTests {
+    @Test func rendersOffsetsBytesAndAscii() {
+        let text = HexDump.render(Data("Hello, hex dump!\n\u{0}".utf8))
+        let lines = text.split(separator: "\n").map(String.init)
+        #expect(lines[0] == "00000000  48 65 6c 6c 6f 2c 20 68  65 78 20 64 75 6d 70 21  |Hello, hex dump!|")
+        #expect(lines[1].hasPrefix("00000010  0a 00 "))
+        #expect(lines[1].hasSuffix("|..|"))
+    }
+
+    @Test func truncatesLargeInput() {
+        #expect(HexDump.render(Data(repeating: 0x41, count: 100), limit: 32).contains("gekürzt: 32 von 100"))
+    }
+}
+
+@Suite struct NameMaskTests {
+    @Test func replacesStemAndExtension() {
+        #expect(NameMask.apply("*.bak", to: "foo.txt") == "foo.bak")
+        #expect(NameMask.apply("*.*", to: "foo.txt") == "foo.txt")
+        #expect(NameMask.apply("neu_*", to: "foo.txt") == "neu_foo.txt")
+        #expect(NameMask.apply("*.old.*", to: "foo.txt") == "foo.old.txt")
+        #expect(NameMask.apply("*.bak", to: "Makefile") == "Makefile.bak")
+        #expect(NameMask.apply("*.bak", to: ".zshrc") == ".zshrc.bak")
+    }
+}
+
 @Suite struct SyntaxHighlightingTests {
     private func kinds(_ text: String, _ language: String) -> [(String, TokenKind)] {
         let string = text as NSString

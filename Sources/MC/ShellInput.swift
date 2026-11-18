@@ -3,6 +3,7 @@ import Foundation
 
 final class ShellInput {
     private(set) var text = ""
+    var status = "" { didSet { onChange?() } }
     var onChange: (() -> Void)?
 
     private var history: [String] = []
@@ -27,6 +28,13 @@ final class ShellInput {
     }
 
     var entries: [String] { history }
+
+    func replaceWord(_ word: String, with replacement: String) {
+        guard text.hasSuffix(word) else { return }
+        text = String(text.dropLast(word.count)) + replacement
+        historyIndex = nil
+        onChange?()
+    }
 
     func clear() {
         text = ""
@@ -85,6 +93,11 @@ final class ShellInputView: NSView {
         let visible = String((prompt + commandLine.text).suffix(max(available, 1)))
         (visible as NSString).draw(at: NSPoint(x: 6, y: 3), withAttributes: attributes)
         let caretX = 6 + (visible as NSString).size(withAttributes: attributes).width
+        if !commandLine.status.isEmpty {
+            let status = commandLine.status
+            let width = (status as NSString).size(withAttributes: attributes).width
+            (status as NSString).draw(at: NSPoint(x: bounds.width - width - 8, y: 3), withAttributes: [.font: Theme.font, .foregroundColor: Theme.marked])
+        }
         Theme.commandText.setFill()
         NSRect(x: caretX, y: 3, width: Theme.font.maximumAdvancement.width, height: 15).fill()
     }
