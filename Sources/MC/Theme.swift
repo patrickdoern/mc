@@ -101,6 +101,33 @@ enum Theme {
     static var editorText: NSColor { palette.editorText }
     static var editorSelection: NSColor { palette.editorSelection }
 
+    struct DialogColors {
+        let background: NSColor
+        let text: NSColor
+        let border: NSColor
+        let fieldBackground: NSColor
+        let fieldText: NSColor
+        let focusBackground: NSColor
+        let focusText: NSColor
+    }
+
+    static func dialogColors(warning: Bool) -> DialogColors {
+        if warning {
+            return DialogColors(
+                background: NSColor(red: 0.72, green: 0.08, blue: 0.08, alpha: 1), text: .white, border: .white,
+                fieldBackground: .white, fieldText: .black, focusBackground: .white, focusText: NSColor(red: 0.72, green: 0.08, blue: 0.08, alpha: 1)
+            )
+        }
+        switch Settings.scheme {
+        case 0:
+            return DialogColors(background: NSColor(white: 0.75, alpha: 1), text: .black, border: .white, fieldBackground: palette.barLabelBackground, fieldText: .black, focusBackground: palette.cursor, focusText: palette.cursorText)
+        case 2:
+            return DialogColors(background: NSColor(white: 0.93, alpha: 1), text: .black, border: NSColor(white: 0.4, alpha: 1), fieldBackground: .white, fieldText: .black, focusBackground: palette.cursor, focusText: palette.cursorText)
+        default:
+            return DialogColors(background: NSColor(white: 0.2, alpha: 1), text: .white, border: NSColor(white: 0.6, alpha: 1), fieldBackground: .black, fieldText: .white, focusBackground: palette.cursor, focusText: palette.cursorText)
+        }
+    }
+
     static func syntaxColor(_ kind: TokenKind) -> NSColor {
         func rgb(_ hex: UInt32) -> NSColor {
             NSColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)

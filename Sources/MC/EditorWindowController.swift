@@ -225,10 +225,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func showHelp() {
-        let alert = NSAlert()
-        alert.messageText = "Editor-Tasten"
-        alert.informativeText = "F2 Sichern · F3 Block markieren (Anfang/Ende) · F4 Ersetzen · F5 Block kopieren · F6 Block verschieben · F7 Suchen · ⇧F7 Weitersuchen · F8 Block löschen · Ctrl-Y Zeile löschen · F10/Esc Beenden"
-        alert.runModal()
+        Dialogs.info(title: "Editor-Tasten", message: "F2 Sichern · F3 Block markieren (Anfang/Ende) · F4 Ersetzen · F5 Block kopieren · F6 Block verschieben · F7 Suchen · ⇧F7 Weitersuchen · F8 Block löschen · Ctrl-Y Zeile löschen · F10/Esc Beenden")
     }
 }
 

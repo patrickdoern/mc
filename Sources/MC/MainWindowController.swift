@@ -382,9 +382,7 @@ final class MainWindowController: NSWindowController {
     }
 
     private func showHelp() {
-        let alert = NSAlert()
-        alert.messageText = "Tastenbelegung"
-        alert.informativeText = """
+        Dialogs.info(title: "Tastenbelegung", message: """
         Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch
         Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren
         Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP verbinden
@@ -392,8 +390,7 @@ final class MainWindowController: NSWindowController {
         F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden
         Tippen schreibt in die Kommandozeile · Enter führt aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf
         Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste.
-        """
-        alert.runModal()
+        """)
     }
 }
 
