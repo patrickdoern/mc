@@ -113,7 +113,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         panel.backgroundColor = colors.background
         let reference = NSApp.keyWindow?.frame ?? NSApp.mainWindow?.frame ?? NSScreen.main?.visibleFrame ?? .zero
         panel.setFrameOrigin(NSPoint(x: reference.midX - frame.width / 2, y: reference.midY - frame.height / 2 + 40))
-        focus = items.firstIndex { $0.kind == .text } ?? items.firstIndex { $0.kind == .button && $0.isDefault } ?? 0
+        focus = items.firstIndex { [.text, .choice, .check].contains($0.kind) } ?? items.firstIndex { $0.kind == .button && $0.isDefault } ?? 0
         panel.makeKeyAndOrderFront(nil)
         applyFocus()
         NSApp.runModal(for: panel)
