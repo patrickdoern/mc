@@ -224,8 +224,13 @@ extension MainWindowController {
         let menu = NSMenu()
         let model = activePanel.model
         let list = Settings.hotlist
-        for path in list {
-            menu.addItem(ClosureMenuItem(path) { [unowned self] in activePanel.model.navigate(to: path, on: localSystem) })
+        for (index, path) in list.enumerated() {
+            let item = ClosureMenuItem(path) { [unowned self] in activePanel.model.navigate(to: path, on: localSystem) }
+            if index < 9 {
+                item.keyEquivalent = String(index + 1)
+                item.keyEquivalentModifierMask = []
+            }
+            menu.addItem(item)
         }
         if !list.isEmpty { menu.addItem(.separator()) }
         if model.isLocal, !list.contains(model.path) {
