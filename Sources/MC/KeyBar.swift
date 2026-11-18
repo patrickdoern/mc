@@ -1,9 +1,9 @@
 import AppKit
 
 final class KeyBar: NSView {
-    init(labels: [String], onPress: @escaping (Int) -> Void) {
+    init(labels: [String], shortLabels: [String], onPress: @escaping (Int) -> Void) {
         super.init(frame: .zero)
-        let buttons = labels.enumerated().map { index, label in KeyBarButton(number: index + 1, label: label) { onPress(index + 1) } }
+        let buttons = labels.indices.map { index in KeyBarButton(number: index + 1, label: labels[index], shortLabel: shortLabels[index]) { onPress(index + 1) } }
         let stack = NSStackView(views: buttons)
         stack.distribution = .fillEqually
         stack.spacing = 1
@@ -29,11 +29,13 @@ final class KeyBar: NSView {
 private final class KeyBarButton: NSView {
     private let number: Int
     private let label: String
+    private let shortLabel: String
     private let action: () -> Void
 
-    init(number: Int, label: String, action: @escaping () -> Void) {
+    init(number: Int, label: String, shortLabel: String, action: @escaping () -> Void) {
         self.number = number
         self.label = label
+        self.shortLabel = shortLabel
         self.action = action
         super.init(frame: .zero)
     }
@@ -52,7 +54,10 @@ private final class KeyBarButton: NSView {
         Theme.keyBarLabelBackground.setFill()
         labelRect.fill()
         let font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-        (label as NSString).draw(in: labelRect.insetBy(dx: 3, dy: 3), withAttributes: [.font: font, .foregroundColor: Theme.keyBarLabel])
+        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: Theme.keyBarLabel]
+        let available = labelRect.width - 6
+        let text = (label as NSString).size(withAttributes: attributes).width <= available ? label : shortLabel
+        (text as NSString).draw(in: labelRect.insetBy(dx: 3, dy: 3), withAttributes: attributes)
     }
 
     override func mouseDown(with event: NSEvent) {

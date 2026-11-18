@@ -48,7 +48,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         scroll.hasHorizontalScroller = true
         scroll.drawsBackground = true
         scroll.backgroundColor = Theme.background
-        let keyBar = KeyBar(labels: readOnly ? ["Hilfe", "Umbruch", "Ende", "Hex", "Gehe zu", "", "Suchen", "Codierg", "", "Ende"] : ["Hilfe", "Sichern", "Markier", "Ersetz", "Kopier", "Versch", "Suchen", "Lösch", "", "Ende"]) { [weak self] number in
+        let keyBar = KeyBar(
+            labels: readOnly ? ["Hilfe", "Umbruch", "Ende", "Hex", "Gehe zu", "", "Suchen", "Codierung", "", "Ende"] : ["Hilfe", "Sichern", "Markieren", "Ersetzen", "Kopieren", "Verschieben", "Suchen", "Löschen", "", "Ende"],
+            shortLabels: readOnly ? ["Hilfe", "Umbr", "Ende", "Hex", "Gehe", "", "Suche", "Codg", "", "Ende"] : ["Hilfe", "Sichrn", "Markr", "Ersetz", "Kopie", "Versch", "Suche", "Lösch", "", "Ende"]
+        ) { [weak self] number in
             self?.perform(functionKey: number, shifted: false)
         }
         let stack = NSStackView(views: [scroll, keyBar])

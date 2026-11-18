@@ -52,7 +52,10 @@ final class MainWindowController: NSWindowController {
         panelStack.orientation = .horizontal
         panelStack.distribution = .fillEqually
         panelStack.spacing = 0
-        let keyBar = KeyBar(labels: ["Hilfe", "Menü", "Ansicht", "Bearbeiten", "Kopieren", "Verschieben", "Mkdir", "Löschen", "Menüs", "Beenden"]) { [weak self] number in
+        let keyBar = KeyBar(
+            labels: ["Hilfe", "Menü", "Ansicht", "Bearbeiten", "Kopieren", "Verschieben", "Mkdir", "Löschen", "Menüs", "Beenden"],
+            shortLabels: ["Hilfe", "Menü", "Zeige", "Edit", "Kopie", "Versch", "MkDir", "Lösch", "Menüs", "Ende"]
+        ) { [weak self] number in
             self?.performFunctionKey(number, shifted: false)
         }
         let menuLine = MenuLineView(titles: ["Links", "Datei", "Befehl", "Optionen", "Rechts"]) { [unowned self] index in menu(at: index) }
