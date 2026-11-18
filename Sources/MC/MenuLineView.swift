@@ -81,7 +81,7 @@ final class MenuLineView: NSView {
     }
 }
 
-private final class DropdownView: NSView {
+final class DropdownView: NSView {
     var onSwitch: ((Int) -> Void)?
     var onDismiss: ((ClosureMenuItem?) -> Void)?
 
@@ -94,27 +94,32 @@ private final class DropdownView: NSView {
     }
 
     private let rows: [Row]
+    private let heading: String?
     private var current: Int?
     private let charWidth = Theme.font.maximumAdvancement.width
 
-    init(menu: NSMenu) {
-        var y: CGFloat = 4
+    init(menu: NSMenu, title: String? = nil) {
+        heading = title
+        var y: CGFloat = title == nil ? 4 : 28
         var built: [Row] = []
         var widest = 0
         for item in menu.items {
             let parts = item.title.components(separatedBy: "   ")
             let height: CGFloat = item.isSeparatorItem ? 9 : 19
-            built.append(Row(item: item, left: (item.state == .on ? "✓ " : "  ") + parts[0], right: parts.count > 1 ? parts[1] : "", y: y, height: height))
-            widest = max(widest, parts[0].count + 2 + (parts.count > 1 ? parts[1].count + 3 : 0))
+            let hint = parts.count > 1 ? parts[1] : item.keyEquivalent.uppercased()
+            built.append(Row(item: item, left: (item.state == .on ? "✓ " : "  ") + parts[0], right: hint, y: y, height: height))
+            widest = max(widest, parts[0].count + 2 + (hint.isEmpty ? 0 : hint.count + 3), (title?.count ?? 0) + 4)
             y += height
         }
         rows = built
         super.init(frame: NSRect(x: 0, y: 0, width: CGFloat(widest + 4) * Theme.font.maximumAdvancement.width, height: y + 4))
-        current = rows.firstIndex { !$0.item.isSeparatorItem }
+        current = rows.firstIndex { Self.isSelectable($0) }
         addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeAlways, .inVisibleRect], owner: self))
     }
 
     required init?(coder: NSCoder) { fatalError() }
+
+    private static func isSelectable(_ row: Row) -> Bool { !row.item.isSeparatorItem && row.item is ClosureMenuItem }
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -131,6 +136,14 @@ private final class DropdownView: NSView {
         bounds.fill()
         Theme.keyBarBackground.setStroke()
         NSBezierPath(rect: bounds.insetBy(dx: 0.5, dy: 0.5)).stroke()
+        if let heading {
+            let label = " \(heading) "
+            let width = CGFloat(label.count) * charWidth
+            let area = NSRect(x: (bounds.width - width) / 2, y: 0, width: width, height: 18)
+            Theme.keyBarLabelBackground.setFill()
+            area.fill()
+            (label as NSString).draw(at: NSPoint(x: area.minX, y: 1), withAttributes: [.font: Theme.boldFont, .foregroundColor: Theme.keyBarLabel])
+        }
         for (index, row) in rows.enumerated() {
             if row.item.isSeparatorItem {
                 let line = NSBezierPath()
@@ -144,7 +157,7 @@ private final class DropdownView: NSView {
                 Theme.keyBarBackground.setFill()
                 NSRect(x: 3, y: row.y, width: bounds.width - 6, height: row.height).fill()
             }
-            let color = selected ? Theme.keyBarNumber : Theme.keyBarLabel
+            let color = selected ? Theme.keyBarNumber : row.item is ClosureMenuItem ? Theme.keyBarLabel : Theme.keyBarLabel.withAlphaComponent(0.55)
             (row.left as NSString).draw(at: NSPoint(x: 6, y: row.y + 2), withAttributes: [.font: Theme.font, .foregroundColor: color])
             if !row.right.isEmpty {
                 let x = bounds.width - 6 - CGFloat(row.right.count) * charWidth
@@ -154,7 +167,7 @@ private final class DropdownView: NSView {
     }
 
     private func move(_ delta: Int) {
-        let selectable = rows.indices.filter { !rows[$0].item.isSeparatorItem }
+        let selectable = rows.indices.filter { Self.isSelectable(rows[$0]) }
         guard let position = selectable.firstIndex(where: { $0 == current }) else { return }
         current = selectable[(position + delta + selectable.count) % selectable.count]
         needsDisplay = true
@@ -162,7 +175,7 @@ private final class DropdownView: NSView {
 
     private func row(at event: NSEvent) -> Int? {
         let point = convert(event.locationInWindow, from: nil)
-        return rows.indices.first { !rows[$0].item.isSeparatorItem && point.y >= rows[$0].y && point.y < rows[$0].y + rows[$0].height }
+        return rows.indices.first { Self.isSelectable(rows[$0]) && point.y >= rows[$0].y && point.y < rows[$0].y + rows[$0].height }
     }
 
     override func mouseMoved(with event: NSEvent) {
@@ -185,7 +198,12 @@ private final class DropdownView: NSView {
         case .rightArrow: onSwitch?(1)
         case .carriageReturn, .enter: onDismiss?(current.flatMap { rows[$0].item as? ClosureMenuItem })
         default:
-            if event.keyCode == 53 { onDismiss?(nil) }
+            if event.keyCode == 53 {
+                onDismiss?(nil)
+            } else if let key = event.characters?.lowercased(), key.count == 1,
+                      let match = rows.first(where: { Self.isSelectable($0) && $0.item.keyEquivalent.lowercased() == key }) {
+                onDismiss?(match.item as? ClosureMenuItem)
+            }
         }
     }
 }

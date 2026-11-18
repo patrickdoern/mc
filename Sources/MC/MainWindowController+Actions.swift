@@ -179,14 +179,8 @@ extension MainWindowController {
         if model.isLocal, !list.contains(model.path) {
             menu.addItem(ClosureMenuItem("Aktuellen Ordner hinzufügen") { Settings.hotlist = list + [model.path] })
         }
-        if !list.isEmpty {
-            let removal = NSMenu()
-            for path in list { removal.addItem(ClosureMenuItem(path) { Settings.hotlist = list.filter { $0 != path } }) }
-            let item = NSMenuItem(title: "Entfernen", action: nil, keyEquivalent: "")
-            item.submenu = removal
-            menu.addItem(item)
-        }
-        popUp(menu)
+        for path in list { menu.addItem(ClosureMenuItem("Entfernen: \(path)") { Settings.hotlist = list.filter { $0 != path } }) }
+        popUp(menu, title: "Verzeichnis-Hotlist")
     }
 
     @objc func showBackgroundJobs(_ sender: Any?) {
@@ -195,7 +189,7 @@ extension MainWindowController {
             menu.addItem(ClosureMenuItem("Abbrechen: \(job.title)" + (job.percent.map { " (\($0) %)" } ?? "")) { job.operation.cancel() })
         }
         if menu.items.isEmpty { menu.addItem(NSMenuItem(title: "Keine Hintergrundaufgaben", action: nil, keyEquivalent: "")) }
-        popUp(menu)
+        popUp(menu, title: "Hintergrundaufgaben")
     }
 
     @objc func showConnections(_ sender: Any?) {
@@ -204,7 +198,7 @@ extension MainWindowController {
             menu.addItem(ClosureMenuItem("\(side): \(panel.model.fileSystem.displayName) schließen") { panel.model.navigate(to: NSHomeDirectory(), on: LocalFileSystem.shared) })
         }
         if menu.items.isEmpty { menu.addItem(NSMenuItem(title: "Keine aktiven Verbindungen", action: nil, keyEquivalent: "")) }
-        popUp(menu)
+        popUp(menu, title: "Aktive Verbindungen")
     }
 
     @objc func showSavedPasswords(_ sender: Any?) {
@@ -213,7 +207,7 @@ extension MainWindowController {
             menu.addItem(ClosureMenuItem("Passwort vergessen: \(account)") { Keychain.delete(account: account) })
         }
         if menu.items.isEmpty { menu.addItem(NSMenuItem(title: "Keine gespeicherten Passwörter", action: nil, keyEquivalent: "")) }
-        popUp(menu)
+        popUp(menu, title: "Gespeicherte Passwörter")
     }
 
     @objc func userMenu(_ sender: Any?) {
@@ -234,7 +228,7 @@ extension MainWindowController {
             item.keyEquivalentModifierMask = []
             menu.addItem(item)
         }
-        popUp(menu)
+        popUp(menu, title: "Benutzermenü")
     }
 
     @objc func editFileActions(_ sender: Any?) {
@@ -263,9 +257,8 @@ extension MainWindowController {
         openEditor(system: LocalFileSystem.shared, path: url.path, readOnly: false)
     }
 
-    func popUp(_ menu: NSMenu) {
-        guard let content = window?.contentView else { return }
-        menu.popUp(positioning: nil, at: NSPoint(x: content.bounds.midX - 120, y: content.bounds.midY + 80), in: content)
+    func popUp(_ menu: NSMenu, title: String? = nil) {
+        ClassicPopup.show(menu, title: title, in: window)
     }
 
     @objc func chooseListFormat(_ sender: Any?) {

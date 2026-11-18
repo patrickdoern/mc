@@ -386,7 +386,7 @@ final class MainWindowController: NSWindowController {
                 self?.commandLine.replaceWord(completion.commonPrefix, with: candidate + (candidate.hasSuffix("/") ? "" : " "))
             })
         }
-        popUp(menu)
+        popUp(menu, title: "Vervollständigen")
     }
 
     private func insertCurrentName() {
