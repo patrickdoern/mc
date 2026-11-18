@@ -24,9 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if isDirectory.boolValue { navigate(to: [url.path]) } else { edit(url.path) }
             } else if url.scheme == "moonlight-commander" {
                 let paths = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.filter { $0.name == "path" }.compactMap(\.value) ?? []
-                for path in paths {
-                    if url.host == "edit" { edit(path) } else if url.host == "open" { navigate(to: [path]) }
-                }
+                if url.host == "edit" { paths.forEach(edit) } else if url.host == "open" { navigate(to: paths) }
             }
         }
     }
