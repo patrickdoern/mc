@@ -2,7 +2,7 @@ import AppKit
 
 final class ClassicDialog: NSView, NSTextFieldDelegate {
     private struct Item {
-        enum Kind { case text, check, choice, button }
+        enum Kind { case text, check, choice, button, progress }
         let kind: Kind
         var title = ""
         var field: NSTextField?
@@ -12,6 +12,8 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         var isCancel = false
         var checked = false
         var index = 0
+        var detail = ""
+        var fraction: Double?
     }
 
     private let dialogTitle: String
@@ -20,6 +22,9 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     private var items: [Item] = []
     private var focus = 0
     private var result: Int?
+    private var columns = 46
+    private var onButton: ((Int?) -> Void)?
+    private var sheetPanel: NSPanel?
     private var frames: [Int: NSRect] = [:]
     private var textLines: [(String, CGFloat)] = []
     private var labels: [(String, CGFloat)] = []
@@ -69,6 +74,38 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         items.append(Item(kind: .button, title: title, isDefault: isDefault, isCancel: isCancel))
     }
 
+    func addProgress() {
+        items.append(Item(kind: .progress))
+    }
+
+    func updateProgress(path: String, fraction: Double?, detail: String) {
+        guard let index = items.firstIndex(where: { $0.kind == .progress }) else { return }
+        items[index].title = path
+        items[index].fraction = fraction
+        items[index].detail = detail
+        needsDisplay = true
+    }
+
+    func presentSheet(on window: NSWindow, onButton: @escaping (Int?) -> Void) {
+        layoutDialog()
+        let panel = ClassicPanel(contentRect: NSRect(origin: .zero, size: frame.size), styleMask: [.borderless], backing: .buffered, defer: false)
+        panel.contentView = self
+        panel.backgroundColor = colors.background
+        self.onButton = onButton
+        sheetPanel = panel
+        focus = items.firstIndex { $0.kind == .button && $0.isDefault } ?? 0
+        window.beginSheet(panel)
+        applyFocus()
+    }
+
+    func dismissSheet(from window: NSWindow) {
+        guard let panel = sheetPanel else { return }
+        sheetPanel = nil
+        onButton = nil
+        window.endSheet(panel)
+        panel.orderOut(nil)
+    }
+
     func isChecked(_ itemIndex: Int) -> Bool { items[itemIndex].checked }
     func choice(_ itemIndex: Int) -> Int { items[itemIndex].index }
 
@@ -115,14 +152,15 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         case .check: return "[\(item.checked ? "x" : " ")] \(item.title)"
         case .choice: return "\(item.title.hasSuffix(":") ? item.title : item.title + ":") < \(item.options[item.index]) >"
         case .button: return buttonText(item)
-        case .text: return item.title
+        case .text, .progress: return item.title
         }
     }
 
     private func layoutDialog() {
         let longestMessage = message.components(separatedBy: "\n").map(\.count).max() ?? 0
-        let longestControl = items.filter { $0.kind != .button }.map { controlText($0).count }.max() ?? 0
+        let longestControl = items.filter { $0.kind != .button && $0.kind != .progress }.map { controlText($0).count }.max() ?? 0
         let columns = min(max(46, dialogTitle.count + 8, min(longestMessage, 76), longestControl + 2), 76)
+        self.columns = columns
         let width = CGFloat(columns) * characterWidth + 2 * padding
         var y: CGFloat = 26
         textLines = []
@@ -148,6 +186,10 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
                 item.field?.frame = rect
                 if let field = item.field, field.superview == nil { addSubview(field) }
                 y += rowHeight + 6
+                index += 1
+            case .progress:
+                frames[index] = NSRect(x: padding, y: y, width: width - 2 * padding, height: 62)
+                y += 70
                 index += 1
             case .check, .choice:
                 frames[index] = NSRect(x: padding, y: y, width: CGFloat(controlText(item).count) * characterWidth, height: 20)
@@ -192,7 +234,11 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         draw(title, at: NSPoint(x: titleRect.minX, y: 2), color: colors.text, bold: true)
         for (line, y) in textLines { draw(line, at: NSPoint(x: padding, y: y), color: colors.text) }
         for (label, y) in labels { draw(label, at: NSPoint(x: padding, y: y), color: colors.text) }
-        for (index, item) in items.enumerated() where item.kind != .text {
+        for (index, item) in items.enumerated() where item.kind == .progress {
+            guard let rect = frames[index] else { continue }
+            drawProgress(item, in: rect)
+        }
+        for (index, item) in items.enumerated() where item.kind != .text && item.kind != .progress {
             guard let rect = frames[index] else { continue }
             let focused = index == focus
             if focused {
@@ -201,6 +247,25 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
             }
             draw(controlText(item), at: NSPoint(x: rect.minX, y: rect.minY + 2), color: focused ? colors.focusText : colors.text, bold: item.kind == .button && item.isDefault)
         }
+    }
+
+    private func drawProgress(_ item: Item, in rect: NSRect) {
+        var path = item.title
+        if path.count > columns { path = "…" + path.suffix(columns - 1) }
+        draw(path, at: NSPoint(x: rect.minX, y: rect.minY), color: colors.text)
+        let bar = NSRect(x: rect.minX, y: rect.minY + 24, width: rect.width, height: 16)
+        colors.fieldBackground.setFill()
+        bar.fill()
+        if let fraction = item.fraction {
+            colors.focusBackground.setFill()
+            NSRect(x: bar.minX, y: bar.minY, width: bar.width * CGFloat(min(max(fraction, 0), 1)), height: bar.height).fill()
+            let label = "\(Int(fraction * 100)) %"
+            let width = CGFloat(label.count) * characterWidth
+            draw(label, at: NSPoint(x: bar.midX - width / 2, y: bar.minY), color: colors.fieldText)
+        }
+        colors.border.setStroke()
+        NSBezierPath(rect: bar.insetBy(dx: 0.5, dy: 0.5)).stroke()
+        draw(item.detail, at: NSPoint(x: rect.minX, y: rect.minY + 46), color: colors.text)
     }
 
     private func draw(_ text: String, at point: NSPoint, color: NSColor, bold: Bool = false) {
@@ -218,7 +283,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     }
 
     private func moveFocus(by delta: Int) {
-        focus = (focus + delta + items.count) % items.count
+        repeat { focus = (focus + delta + items.count) % items.count } while items[focus].kind == .progress
         applyFocus()
     }
 
@@ -228,7 +293,11 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         } else if let cancel = items.firstIndex(where: { $0.kind == .button && $0.isCancel }) {
             result = items[0...cancel].filter { $0.kind == .button }.count - 1
         }
-        NSApp.stopModal()
+        if let onButton {
+            onButton(result)
+        } else {
+            NSApp.stopModal()
+        }
     }
 
     private func activate() {
@@ -238,6 +307,8 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         case .check:
             items[focus].checked.toggle()
             needsDisplay = true
+        case .progress:
+            break
         case .choice, .text:
             if let defaultButton = items.firstIndex(where: { $0.kind == .button && $0.isDefault }) { finish(button: defaultButton) }
         }
@@ -278,7 +349,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
 
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
-        guard let index = frames.first(where: { items[$0.key].kind != .text && $0.value.contains(point) })?.key else { return }
+        guard let index = frames.first(where: { items[$0.key].kind != .text && items[$0.key].kind != .progress && $0.value.contains(point) })?.key else { return }
         focus = index
         applyFocus()
         if items[index].kind == .choice { cycleChoice(1) } else { activate() }

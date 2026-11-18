@@ -79,70 +79,34 @@ final class OperationRunner {
 private final class ProgressSheet {
     var onCancel: (() -> Void)?
     var onBackground: (() -> Void)?
-    private let panel: NSWindow
-    private let pathLabel = NSTextField(labelWithString: "")
-    private let detailLabel = NSTextField(labelWithString: "")
-    private let bar = NSProgressIndicator()
+    private let dialog: ClassicDialog
     private var presented = false
 
     init(title: String) {
-        panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 130), styleMask: [.titled], backing: .buffered, defer: false)
-        let titleLabel = NSTextField(labelWithString: title)
-        titleLabel.font = .boldSystemFont(ofSize: 13)
-        pathLabel.lineBreakMode = .byTruncatingMiddle
-        detailLabel.textColor = .secondaryLabelColor
-        bar.isIndeterminate = true
-        bar.style = .bar
-        bar.startAnimation(nil)
-        let cancel = NSButton(title: "Abbrechen", target: self, action: #selector(cancel))
-        cancel.keyEquivalent = "\u{1b}"
-        let background = NSButton(title: "Im Hintergrund", target: self, action: #selector(moveToBackground))
-        let buttons = NSStackView(views: [background, cancel])
-        let stack = NSStackView(views: [titleLabel, pathLabel, bar, detailLabel, buttons])
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 8
-        stack.edgeInsets = NSEdgeInsets(top: 16, left: 20, bottom: 16, right: 20)
-        stack.setHuggingPriority(.defaultLow, for: .horizontal)
-        panel.contentView = stack
-        NSLayoutConstraint.activate([
-            pathLabel.widthAnchor.constraint(equalToConstant: 420),
-            bar.widthAnchor.constraint(equalToConstant: 420),
-        ])
-        cancel.setContentHuggingPriority(.required, for: .horizontal)
+        dialog = ClassicDialog(title: title)
+        dialog.addProgress()
+        dialog.addButton("Im Hintergrund", isDefault: true)
+        dialog.addButton("Abbrechen", isCancel: true)
     }
 
     func present(on window: NSWindow) {
         presented = true
-        window.beginSheet(panel)
+        dialog.presentSheet(on: window) { [weak self] button in
+            if button == 0 { self?.onBackground?() } else { self?.onCancel?() }
+        }
     }
 
     func dismiss(from window: NSWindow?) {
         guard presented, let window else { return }
         presented = false
-        window.endSheet(panel)
-        panel.orderOut(nil)
+        dialog.dismissSheet(from: window)
     }
 
     func update(_ progress: OperationProgress) {
-        pathLabel.stringValue = progress.currentPath
         let total = progress.bytesTotal > 0 ? progress.bytesTotal : Int64(progress.filesTotal)
         let done = progress.bytesTotal > 0 ? progress.bytesDone : Int64(progress.filesDone)
-        bar.isIndeterminate = total == 0
-        if total > 0 {
-            bar.maxValue = Double(total)
-            bar.doubleValue = Double(done)
-        }
         var detail = "\(progress.filesDone) von \(progress.filesTotal) Dateien"
         if progress.bytesTotal > 0 { detail += " · \(Formatting.exactSize(progress.bytesDone)) von \(Formatting.exactSize(progress.bytesTotal))" }
-        detailLabel.stringValue = detail
-    }
-
-    @objc private func cancel() {
-        onCancel?()
-    }
-
-    @objc private func moveToBackground() {
-        onBackground?()
+        dialog.updateProgress(path: progress.currentPath, fraction: total > 0 ? Double(done) / Double(total) : nil, detail: detail)
     }
 }
