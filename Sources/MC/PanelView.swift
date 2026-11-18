@@ -12,13 +12,14 @@ enum PanelCommand {
     case complete
 }
 
-enum PanelMode {
+enum PanelMode: Int {
     case list, quickView, info, tree
 }
 
 final class PanelView: NSView {
     let model: PanelModel
     var onCommand: ((PanelCommand) -> Void)?
+    var onModeChange: (() -> Void)?
     var peer: (() -> PanelModel)?
     var isActive = false { didSet { needsDisplay = true } }
     private(set) var mode = PanelMode.list
@@ -60,6 +61,7 @@ final class PanelView: NSView {
         tree = newMode == .tree ? DirectoryTree(fileSystem: model.fileSystem, path: model.path, showHidden: model.showHidden) { [weak self] in self?.needsDisplay = true } : nil
         refreshPreview()
         needsDisplay = true
+        onModeChange?()
     }
 
     func refreshPreview() {

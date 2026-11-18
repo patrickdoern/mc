@@ -87,8 +87,15 @@ final class MainWindowController: NSWindowController {
         }
         applyLayout()
         NotificationCenter.default.addObserver(self, selector: #selector(themeDidChange), name: Theme.didChange, object: nil)
-        activate(panels[0])
-        window.makeFirstResponder(panels[0])
+        for (side, panel) in zip(["left", "right"], panels) {
+            panel.setMode(PanelMode(rawValue: defaults.integer(forKey: side + "Mode")) ?? .list)
+        }
+        let preferred = panels[min(max(defaults.integer(forKey: "activePanel"), 0), 1)]
+        let focusable = [preferred] + panels.filter { $0 !== preferred }
+        let start = focusable.first { $0.mode == .list || $0.mode == .tree } ?? panels[0]
+        activate(start)
+        window.makeFirstResponder(start)
+        panels.forEach { $0.onModeChange = { [weak self] in self?.saveState() } }
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -103,8 +110,10 @@ final class MainWindowController: NSWindowController {
             defaults.set(model.dirsFirst, forKey: side + "DirsFirst")
             defaults.set(model.caseSensitive, forKey: side + "CaseSensitive")
             defaults.set(model.format.rawValue, forKey: side + "Format")
+            defaults.set(panel.mode.rawValue, forKey: side + "Mode")
         }
         defaults.set(activePanel.model.showHidden, forKey: "showHidden")
+        defaults.set(panels.firstIndex { $0 === activePanel } ?? 0, forKey: "activePanel")
     }
 
     func applyLayout() {
@@ -128,6 +137,7 @@ final class MainWindowController: NSWindowController {
         activePanel = panel
         panels.forEach { $0.isActive = $0 === panel }
         commandLine.onChange?()
+        saveState()
     }
 
     private func handle(_ command: PanelCommand, from panel: PanelView) {
