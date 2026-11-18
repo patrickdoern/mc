@@ -191,7 +191,8 @@ final class PanelModel {
         }
     }
 
-    func markDifferences(against other: PanelModel) {
+    @discardableResult
+    func markDifferences(against other: PanelModel) -> Int {
         let counterparts = Dictionary(other.rows.filter { $0.name != Self.parentName }.map { ($0.name, $0) }) { first, _ in first }
         marked = Set(rows.filter { entry in
             guard entry.name != Self.parentName else { return false }
@@ -200,6 +201,7 @@ final class PanelModel {
             return entry.size != counterpart.size || (entry.modified ?? .distantPast) > (counterpart.modified ?? .distantPast).addingTimeInterval(1)
         }.map(\.name))
         onChange?()
+        return marked.count
     }
 
     func sort(by key: SortKey) {

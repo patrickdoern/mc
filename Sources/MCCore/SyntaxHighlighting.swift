@@ -1,7 +1,7 @@
 import Foundation
 
 public enum TokenKind: Sendable {
-    case keyword, string, comment, number, type, property
+    case keyword, string, comment, number, type, property, addition, deletion
 }
 
 public struct SyntaxToken: Equatable, Sendable {
@@ -46,7 +46,7 @@ public final class SyntaxHighlighter {
             "cpp": "c", "cc": "c", "hpp": "c", "hh": "c", "m": "c", "mm": "c", "cs": "c", "java": "java", "kt": "kotlin", "kts": "kotlin", "go": "go",
             "rs": "rust", "sql": "sql", "dart": "dart", "json": "json", "jsonc": "json", "yaml": "yaml", "yml": "yaml", "toml": "ini", "ini": "ini",
             "conf": "ini", "cfg": "ini", "html": "markup", "htm": "markup", "xml": "markup", "svg": "markup", "plist": "markup", "xhtml": "markup",
-            "css": "css", "scss": "css", "less": "css", "md": "markdown", "markdown": "markdown",
+            "css": "css", "scss": "css", "less": "css", "md": "markdown", "markdown": "markdown", "diff": "diff", "patch": "diff",
         ]
         if let language = byExtension[ext] { return language }
         guard firstLine.hasPrefix("#!") else { return nil }
@@ -177,6 +177,8 @@ public final class SyntaxHighlighter {
             highlightsNumbers: false, blockComment: ("<!--", "-->"), rules: [(#"</?[A-Za-z][\w:\-.]*|/?>|<\?[\w\-]+|\?>|<!DOCTYPE"#, .keyword), (#"[\w:\-]+(?=\s*=)"#, .property)]),
         "css": SyntaxLanguage(
             blockComment: ("/*", "*/"), rules: [(#"#[0-9a-fA-F]{3,8}\b"#, .number), (#"@[\w\-]+"#, .keyword), (#"[\w\-]+(?=\s*:)"#, .property), (#"[.#][A-Za-z_][\w\-]*"#, .type)]),
+        "diff": SyntaxLanguage(
+            highlightsNumbers: false, quotes: [], rules: [(#"^\+.*$"#, .addition), (#"^-.*$"#, .deletion), (#"^(?:\+\+\+|---) .*$"#, .keyword), (#"^@@.*$"#, .property)]),
         "markdown": SyntaxLanguage(
             highlightsNumbers: false, quotes: [], rules: [(#"^#{1,6}\s.*$"#, .keyword), (#"^\s*(?:[-*+]|\d+\.)\s"#, .number), (#"`[^`\n]+`"#, .string), (#"\[[^\]\n]*\]\([^)\n]*\)"#, .property), (#"^```.*$"#, .comment)]),
     ]

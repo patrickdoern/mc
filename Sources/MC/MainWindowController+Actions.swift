@@ -94,19 +94,76 @@ extension MainWindowController {
     @objc func compareDirectories(_ sender: Any?) {
         let first = panelViews[0].model
         let second = panelViews[1].model
-        first.markDifferences(against: second)
-        second.markDifferences(against: first)
+        let left = first.markDifferences(against: second)
+        let right = second.markDifferences(against: first)
+        if left + right == 0 {
+            Dialogs.info(title: "Verzeichnisse vergleichen", message: "Keine Unterschiede in Namen, Größe und Änderungszeit.")
+        } else {
+            Dialogs.info(title: "Verzeichnisse vergleichen", message: "Markiert: \(left) links, \(right) rechts.\nVerglichen werden Namen, Größe und Änderungszeit der sichtbaren Einträge.")
+        }
+    }
+
+    private func selectedFilePair() -> (left: String, right: String)? {
+        let active = activePanel.model
+        let other = inactivePanel.model
+        guard active.isLocal, other.isLocal else {
+            Dialogs.show(error: FileError("Dateien lassen sich nur im lokalen Dateisystem vergleichen"))
+            return nil
+        }
+        guard let mine = currentFile(active), !mine.isDirectory else {
+            Dialogs.show(error: FileError("Setze den Cursor im aktiven Panel auf eine Datei. Im anderen Panel wird die Datei unter dem Cursor oder die gleichnamige verwendet."))
+            return nil
+        }
+        let counterpart = currentFile(other).flatMap { $0.isDirectory ? nil : $0 } ?? other.rows.first { $0.name == mine.name && !$0.isDirectory }
+        guard let counterpart else {
+            Dialogs.show(error: FileError("Im anderen Panel gibt es keine passende Datei. Setze dort den Cursor auf eine Datei oder verwende denselben Dateinamen."))
+            return nil
+        }
+        let mineIsLeft = activePanel === panelViews[0]
+        let minePath = active.fullPath(of: mine.name)
+        let otherPath = other.fullPath(of: counterpart.name)
+        return mineIsLeft ? (minePath, otherPath) : (otherPath, minePath)
     }
 
     @objc func compareFiles(_ sender: Any?) {
-        let first = panelViews[0].model
-        let second = panelViews[1].model
-        guard first.isLocal, second.isLocal, let left = currentFile(first), let right = currentFile(second), !left.isDirectory, !right.isDirectory else {
-            return Dialogs.show(error: FileError("Zum Vergleichen muss in beiden lokalen Panels eine Datei ausgewählt sein"))
+        guard let pair = selectedFilePair() else { return }
+        let outputPath = NSTemporaryDirectory() + "moonlight-diff/" + PosixPath.name(pair.left) + " ↔ " + PosixPath.name(pair.right) + ".diff"
+        let status = Box<Int32>()
+        runner.run(title: "Vergleiche …", { _ in
+            try FileManager.default.createDirectory(atPath: PosixPath.parent(outputPath), withIntermediateDirectories: true)
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/diff")
+            process.arguments = ["-u", pair.left, pair.right]
+            let output = Pipe()
+            let errors = Pipe()
+            process.standardOutput = output
+            process.standardError = errors
+            try process.run()
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            let errorData = errors.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            guard process.terminationStatus < 2 else { throw FileError(String(decoding: errorData, as: UTF8.self)) }
+            try data.write(to: URL(fileURLWithPath: outputPath))
+            status.value = process.terminationStatus
+        }, completion: { [weak self] in
+            guard let status = status.value else { return }
+            if status == 0 {
+                Dialogs.info(title: "Dateien vergleichen", message: "Die Dateien sind identisch.")
+            } else {
+                self?.openEditor(system: LocalFileSystem.shared, path: outputPath, readOnly: true)
+            }
+        })
+    }
+
+    @objc func compareFilesInFileMerge(_ sender: Any?) {
+        guard let pair = selectedFilePair() else { return }
+        let developer = (try? Process.output("/usr/bin/xcode-select", ["-p"]))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard FileManager.default.fileExists(atPath: developer + "/../Applications/FileMerge.app") else {
+            return Dialogs.show(error: FileError("FileMerge wurde nicht gefunden. Es gehört zu Xcode; „Dateien vergleichen“ funktioniert auch ohne."))
         }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/opendiff")
-        process.arguments = [first.fullPath(of: left.name), second.fullPath(of: right.name)]
+        process.arguments = [pair.left, pair.right]
         do {
             try process.run()
         } catch {

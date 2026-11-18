@@ -308,6 +308,15 @@ private func read(_ path: String) throws -> String {
         #expect(tokens.contains { $0.0 == "let" && $0.1 == .keyword })
     }
 
+    @Test func marksDiffAdditionsAndDeletions() {
+        let tokens = kinds("--- a\n+++ b\n@@ -1 +1 @@\n-alt\n+neu\n gleich\n", "diff")
+        #expect(tokens.contains { $0.0 == "-alt" && $0.1 == .deletion })
+        #expect(tokens.contains { $0.0 == "+neu" && $0.1 == .addition })
+        #expect(tokens.contains { $0.0 == "@@ -1 +1 @@" && $0.1 == .property })
+        #expect(tokens.contains { $0.0 == "+++ b" && $0.1 == .keyword })
+        #expect(SyntaxHighlighter.languageName(forFile: "x.patch", firstLine: "") == "diff")
+    }
+
     @Test func highlightsJsonKeysAndNumbers() {
         let tokens = kinds(#"{"name": "x", "count": 42}"#, "json")
         #expect(tokens.contains { $0.0 == #""name""# && $0.1 == .property })

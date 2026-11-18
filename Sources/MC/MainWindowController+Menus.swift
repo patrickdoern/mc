@@ -59,7 +59,7 @@ extension MainWindowController {
         let menu = NSMenu()
         add([
             ("Benutzermenü   F2", userMenu), ("Terminal ein/aus   Ctrl-O", toggleTerminal), ("Verzeichnisbaum", { _ in self.activePanel.setMode(.tree) }), ("Datei suchen …", findFiles), ("Externes Panelisieren …", panelizeCommand), ("Panels vertauschen   ⌘U", swapPanels),
-            ("Verzeichnisse vergleichen", compareDirectories), ("Dateien vergleichen", compareFiles), ("Verzeichnisgrößen anzeigen", showDirectorySizes), nil,
+            ("Verzeichnisse vergleichen", compareDirectories), ("Dateien vergleichen", compareFiles), ("Dateien in FileMerge vergleichen", compareFilesInFileMerge), ("Verzeichnisgrößen anzeigen", showDirectorySizes), nil,
             ("Befehlschronik …", showCommandHistory), ("Verzeichnis-Hotlist …", showHotlist), ("Aktive Verbindungen …", showConnections), ("Hintergrundaufgaben …", showBackgroundJobs), ("Gespeicherte Passwörter …", showSavedPasswords), nil,
             ("Benutzermenü bearbeiten", editUserMenu), ("Dateizuordnung bearbeiten", editFileActions),
         ], to: menu)
