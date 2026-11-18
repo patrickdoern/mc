@@ -113,7 +113,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     private func controlText(_ item: Item) -> String {
         switch item.kind {
         case .check: return "[\(item.checked ? "x" : " ")] \(item.title)"
-        case .choice: return "\(item.title): < \(item.options[item.index]) >"
+        case .choice: return "\(item.title.hasSuffix(":") ? item.title : item.title + ":") < \(item.options[item.index]) >"
         case .button: return buttonText(item)
         case .text: return item.title
         }

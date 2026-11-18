@@ -56,6 +56,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         stack.spacing = 0
         window.contentView = stack
         window.makeFirstResponder(textView)
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
     }
 
     required init?(coder: NSCoder) { fatalError() }
