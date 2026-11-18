@@ -16,7 +16,7 @@ final class MainWindowController: NSWindowController {
     private var terminal: ShellTerminal?
     private let quickLook = QuickLook()
     private var keyBar: KeyBar?
-    var finders: [FindWindowController] = []
+    var activeFind: FindDialog?
     private var editors: [EditorWindowController] = []
     lazy var runner: OperationRunner = {
         let runner = OperationRunner(window: window!)

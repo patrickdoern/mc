@@ -121,18 +121,13 @@ extension MainWindowController {
     @objc func findFiles(_ sender: Any?) {
         let model = activePanel.model
         guard let values = Dialogs.fields(title: "Datei suchen", message: "Start: \(model.path)\nInhaltssuche nur im lokalen Dateisystem, Groß-/Kleinschreibung wird beachtet.", fields: [("Name:", "*"), ("Inhalt:", "")], confirm: "Suchen") else { return }
-        let finder = FindWindowController(fileSystem: model.fileSystem, root: model.path, criteria: SearchCriteria(namePattern: values[0], content: values[1]))
-        finder.onSelect = { [weak self] path in
-            model.navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path))
-            self?.window?.makeKeyAndOrderFront(nil)
-        }
-        finder.onPanelize = { [weak self] paths in
-            model.navigate(to: "/", on: PanelizedFileSystem(base: model.fileSystem, paths: paths, title: "Suchergebnis"))
-            self?.window?.makeKeyAndOrderFront(nil)
-        }
-        finder.onClose = { [weak self] closed in self?.finders.removeAll { $0 === closed } }
-        finders.append(finder)
-        finder.showWindow(nil)
+        guard let window else { return }
+        let finder = FindDialog(fileSystem: model.fileSystem, root: model.path, criteria: SearchCriteria(namePattern: values[0], content: values[1]))
+        finder.onSelect = { path in model.navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path)) }
+        finder.onPanelize = { paths in model.navigate(to: "/", on: PanelizedFileSystem(base: model.fileSystem, paths: paths, title: "Suchergebnis")) }
+        finder.onClose = { [weak self] in self?.activeFind = nil }
+        activeFind = finder
+        finder.present(on: window)
     }
 
     @objc func panelizeCommand(_ sender: Any?) {

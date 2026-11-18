@@ -367,6 +367,6 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     }
 }
 
-private final class ClassicPanel: NSPanel {
+final class ClassicPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
