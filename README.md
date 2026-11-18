@@ -1,4 +1,4 @@
-# macOS Commander
+# Moonlight Commander
 
 Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateioperationen, SFTP und ein mcedit-artiger Editor.
 
@@ -7,7 +7,7 @@ Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateiop
 open build/MC.app --args ~/Downloads ~/projects
 ```
 
-Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch nach `vendor/` (nur Xcode und Netzwerk nötig). `./scripts/bundle.sh` erzeugt `build/MC.app`, `./scripts/install.sh` installiert sie nach `/Applications/macOS Commander.app`. Die App ist eine einzelne Datei ohne Homebrew, läuft ab macOS 14 auf Apple Silicon. Ohne `vendor/` greift `swift build` auf `brew install libssh2` zurück. Tests: `swift test`; die SFTP-Tests laufen nur mit `MC_TEST_SSH_DIR` (Ordner mit `clientkey`, sshd auf 127.0.0.1:2222).
+Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch nach `vendor/` (nur Xcode und Netzwerk nötig). `./scripts/bundle.sh` erzeugt `build/MC.app`, `./scripts/install.sh` installiert sie nach `/Applications/Moonlight Commander.app`. Die App ist eine einzelne Datei ohne Homebrew, läuft ab macOS 14 auf Apple Silicon. Ohne `vendor/` greift `swift build` auf `brew install libssh2` zurück. Tests: `swift test`; die SFTP-Tests laufen nur mit `MC_TEST_SSH_DIR` (Ordner mit `clientkey`, sshd auf 127.0.0.1:2222).
 
 ## Kommandozeile
 
@@ -30,7 +30,7 @@ Beides funktioniert auch bei laufender App. Ordner lassen sich außerdem aufs Do
 | Leertaste, Einfg, ⇧↑↓ | markieren; `+` `-` Muster, `*` umkehren |
 | Ctrl-S | Schnellsuche |
 | ⌘L / ⇧⌘H / ⌘K | Pfad / Home / SFTP verbinden |
-| F2 | Benutzermenü (Einträge aus `~/.config/macos-commander/menu`, Format wie mc, Makros `%f %d %s %D %F`) |
+| F2 | Benutzermenü (Einträge aus `~/.config/moonlight-commander/menu`, Format wie mc, Makros `%f %d %s %D %F`) |
 | F3 / F4 | Anzeigen / Bearbeiten (⇧F4 neue Datei), beides mit Syntax-Highlighting |
 | F5 / F6 | Kopieren / Verschieben (⇧F6 Umbenennen) |
 | F7 / F8 | Ordner anlegen / Löschen (lokal Papierkorb, ⇧F8 endgültig) |
@@ -59,8 +59,8 @@ Nicht enthalten: FTP/Shell-Verbindungen, Codierung, Darstellungsbits, Tasten ler
 MC_SIGN_IDENTITY="Developer ID Application: …" MC_NOTARY_PROFILE=<profil> ./scripts/dist.sh
 ```
 
-Erzeugt ein signiertes, notarisiertes `build/macOS-Commander.dmg`. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
+Erzeugt ein signiertes, notarisiertes `build/Moonlight-Commander.dmg`. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
 
 ### Auf einen anderen Mac kopieren
 
-`/Applications/macOS Commander.app` per `rsync`, `scp` oder USB-Stick kopieren, dann startet sie direkt. Kommt sie per AirDrop, Download oder Cloud, markiert macOS sie als Quarantäne, und Gatekeeper blockiert sie ohne Notarisierung. Dann einmal `xattr -dr com.apple.quarantine "/Applications/macOS Commander.app"` ausführen.
+`/Applications/Moonlight Commander.app` per `rsync`, `scp` oder USB-Stick kopieren, dann startet sie direkt. Kommt sie per AirDrop, Download oder Cloud, markiert macOS sie als Quarantäne, und Gatekeeper blockiert sie ohne Notarisierung. Dann einmal `xattr -dr com.apple.quarantine "/Applications/Moonlight Commander.app"` ausführen.

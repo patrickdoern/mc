@@ -1,11 +1,11 @@
-# ADR-0001: macOS Commander ist eine native AppKit-App mit eigenem Zeichnen der Panels, gebaut mit SwiftPM
+# ADR-0001: Moonlight Commander ist eine native AppKit-App mit eigenem Zeichnen der Panels, gebaut mit SwiftPM
 
 - Status: Accepted
 - Datum: 2026-11-17
 
 ## Kontext
 
-Der Midnight Commander im Terminal ist für große Verzeichnisse und Dateioperationen zu langsam. macOS Commander soll Dateioperationen, SFTP und einen mcedit-artigen Editor nativ auf macOS liefern.
+Der Midnight Commander im Terminal ist für große Verzeichnisse und Dateioperationen zu langsam. Moonlight Commander soll Dateioperationen, SFTP und einen mcedit-artigen Editor nativ auf macOS liefern.
 
 ## Entscheidung
 

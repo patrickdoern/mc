@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !files.isEmpty {
             if let mainWindow { mainWindow.open(paths: files) } else { pendingPaths += files }
         }
-        for url in urls where url.scheme == "macos-commander" && url.host == "edit" {
+        for url in urls where url.scheme == "moonlight-commander" && url.host == "edit" {
             let paths = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.filter { $0.name == "path" }.compactMap(\.value) ?? []
             for path in paths {
                 if let mainWindow { mainWindow.edit(path: path) } else { pendingEdits.append(path) }
@@ -30,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if Settings.confirmExit, !Dialogs.confirm(title: "macOS Commander beenden?", message: "", confirm: "Beenden") { return .terminateCancel }
+        if Settings.confirmExit, !Dialogs.confirm(title: "Moonlight Commander beenden?", message: "", confirm: "Beenden") { return .terminateCancel }
         guard mainWindow?.hasUnsavedEditors == true else { return .terminateNow }
         let proceed = Dialogs.confirm(title: "Ungespeicherte Änderungen", message: "In geöffneten Editor-Fenstern gibt es ungespeicherte Änderungen. Trotzdem beenden?", confirm: "Beenden", destructive: true)
         return proceed ? .terminateNow : .terminateCancel

@@ -15,7 +15,7 @@ struct UserMenuContext {
 }
 
 enum UserMenu {
-    static var fileURL: URL { URL(fileURLWithPath: NSHomeDirectory() + "/.config/macos-commander/menu") }
+    static var fileURL: URL { URL(fileURLWithPath: NSHomeDirectory() + "/.config/moonlight-commander/menu") }
 
     static let defaultText = """
     o   Mit Standardprogramm öffnen

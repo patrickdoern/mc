@@ -1,7 +1,7 @@
 #!/bin/zsh
-app="/Applications/macOS Commander.app"
+app="/Applications/Moonlight Commander.app"
 if [[ ! -d "$app" ]]; then
-    echo "mcedit: macOS Commander ist nicht installiert ($app)" >&2
+    echo "mcedit: Moonlight Commander ist nicht installiert ($app)" >&2
     exit 1
 fi
 if (( $# == 0 )); then
@@ -17,4 +17,4 @@ for argument in "$@"; do
     encoded="$(/usr/bin/python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "${argument:A}")"
     query+="${query:+&}path=$encoded"
 done
-exec open "macos-commander://edit?$query"
+exec open "moonlight-commander://edit?$query"

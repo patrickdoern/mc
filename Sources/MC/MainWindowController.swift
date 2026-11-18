@@ -39,7 +39,7 @@ final class MainWindowController: NSWindowController {
         activePanel = panels[0]
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1180, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         super.init(window: window)
-        window.title = "macOS Commander"
+        window.title = "Moonlight Commander"
         window.minSize = NSSize(width: 640, height: 360)
         window.setFrameAutosaveName("MainWindow")
         window.tabbingMode = .disallowed

@@ -9,7 +9,7 @@ SFTP muss mit der bestehenden SSH-Konfiguration (Aliase, Benutzer, Ports, Identi
 
 ## Entscheidung
 
-Verbindungen nutzen libssh2 aus Homebrew (synchrone API, durch ein Lock je Verbindung serialisiert). Host, Benutzer, Port, Schlüsseldateien und Agent-Socket löst `/usr/bin/ssh -G <alias>` auf. Unbekannte Hostkeys werden nach Rückfrage an `known_hosts` angehängt, geänderte lehnt macOS Commander ab.
+Verbindungen nutzen libssh2 aus Homebrew (synchrone API, durch ein Lock je Verbindung serialisiert). Host, Benutzer, Port, Schlüsseldateien und Agent-Socket löst `/usr/bin/ssh -G <alias>` auf. Unbekannte Hostkeys werden nach Rückfrage an `known_hosts` angehängt, geänderte lehnt Moonlight Commander ab.
 
 ## Konsequenzen
 

@@ -1,4 +1,4 @@
-# ADR-0003: macOS Commander wird mit Developer ID außerhalb des App Stores verteilt und bringt seine Bibliotheken mit
+# ADR-0003: Moonlight Commander wird mit Developer ID außerhalb des App Stores verteilt und bringt seine Bibliotheken mit
 
 - Status: Accepted
 - Datum: 2026-11-17
