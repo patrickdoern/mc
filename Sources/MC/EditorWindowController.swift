@@ -21,6 +21,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private var lastSearch = ""
     private var lastReplacement = ""
     private var language: String?
+    private let markup: MarkupKind?
+    private var sourceText: String
+    private var isRendered = false
+    private var wrapBeforePreview = false
 
     var hasUnsavedChanges: Bool { window?.isDocumentEdited ?? false }
 
@@ -32,6 +36,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         self.rawData = data
         self.encoding = encoding
         self.permissions = permissions
+        self.sourceText = text
+        markup = readOnly ? MarkupKind.kind(forFile: PosixPath.name(path)) : nil
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 920, height: 660), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         super.init(window: window)
         window.delegate = self
@@ -50,8 +56,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         scroll.drawsBackground = true
         scroll.backgroundColor = Theme.background
         let keyBar = KeyBar(
-            labels: readOnly ? ["Hilfe", "Umbruch", "Ende", "Hex", "Gehe zu", "", "Suchen", "Codierung", "", "Ende"] : ["Hilfe", "Sichern", "Markieren", "Ersetzen", "Kopieren", "Verschieben", "Suchen", "Löschen", "", "Ende"],
-            shortLabels: readOnly ? ["Hilfe", "Umbr", "Ende", "Hex", "Gehe", "", "Suche", "Codg", "", "Ende"] : ["Hilfe", "Sichrn", "Markr", "Ersetz", "Kopie", "Versch", "Suche", "Lösch", "", "Ende"]
+            labels: readOnly ? ["Hilfe", "Umbruch", "Ende", "Hex", "Gehe zu", "", "Suchen", "Codierung", markup == nil ? "" : "Vorschau", "Ende"] : ["Hilfe", "Sichern", "Markieren", "Ersetzen", "Kopieren", "Verschieben", "Suchen", "Löschen", "", "Ende"],
+            shortLabels: readOnly ? ["Hilfe", "Umbr", "Ende", "Hex", "Gehe", "", "Suche", "Codg", markup == nil ? "" : "Vorsch", "Ende"] : ["Hilfe", "Sichrn", "Markr", "Ersetz", "Kopie", "Versch", "Suche", "Lösch", "", "Ende"]
         ) { [weak self] number in
             self?.perform(functionKey: number, shifted: false)
         }
@@ -60,6 +66,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         stack.spacing = 0
         window.contentView = stack
         window.makeFirstResponder(textView)
+        if markup != nil { showPreview() }
         textView.setSelectedRange(NSRange(location: 0, length: 0))
     }
 
@@ -86,7 +93,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @objc private func themeDidChange(_ notification: Notification) {
         textView.applyEditorStyle()
         textView.enclosingScrollView?.backgroundColor = Theme.background
-        applyHighlighting()
+        if isRendered { showPreview() } else { applyHighlighting() }
     }
 
     @objc private func textDidChange(_ notification: Notification) {
@@ -96,7 +103,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func applyHighlighting() {
-        guard let language, let storage = textView.textStorage, storage.length <= SyntaxHighlighter.maximumLength else { return }
+        guard !isRendered, let language, let storage = textView.textStorage, storage.length <= SyntaxHighlighter.maximumLength else { return }
         let tokens = SyntaxHighlighter.tokens(in: storage.string, language: language)
         storage.beginEditing()
         storage.addAttribute(.foregroundColor, value: Theme.editorText, range: NSRange(location: 0, length: storage.length))
@@ -121,6 +128,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         case (7, true): findNext(nil)
         case (8, _) where readOnly: chooseEncoding(nil)
         case (8, _): deleteBlock()
+        case (9, _) where readOnly && markup != nil: togglePreview(nil)
         case (10, _): window?.performClose(nil)
         default: return false
         }
@@ -222,7 +230,11 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func toggleWrap(_ sender: Any?) {
-        wraps.toggle()
+        setWrap(!wraps)
+    }
+
+    private func setWrap(_ enabled: Bool) {
+        wraps = enabled
         textView.extraTrailingWidth = wraps ? 0 : 24
         guard let container = textView.textContainer, let scroll = textView.enclosingScrollView else { return }
         container.widthTracksTextView = wraps
@@ -233,8 +245,38 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         textView.setFrameSize(NSSize(width: wraps ? scroll.contentSize.width : textView.frame.width, height: textView.frame.height))
     }
 
+    @objc func togglePreview(_ sender: Any?) {
+        guard readOnly, markup != nil, !isHex else { return }
+        if isRendered { showSource() } else { showPreview() }
+    }
+
+    private func showPreview() {
+        guard let markup, let rendered = MarkupRenderer.render(sourceText, kind: markup) else { return }
+        if !isRendered { wrapBeforePreview = wraps }
+        isRendered = true
+        setWrap(true)
+        textView.textStorage?.setAttributedString(rendered)
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
+        textView.scrollToBeginningOfDocument(nil)
+        window?.title = PosixPath.name(path) + " (Vorschau)"
+    }
+
+    private func showSource() {
+        guard isRendered else { return }
+        isRendered = false
+        setWrap(wrapBeforePreview)
+        textView.textStorage?.setAttributedString(NSAttributedString(string: sourceText))
+        textView.typingAttributes = [.font: Theme.font, .foregroundColor: Theme.editorText]
+        textView.applyEditorStyle()
+        applyHighlighting()
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
+        textView.scrollToBeginningOfDocument(nil)
+        window?.title = PosixPath.name(path) + (readOnly ? " (nur lesen)" : "")
+    }
+
     @objc func toggleHex(_ sender: Any?) {
         guard readOnly else { return }
+        showSource()
         isHex.toggle()
         if isHex {
             textBeforeHex = textView.string
@@ -249,12 +291,14 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     @objc func chooseEncoding(_ sender: Any?) {
         guard !isHex else { return }
+        showSource()
         guard !hasUnsavedChanges else { return Dialogs.show(error: FileError("Die Codierung lässt sich nur ohne ungespeicherte Änderungen wechseln")) }
         let encodings: [(String, String.Encoding)] = [("UTF-8", .utf8), ("ISO-8859-1 (Latin 1)", .isoLatin1), ("Windows-1252", .windowsCP1252), ("Mac Roman", .macOSRoman), ("UTF-16", .utf16)]
         guard let result = Dialogs.form(title: "Codierung", popup: ("Zeichensatz:", encodings.map(\.0), encodings.firstIndex { $0.1 == encoding } ?? 0), confirm: "Übernehmen") else { return }
         let chosen = encodings[result.choice].1
         guard let text = String(data: rawData, encoding: chosen) else { return Dialogs.show(error: FileError("Die Datei lässt sich nicht als \(encodings[result.choice].0) lesen")) }
         encoding = chosen
+        sourceText = text
         let caret = textView.selectedRange().location
         textView.string = text
         textView.setSelectedRange(NSRange(location: min(caret, (text as NSString).length), length: 0))
@@ -341,7 +385,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     private func showHelp() {
         Dialogs.info(title: readOnly ? "Viewer-Tasten" : "Editor-Tasten", message: readOnly
-            ? "F2 Zeilenumbruch · F3/F10/Esc Ende · F4 Hex-Ansicht · F5 Gehe zu Zeile · F7 Suchen (⇧F7 weiter) · F8 Codierung wählen"
+            ? "F2 Zeilenumbruch · F3/F10/Esc Ende · F4 Hex-Ansicht · F5 Gehe zu Zeile · F7 Suchen (⇧F7 weiter) · F8 Codierung wählen · F9 Vorschau/Quelltext (Markdown, HTML)"
             : "F2 Sichern · F3 Block markieren (Anfang/Ende) · F4 Ersetzen (auch Regex) · F5 Block kopieren · F6 Block verschieben · F7 Suchen (⇧F7 weiter) · F8 Block löschen · Ctrl-Y Zeile löschen · F10/Esc Ende · Menü Bearbeiten: Datei einfügen, Block sichern, Codierung")
     }
 }

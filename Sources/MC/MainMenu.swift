@@ -62,6 +62,7 @@ enum MainMenu {
         menu.addItem(item("Block sichern …", #selector(EditorWindowController.saveBlock(_:)), "b", [.command, .option]))
         menu.addItem(item("Codierung …", #selector(EditorWindowController.chooseEncoding(_:)), "e", [.command, .option]))
         menu.addItem(item("Hex-Ansicht", #selector(EditorWindowController.toggleHex(_:)), "h", [.command, .option]))
+        menu.addItem(item("Vorschau/Quelltext", #selector(EditorWindowController.togglePreview(_:)), "p", [.command, .option]))
         menu.addItem(item("Zeilenumbruch", #selector(EditorWindowController.toggleWrap(_:)), "w", [.command, .option]))
         menu.addItem(item("Zeile löschen", #selector(EditorWindowController.deleteLine(_:)), "k", [.command, .shift]))
         return menu
