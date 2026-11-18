@@ -551,6 +551,8 @@ final class MainWindowController: NSWindowController {
         F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden
         Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf
         Ctrl-O Terminal ein/aus · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner
+        Menü Befehl: Chronik angesehener Dateien (Ziffern 1–9 öffnen) · Verzeichnis-Hotlist (Ziffern 1–9 springen) · Dateien/Verzeichnisse vergleichen
+        Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP und Archive neu ein
         Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste.
         """)
     }

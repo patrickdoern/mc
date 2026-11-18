@@ -19,7 +19,7 @@ final class DirectoryWatcher {
             let changed = Unmanaged<CFArray>.fromOpaque(paths).takeUnretainedValue() as? [String] ?? []
             if changed.contains(where: { watcher.isWatchedDirectory($0) }) { watcher.onChange() }
         }
-        guard let created = FSEventStreamCreate(nil, callback, &context, [self.path] as CFArray, FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0.4, FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes)) else { return }
+        guard let created = FSEventStreamCreate(nil, callback, &context, [self.path] as CFArray, FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0.4, FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagWatchRoot)) else { return }
         stream = created
         FSEventStreamSetDispatchQueue(created, .main)
         FSEventStreamStart(created)
