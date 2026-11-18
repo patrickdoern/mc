@@ -349,6 +349,9 @@ final class MainWindowController: NSWindowController {
             }
             editors.append(editor)
             editor.showWindow(nil)
+            if system is LocalFileSystem, !path.hasPrefix(NSTemporaryDirectory() + "moonlight-diff") {
+                Settings.viewedFiles = ViewedFiles.recording(ViewedFile(path: path, edited: !readOnly), in: Settings.viewedFiles)
+            }
         })
     }
 

@@ -220,6 +220,28 @@ extension MainWindowController {
         commandLine.replace(with: entries[result.choice])
     }
 
+    @objc func showViewedFiles(_ sender: Any?) {
+        let files = Settings.viewedFiles.filter { localSystem.exists($0.path) }
+        let menu = NSMenu()
+        for (index, file) in files.enumerated() {
+            let item = ClosureMenuItem("\(file.edited ? "F4" : "F3")  \(file.path)") { [unowned self] in
+                openEditor(system: localSystem, path: file.path, readOnly: !file.edited)
+            }
+            if index < 9 {
+                item.keyEquivalent = String(index + 1)
+                item.keyEquivalentModifierMask = []
+            }
+            menu.addItem(item)
+        }
+        if files.isEmpty {
+            menu.addItem(NSMenuItem(title: "Noch keine Dateien angesehen", action: nil, keyEquivalent: ""))
+        } else {
+            menu.addItem(.separator())
+            menu.addItem(ClosureMenuItem("Chronik leeren") { Settings.viewedFiles = [] })
+        }
+        popUp(menu, title: "Angesehene Dateien")
+    }
+
     @objc func showHotlist(_ sender: Any?) {
         let menu = NSMenu()
         let model = activePanel.model

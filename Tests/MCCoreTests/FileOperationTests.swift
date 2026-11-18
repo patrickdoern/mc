@@ -264,6 +264,29 @@ private func read(_ path: String) throws -> String {
     }
 }
 
+@Suite struct ViewedFilesTests {
+    @Test func recordsMostRecentFirstWithoutDuplicates() {
+        var files: [ViewedFile] = []
+        files = ViewedFiles.recording(ViewedFile(path: "/a", edited: false), in: files)
+        files = ViewedFiles.recording(ViewedFile(path: "/b", edited: true), in: files)
+        files = ViewedFiles.recording(ViewedFile(path: "/a", edited: true), in: files)
+        #expect(files == [ViewedFile(path: "/a", edited: true), ViewedFile(path: "/b", edited: true)])
+    }
+
+    @Test func capsTheListAtTheLimit() {
+        var files: [ViewedFile] = []
+        for index in 0..<(ViewedFiles.limit + 5) { files = ViewedFiles.recording(ViewedFile(path: "/f\(index)", edited: false), in: files) }
+        #expect(files.count == ViewedFiles.limit)
+        #expect(files.first?.path == "/f\(ViewedFiles.limit + 4)")
+    }
+
+    @Test func roundTripsThroughItsEncodedForm() {
+        let file = ViewedFile(path: "/Users/x/Mit Leerzeichen/a.txt", edited: true)
+        #expect(ViewedFile(encoded: file.encoded) == file)
+        #expect(ViewedFile(encoded: "kaputt") == nil)
+    }
+}
+
 @Suite struct HexDumpTests {
     @Test func rendersOffsetsBytesAndAscii() {
         let text = HexDump.render(Data("Hello, hex dump!\n\u{0}".utf8))

@@ -1,4 +1,5 @@
 import Foundation
+import MCCore
 
 enum Settings {
     private static let defaults = UserDefaults.standard
@@ -46,6 +47,11 @@ enum Settings {
     static var scheme: Int {
         get { defaults.integer(forKey: "scheme") }
         set { defaults.set(newValue, forKey: "scheme") }
+    }
+
+    static var viewedFiles: [ViewedFile] {
+        get { (defaults.stringArray(forKey: "viewedFiles") ?? []).compactMap(ViewedFile.init(encoded:)) }
+        set { defaults.set(newValue.map(\.encoded), forKey: "viewedFiles") }
     }
 
     static var hotlist: [String] {
