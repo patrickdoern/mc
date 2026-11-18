@@ -74,7 +74,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         textView.extraTrailingWidth = 24
         textView.onFunctionKey = { [weak self] number, shifted in self?.perform(functionKey: number, shifted: shifted) ?? false }
         textView.onDeleteLine = { [weak self] in self?.deleteLine(nil) }
-        textView.onEscape = { [weak self] in self?.close() }
+        textView.onEscape = { [weak self] in self?.window?.performClose(nil) }
         NotificationCenter.default.addObserver(self, selector: #selector(themeDidChange), name: Theme.didChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(textDidChange), name: NSText.didChangeNotification, object: textView)
     }
@@ -106,7 +106,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         case (1, _): showHelp()
         case (2, _) where readOnly: toggleWrap(nil)
         case (2, _): saveDocument(nil)
-        case (3, _) where readOnly: close()
+        case (3, _) where readOnly: window?.performClose(nil)
         case (3, _): toggleBlock()
         case (4, _) where readOnly: toggleHex(nil)
         case (4, _): replaceText(nil)
@@ -117,7 +117,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         case (7, true): findNext(nil)
         case (8, _) where readOnly: chooseEncoding(nil)
         case (8, _): deleteBlock()
-        case (10, _): close()
+        case (10, _): window?.performClose(nil)
         default: return false
         }
         return true
@@ -251,7 +251,9 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         let chosen = encodings[result.choice].1
         guard let text = String(data: rawData, encoding: chosen) else { return Dialogs.show(error: FileError("Die Datei lässt sich nicht als \(encodings[result.choice].0) lesen")) }
         encoding = chosen
+        let caret = textView.selectedRange().location
         textView.string = text
+        textView.setSelectedRange(NSRange(location: min(caret, (text as NSString).length), length: 0))
         applyHighlighting()
         if !readOnly { window?.isDocumentEdited = false }
     }
