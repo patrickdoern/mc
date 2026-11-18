@@ -71,7 +71,7 @@ final class MainWindowController: NSWindowController {
                 guard let self, let panel else { return }
                 self.handle(command, from: panel)
             }
-            panel.model.onFailure = { Dialogs.show(error: $0) }
+            panel.model.onFailure = { error in RunLoop.main.perform(inModes: [.common]) { Dialogs.show(error: error) } }
             panel.peer = { [unowned self, unowned panel] in panels.first { $0 !== panel }!.model }
             let redraw = panel.model.onChange
             panel.model.onChange = { [weak self] in

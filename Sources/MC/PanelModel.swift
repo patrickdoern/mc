@@ -97,6 +97,10 @@ final class PanelModel {
                     if !keepMarks { directorySizes = [:] }
                     rebuild(selecting: name)
                 case .failure(let error):
+                    if newSystem == nil, newPath == path, path != "/" {
+                        navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path))
+                        return
+                    }
                     onFailure?(error)
                 }
                 onChange?()
