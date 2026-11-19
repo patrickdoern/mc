@@ -400,11 +400,17 @@ final class MainWindowController: NSWindowController {
     @objc func goToPath(_ sender: Any?) {
         let model = activePanel.model
         guard let text = Dialogs.prompt(title: "Gehe zu", message: "Pfad:", value: model.path, confirm: "Gehen") else { return }
+        showFileList(activePanel)
         model.navigate(to: PosixPath.resolve(text, relativeTo: model.path, home: model.fileSystem.homePath))
     }
 
     @objc func goHome(_ sender: Any?) {
+        showFileList(activePanel)
         activePanel.model.navigate(to: NSHomeDirectory(), on: LocalFileSystem.shared)
+    }
+
+    private func showFileList(_ panel: PanelView) {
+        if panel.mode == .info || panel.mode == .quickView { panel.setMode(.list) }
     }
 
     func markPattern(select: Bool) {
