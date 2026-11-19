@@ -8,6 +8,22 @@
   <meta property="og:image" content="https://moonlight-commander.de/screenshot.png">
   <link rel="icon" href="/icon.png">
   <link rel="stylesheet" href="/style.css">
+  <!-- Matomo -->
+  <script>
+    var _paq = window._paq = window._paq || [];
+    /* ohne Cookies, damit kein Einwilligungsbanner nötig ist */
+    _paq.push(['disableCookies']);
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+      var u="https://metrics.doern.eu/";
+      _paq.push(['setTrackerUrl', u+'matomo.php']);
+      _paq.push(['setSiteId', '26']);
+      var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+      g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+  </script>
+  <!-- End Matomo Code -->
 </head>
 <body>
 <main>
@@ -16,7 +32,7 @@
 <p class="lead">Stand: November 2026</p>
 
 <h2>Kurz gesagt</h2>
-<p>Die App Moonlight Commander erfasst keine personenbezogenen Daten und sendet von sich aus nichts ins Netz. Diese Website setzt keine Cookies und misst keine Reichweite.</p>
+<p>Die App Moonlight Commander erfasst keine personenbezogenen Daten und sendet von sich aus nichts ins Netz. Diese Website setzt keine Cookies und misst ihre Reichweite anonym mit Matomo auf meinem eigenen Server.</p>
 
 <h2>Verantwortlicher</h2>
 <p>
@@ -36,8 +52,14 @@
 </ul>
 
 <h2>Diese Website</h2>
-<p>Die Website läuft auf einem eigenen Server. Sie verwendet keine Cookies, keine Analyse-Werkzeuge und lädt keine Inhalte von fremden Servern. Der Webserver führt keine Zugriffsprotokolle.</p>
+<p>Die Website läuft auf einem eigenen Server. Sie setzt keine Cookies und lädt keine Inhalte von Servern Dritter. Der Webserver führt keine Zugriffsprotokolle.</p>
 <p>Damit die Seite ausgeliefert werden kann, verarbeitet der Server beim Aufruf technisch zwangsläufig deine IP-Adresse. Sie wird nicht gespeichert. Nur wenn ein technischer Fehler auftritt (etwa ein abgebrochener Verbindungsaufbau), kann sie in der Fehlermeldung des Servers stehen. Rechtsgrundlage ist das berechtigte Interesse an einem sicheren Betrieb der Website (Art. 6 Abs. 1 lit. f DSGVO).</p>
+
+<h3>Reichweitenmessung mit Matomo</h3>
+<p>Ich nutze die Software Matomo, um zu sehen, wie oft die Seite aufgerufen wird. Matomo läuft auf meinem eigenen Server unter metrics.doern.eu; es gibt keinen externen Dienstleister, und die Daten werden nicht an Dritte weitergegeben. Matomo ist so eingerichtet, dass es keine Cookies setzt und die IP-Adresse sofort um zwei Bytes kürzt, sodass sie nicht mehr einer Person zugeordnet werden kann.</p>
+<p>Erfasst werden die aufgerufene Seite, die Seite, von der du kommst, Datum und Uhrzeit, ungefährer Standort (Land und Region aus der gekürzten IP-Adresse), Browser, Betriebssystem, Gerätetyp, Bildschirmauflösung und Sprache sowie Klicks auf ausgehende Links und Downloads. Rohdaten lösche ich nach 180 Tagen, danach bleiben nur zusammengefasste Statistiken. Rechtsgrundlage ist das berechtigte Interesse an einer bedarfsgerechten Gestaltung und Weiterentwicklung des Angebots (Art. 6 Abs. 1 lit. f DSGVO).</p>
+<p>Wenn dein Browser „Do Not Track“ sendet, misst Matomo deinen Besuch nicht. Du kannst der Messung außerdem hier widersprechen:</p>
+<iframe src="https://metrics.doern.eu/index.php?module=CoreAdminHome&amp;action=optOut&amp;language=de&amp;backgroundColor=&amp;fontColor=&amp;fontSize=&amp;fontFamily=" style="border:0; width:100%; height:200px;" title="Widerspruch gegen die Reichweitenmessung"></iframe>
 
 <h2>Kontakt per E-Mail</h2>
 <p>Wenn du mir schreibst, verarbeite ich deine E-Mail-Adresse und den Inhalt deiner Nachricht, um deine Anfrage zu beantworten (Art. 6 Abs. 1 lit. b bzw. f DSGVO). Ich lösche die Nachricht, wenn sie erledigt ist und keine gesetzlichen Aufbewahrungspflichten bestehen.</p>
