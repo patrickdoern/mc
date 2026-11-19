@@ -92,6 +92,10 @@ Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Pro
 
 `website/` enthält die statische Seite für moonlight-commander.de (Start, Impressum, Datenschutz, Lizenzen). `./scripts/deploy-website.sh` legt sie samt `build/mc.dmg` nach `/var/www/moonlight-commander.de` auf janus; das Caddyfile dort liefert sie per `file_server` aus. Ein neues Release: `dist.sh`, dann `deploy-website.sh`.
 
+## Entstehung
+
+Der Code ist mit KI-gestützter Softwareentwicklung (Claude Code von Anthropic) entstanden und wurde von Patrick Dörn konzipiert, geprüft und getestet.
+
 ## Lizenz
 
 MIT-Lizenz, siehe [LICENSE](LICENSE). Lizenzen der enthaltenen Drittsoftware stehen auf moonlight-commander.de/lizenzen.
