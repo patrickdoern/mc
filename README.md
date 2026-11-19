@@ -4,10 +4,10 @@ Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateiop
 
 ```bash
 ./scripts/bundle.sh
-open build/MC.app --args ~/Downloads ~/projects
+open "build/Moonlight Commander.app" --args ~/Downloads ~/projects
 ```
 
-Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch nach `vendor/` (nur Xcode und Netzwerk nötig). `./scripts/bundle.sh` erzeugt `build/MC.app`, `./scripts/install.sh` installiert sie nach `/Applications/Moonlight Commander.app`. Die App ist eine einzelne Datei ohne Homebrew, läuft ab macOS 14 auf Apple Silicon. Ohne `vendor/` greift `swift build` auf `brew install libssh2` zurück. Tests: `swift test`; mit der Umgebungsvariable `MC_SSH_CONFIG=<Datei>` liest die App SSH-Aliase, Schlüssel und `known_hosts` nur aus dieser Konfiguration statt aus `~/.ssh` (für gefahrlose Tests gegen lokale Server); die SFTP-Tests laufen nur mit `MC_TEST_SSH_DIR` (Ordner mit `clientkey`, sshd auf 127.0.0.1:2222).
+Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch nach `vendor/` (nur Xcode und Netzwerk nötig). `./scripts/bundle.sh` erzeugt `build/Moonlight Commander.app`, `./scripts/install.sh` installiert sie nach `/Applications/Moonlight Commander.app`. Die App ist eine einzelne Datei ohne Homebrew, läuft ab macOS 14 auf Apple Silicon. Ohne `vendor/` greift `swift build` auf `brew install libssh2` zurück. Tests: `swift test`; mit der Umgebungsvariable `MC_SSH_CONFIG=<Datei>` liest die App SSH-Aliase, Schlüssel und `known_hosts` nur aus dieser Konfiguration statt aus `~/.ssh` (für gefahrlose Tests gegen lokale Server); die SFTP-Tests laufen nur mit `MC_TEST_SSH_DIR` (Ordner mit `clientkey`, sshd auf 127.0.0.1:2222).
 
 ## Kommandozeile
 
@@ -82,7 +82,7 @@ Nicht enthalten: FTP/Shell-Verbindungen, Codierung, Darstellungsbits, Tasten ler
 MC_SIGN_IDENTITY="Developer ID Application: …" MC_NOTARY_PROFILE=<profil> ./scripts/dist.sh
 ```
 
-Erzeugt ein signiertes, notarisiertes `build/Moonlight-Commander.dmg`. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
+Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Programme“ zum Hineinziehen. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
 
 ### Auf einen anderen Mac kopieren
 

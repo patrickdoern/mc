@@ -13,7 +13,12 @@ enum MainMenu {
 
     private static func appMenu() -> NSMenu {
         let menu = NSMenu(title: "Moonlight Commander")
-        menu.addItem(item("Über Moonlight Commander", #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
+        let about = item("Über Moonlight Commander", #selector(AboutPanel.show))
+        about.target = AboutPanel.shared
+        menu.addItem(about)
+        let imprint = item("Impressum …", #selector(AboutPanel.openImprint))
+        imprint.target = AboutPanel.shared
+        menu.addItem(imprint)
         menu.addItem(.separator())
         menu.addItem(item("Moonlight Commander ausblenden", #selector(NSApplication.hide(_:)), "h"))
         menu.addItem(item("Andere ausblenden", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]))

@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 ./scripts/bundle.sh
 target="/Applications/Moonlight Commander.app"
 rm -rf "/Applications/macOS Commander.app" "$target"
-ditto build/MC.app "$target"
+ditto "build/Moonlight Commander.app" "$target"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$target"
 mkdir -p "$HOME/.local/bin"
 install -m 755 scripts/mc scripts/mcedit "$HOME/.local/bin/"

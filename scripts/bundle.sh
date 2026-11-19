@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 identity="${MC_SIGN_IDENTITY:--}"
 swift build -c release
 bin="$(swift build -c release --show-bin-path)/MC"
-app="build/MC.app"
+app="build/Moonlight Commander.app"
 frameworks="$app/Contents/Frameworks"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$frameworks"
