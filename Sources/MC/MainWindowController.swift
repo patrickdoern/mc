@@ -226,7 +226,8 @@ final class MainWindowController: NSWindowController {
         let panel = activePanel
         let model = panel.model
         let interaction = interaction
-        let showList = { if panel.mode == .info || panel.mode == .quickView { panel.setMode(.list) } }
+        let other = inactivePanel
+        let showList = { for shown in [panel, other] where shown.mode == .info || shown.mode == .quickView { shown.setMode(.list) } }
         let remember = { UserDefaults.standard.set(([text] + history.filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
         if FTPTarget.isFTP(text) {
             guard let target = FTPTarget.parse(text) else { return Dialogs.show(error: FileError("Ungültige FTP-Adresse: \(text)")) }
