@@ -1,6 +1,6 @@
 # Moonlight Commander
 
-Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateioperationen, SFTP und ein mcedit-artiger Editor.
+Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateioperationen, SFTP, FTP/FTPS und ein mcedit-artiger Editor.
 
 ```bash
 ./scripts/bundle.sh
@@ -31,7 +31,7 @@ Beides funktioniert auch bei laufender App. Ordner lassen sich außerdem aufs Do
 | Enter / Backspace | öffnen / eine Ebene hoch |
 | Leertaste, Einfg, ⇧↑↓ | markieren; `+` `-` Muster, `*` umkehren |
 | Ctrl-S | Schnellsuche |
-| ⌘L / ⇧⌘H / ⌘K | Pfad / Home / SFTP verbinden |
+| ⌘L / ⇧⌘H / ⌘K | Pfad / Home / SFTP oder FTP verbinden |
 | F2 | Benutzermenü (Einträge aus `~/.config/moonlight-commander/menu`, Format wie mc, Makros `%f %d %s %D %F`) |
 | F3 / F4 | Anzeigen / Bearbeiten (⇧F4 neue Datei), beides mit Syntax-Highlighting |
 | F5 / F6 | Kopieren / Verschieben (⇧F6 Umbenennen) |
@@ -48,7 +48,11 @@ Beim Beenden merkt sich die App pro Panel Ordner, Sortierung, Listenformat und A
 
 Alle Aktionen stehen auch im Menü (⌥3 bis ⌥8). Editor: F2 Sichern, F3 Block markieren, F4 Ersetzen, F5/F6/F8 Block kopieren/verschieben/löschen, F7 Suchen, Ctrl-Y Zeile löschen, F10/Esc Ende.
 
-SFTP: ⌘K (oder Menü Links/Rechts → SFTP-Verbindung), dann `user@host[:port][/pfad]` oder ein SSH-Alias. Zurück zum lokalen Dateisystem mit ⇧⌘H. Beim Passwort-Dialog lässt sich das Passwort im Schlüsselbund sichern (Befehl → Gespeicherte Passwörter zum Vergessen). Mit `MC_SIGN_IDENTITY="Apple Development: …" ./scripts/bundle.sh` signiert, fragt der Schlüsselbund nach einem Neubau nicht erneut.
+SFTP: ⌘K (oder Menü Links/Rechts → SFTP-Verbindung), dann `user@host[:port][/pfad]` oder ein SSH-Alias. Zurück zum lokalen Dateisystem mit ⇧⌘H.
+
+FTP: ebenfalls ⌘K, mit `ftp://[user@]host[:port][/pfad]` (Standard: TLS, wenn der Server es anbietet) oder `ftps://…` (implizites TLS, Port 990). Ohne Nutzer wird anonym angemeldet, Passwörter landen wie bei SFTP optional im Schlüsselbund. Dateien laufen über temporäre Dateien, Symlinks und Zeitstempel setzen gehen nicht. Die FTP-Test läuft nur mit `MC_TEST_FTP_PORT` (anonymer, schreibbarer Server auf 127.0.0.1).
+
+Remote-Terminal: Ctrl-O auf einem SFTP-Panel öffnet eine ssh-Sitzung im Ordner des Panels (je Server eine eigene, das lokale Terminal bleibt daneben bestehen). Beim Passwort-Dialog lässt sich das Passwort im Schlüsselbund sichern (Befehl → Gespeicherte Passwörter zum Vergessen). Mit `MC_SIGN_IDENTITY="Apple Development: …" ./scripts/bundle.sh` signiert, fragt der Schlüsselbund nach einem Neubau nicht erneut.
 
 ## Weitere Funktionen
 
@@ -56,7 +60,7 @@ SFTP: ⌘K (oder Menü Links/Rechts → SFTP-Verbindung), dann `user@host[:port]
 - **Archive als Ordner:** zip, tar, tar.gz/bz2/xz/zst, 7z, rar, iso und weitere öffnen mit Enter (schreibgeschützt, Kopieren nach außen und Ansehen gehen).
 - **Panelisieren:** Suchergebnisse („Als Panel anzeigen“) oder die Ausgabe eines Befehls (Befehl → Externes Panelisieren) erscheinen als Panel, in dem man kopieren, ansehen und löschen kann.
 - **Mehrspaltig:** Listenformat „Kurz“ zeigt 2 bis 3 Spalten.
-- **Live-Aktualisierung:** Lokale Panels laden sich selbst neu, sobald sich ihr Verzeichnis von außen ändert; Cursor und Markierungen bleiben erhalten. Bei SFTP und Archiven bleibt ⌘R.
+- **Live-Aktualisierung:** Lokale Panels laden sich selbst neu, sobald sich ihr Verzeichnis von außen ändert; Cursor und Markierungen bleiben erhalten. Bei SFTP, FTP und Archiven bleibt ⌘R.
 - **Hintergrund:** Lange Operationen lassen sich im Fortschrittsdialog in den Hintergrund schicken; Status rechts in der Kommandozeile, Abbrechen unter Befehl → Hintergrundaufgaben.
 - **Dateizuordnung:** `~/.config/moonlight-commander/ext` legt pro Muster fest, was Enter (`open`), F3 (`view`) und F4 (`edit`) tun; Beispiele stehen in der Datei, nach „Befehl → Dateizuordnung bearbeiten“.
 - **Viewer (F3):** F2 Zeilenumbruch, F4 Hex-Ansicht, F5 Gehe zu Zeile, F7 Suche (Regex möglich), F8 Codierung wählen, F9 Vorschau/Quelltext.
@@ -65,7 +69,7 @@ SFTP: ⌘K (oder Menü Links/Rechts → SFTP-Verbindung), dann `user@host[:port]
 
 ## Menüzeile (F9, Pfeiltasten wechseln zwischen den Menüs, Enter wählt, Esc schließt)
 
-- **Links/Rechts:** Dateiliste, Schnellansicht, Info, Baum, Listenformat, Sortierreihenfolge, Filter, SFTP, Pfad, Anordnen.
+- **Links/Rechts:** Dateiliste, Schnellansicht, Info, Baum, Listenformat, Sortierreihenfolge, Filter, SFTP/FTP, Pfad, Anordnen.
 - **Datei:** Anzeigen, Bearbeiten, Kopieren, Chmod, Link, symbolischer Link (auch relativ, bearbeitbar), Chown, Umbenennen, Löschen, Gruppenauswahl.
 - **Befehl:** Benutzermenü, Verzeichnisbaum, Datei suchen (Name und Inhalt), Verzeichnisse vergleichen (markiert Unterschiede und meldet die Anzahl), Dateien vergleichen (eingebauter Diff im Viewer, funktioniert ohne Xcode; der Cursor im anderen Panel darf auch nur der gleiche Dateiname sein) und optional in FileMerge, Verzeichnisgrößen, Befehlschronik, Chronik angesehener Dateien (die letzten 30 lokalen Dateien aus Viewer und Editor, die ersten neun mit Ziffern 1 bis 9 wieder öffnen), Hotlist (⌘D, die ersten neun Einträge springt man direkt mit den Ziffern 1 bis 9 an), aktive Verbindungen.
 - **Optionen:** Konfiguration, Layout, Paneloptionen, Nachfragen, Aussehen (Norton Blau, Dunkel, Hell).

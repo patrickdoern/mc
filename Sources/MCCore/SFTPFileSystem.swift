@@ -4,6 +4,7 @@ import Foundation
 public final class SFTPFileSystem: FileSystem {
     public let identity: String
     public private(set) var homePath = "/"
+    public let settings: SSHSettings
     let session: SSHSession
     let sftp: OpaquePointer
     let lock = NSRecursiveLock()
@@ -13,6 +14,7 @@ public final class SFTPFileSystem: FileSystem {
     private static let typeMask: UInt = 0o170000
 
     public init(settings: SSHSettings, interaction: SSHInteraction) throws {
+        self.settings = settings
         identity = "sftp://\(settings.user)@\(settings.hostName):\(settings.port)"
         session = try SSHSession(settings: settings, interaction: interaction)
         guard let sftp = libssh2_sftp_init(session.handle) else {

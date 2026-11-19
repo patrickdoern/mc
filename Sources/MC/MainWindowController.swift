@@ -12,8 +12,10 @@ final class MainWindowController: NSWindowController {
     private(set) var activePanel: PanelView
     private var menuLine: MenuLineView?
     private var promptLine: ShellInputView?
+    private var hintLine: HintLineView?
     private let body = NSView()
     private var terminal: ShellTerminal?
+    private var terminals: [String: ShellTerminal] = [:]
     private let quickLook = QuickLook()
     private var keyBar: KeyBar?
     var activeFind: FindDialog?
@@ -63,11 +65,13 @@ final class MainWindowController: NSWindowController {
         self.keyBar = keyBar
         let promptLine = ShellInputView(commandLine: commandLine) { [unowned self] in prompt }
         self.promptLine = promptLine
+        let hintLine = HintLineView()
+        self.hintLine = hintLine
         panelStack.translatesAutoresizingMaskIntoConstraints = false
         body.addSubview(panelStack)
         pin(panelStack, to: body)
         body.setContentHuggingPriority(.defaultLow, for: .vertical)
-        let content = NSStackView(views: [menuLine, body, promptLine, keyBar])
+        let content = NSStackView(views: [menuLine, body, hintLine, promptLine, keyBar])
         content.orientation = .vertical
         content.spacing = 0
         window.contentView = content
@@ -132,6 +136,7 @@ final class MainWindowController: NSWindowController {
         panelStack.orientation = Settings.verticalLayout ? .vertical : .horizontal
         menuLine?.isHidden = !Settings.showMenuLine
         promptLine?.isHidden = !Settings.showCommandLine || terminal?.isHidden == false
+        hintLine?.isHidden = !Settings.showHints || terminal?.isHidden == false
         keyBar?.isHidden = !Settings.showKeyBar
     }
 
@@ -217,16 +222,29 @@ final class MainWindowController: NSWindowController {
 
     @objc func connect(_ sender: Any?) {
         let history = UserDefaults.standard.stringArray(forKey: Self.connectionHistoryKey) ?? []
-        guard let text = Dialogs.prompt(title: "SFTP-Verbindung", message: "user@host[:port][/pfad] oder SSH-Alias:", value: history.first ?? "", confirm: "Verbinden", history: history),
-              let target = SSHTarget.parse(text) else { return }
+        guard let text = Dialogs.prompt(title: "Verbindung", message: "user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:", value: history.first ?? "", confirm: "Verbinden", history: history) else { return }
         let model = activePanel.model
         let interaction = interaction
+        let remember = { UserDefaults.standard.set(([text] + history.filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
+        if FTPTarget.isFTP(text) {
+            guard let target = FTPTarget.parse(text) else { return Dialogs.show(error: FileError("Ungültige FTP-Adresse: \(text)")) }
+            let connection = Box<FTPFileSystem>()
+            runner.run(title: "Verbinde mit \(target.displayName) …", { _ in
+                connection.value = try FTPFileSystem(target: target, interaction: interaction)
+            }, completion: {
+                guard let system = connection.value else { return }
+                remember()
+                model.navigate(to: target.path ?? system.homePath, on: system)
+            })
+            return
+        }
+        guard let target = SSHTarget.parse(text) else { return }
         let connection = Box<SFTPFileSystem>()
         runner.run(title: "Verbinde mit \(target.displayName) …", { _ in
             connection.value = try SFTPFileSystem(settings: try SSHSettings.resolve(target), interaction: interaction)
         }, completion: {
             guard let system = connection.value else { return }
-            UserDefaults.standard.set(([text] + history.filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey)
+            remember()
             model.navigate(to: target.path ?? system.homePath, on: system)
         })
     }
@@ -391,9 +409,17 @@ final class MainWindowController: NSWindowController {
 
     private var prompt: String {
         let model = activePanel.model
-        guard model.isLocal else { return model.title }
-        return model.path.hasPrefix(NSHomeDirectory()) ? "~" + model.path.dropFirst(NSHomeDirectory().count) : model.path
+        guard model.isLocal else { return model.title + ">" }
+        let path = model.path.hasPrefix(NSHomeDirectory()) ? "~" + model.path.dropFirst(NSHomeDirectory().count) : model.path
+        return "\(Self.account):\(path)$"
     }
+
+    private static let account: String = {
+        var buffer = [CChar](repeating: 0, count: 256)
+        gethostname(&buffer, buffer.count)
+        let host = String(cString: buffer).split(separator: ".").first.map(String.init) ?? "localhost"
+        return "\(NSUserName())@\(host)"
+    }()
 
     private func completeCommand() {
         let model = activePanel.model
@@ -477,14 +503,27 @@ final class MainWindowController: NSWindowController {
 
     private func showTerminal() {
         let model = activePanel.model
-        if let terminal {
-            if model.isLocal { terminal.follow(model.path) }
+        let remote = model.fileSystem as? SFTPFileSystem
+        let identity = remote?.identity ?? "local"
+        if let shown = terminal, shown.identity != identity { shown.isHidden = true }
+        if let existing = terminals[identity] {
+            terminal = existing
+            if remote == nil, model.isLocal { existing.follow(model.path) }
         } else {
-            let created = ShellTerminal(directory: model.isLocal ? model.path : NSHomeDirectory())
-            created.onExit = { [weak self] in self?.terminalExited() }
+            let created: ShellTerminal
+            if let remote {
+                created = ShellTerminal(identity: identity, sshArguments: remote.settings.sshArguments, directory: model.path)
+            } else {
+                created = ShellTerminal(directory: model.isLocal ? model.path : NSHomeDirectory())
+            }
+            created.onExit = { [weak self, weak created] in
+                guard let self, let created else { return }
+                terminalExited(created)
+            }
             created.translatesAutoresizingMaskIntoConstraints = false
             body.addSubview(created)
             pin(created, to: body)
+            terminals[identity] = created
             terminal = created
         }
         panelStack.isHidden = true
@@ -501,8 +540,10 @@ final class MainWindowController: NSWindowController {
         reloadPanels()
     }
 
-    private func terminalExited() {
-        terminal?.removeFromSuperview()
+    private func terminalExited(_ exited: ShellTerminal) {
+        exited.removeFromSuperview()
+        terminals[exited.identity] = nil
+        guard terminal === exited else { return }
         terminal = nil
         panelStack.isHidden = false
         applyLayout()
@@ -526,7 +567,9 @@ final class MainWindowController: NSWindowController {
             model.navigate(to: PosixPath.resolve(argument.isEmpty ? "~" : argument, relativeTo: model.path, home: model.fileSystem.homePath))
             return
         }
-        guard model.isLocal else { return Dialogs.show(error: FileError("Befehle laufen nur in lokalen Ordnern")) }
+        guard model.isLocal else {
+            return Dialogs.show(error: FileError(model.fileSystem is SFTPFileSystem ? "Befehle laufen nur in lokalen Ordnern. Ctrl-O öffnet ein Terminal auf dem Server." : "Befehle laufen nur in lokalen Ordnern"))
+        }
         runInTerminal(command)
     }
 
@@ -548,13 +591,13 @@ final class MainWindowController: NSWindowController {
         Dialogs.info(title: "Tastenbelegung", message: """
         Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch
         Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren
-        Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP verbinden
+        Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)
         F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren · F6 Verschieben (⇧F6 Umbenennen)
         F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden
         Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf
-        Ctrl-O Terminal ein/aus · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner
+        Ctrl-O Terminal ein/aus (auf SFTP-Panels: ssh-Sitzung auf dem Server) · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner
         Menü Befehl: Chronik angesehener Dateien (Ziffern 1–9 öffnen) · Verzeichnis-Hotlist ⌘D (Ziffern 1–9 springen) · Dateien/Verzeichnisse vergleichen
-        Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP und Archive neu ein
+        Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP, FTP und Archive neu ein
         Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste.
         """)
     }

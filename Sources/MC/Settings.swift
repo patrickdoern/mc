@@ -44,6 +44,11 @@ enum Settings {
         set { defaults.set(newValue, forKey: "showKeyBar") }
     }
 
+    static var showHints: Bool {
+        get { defaults.object(forKey: "showHints") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "showHints") }
+    }
+
     static var scheme: Int {
         get { defaults.integer(forKey: "scheme") }
         set { defaults.set(newValue, forKey: "scheme") }

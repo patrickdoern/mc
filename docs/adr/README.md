@@ -13,3 +13,4 @@ Entscheidungen, die nicht aus dem Code ablesbar sind. Ein akzeptiertes ADR wird 
 | [0007](0007-live-aktualisierung-nur-fuer-lokale-panels.md) | Nur lokale Panels aktualisieren sich selbst, über FSEvents | Accepted |
 | [0008](0008-sftp-passwoerter-im-schluesselbund.md) | SFTP-Passwörter liegen ausschließlich im macOS-Schlüsselbund | Accepted |
 | [0009](0009-tastenkuerzel-muessen-auf-deutscher-tastatur-gehen.md) | Eigene Tastenkürzel müssen auf einer deutschen Tastatur direkt erreichbar sein | Accepted |
+| [0010](0010-ftp-ueber-libcurl-remote-terminal-ueber-ssh.md) | FTP läuft über das System-libcurl, das Remote-Terminal über /usr/bin/ssh | Accepted |

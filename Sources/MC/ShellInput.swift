@@ -87,7 +87,7 @@ final class ShellInputView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         Theme.commandBackground.setFill()
         bounds.fill()
-        let prompt = promptProvider() + "> "
+        let prompt = promptProvider() + " "
         let attributes: [NSAttributedString.Key: Any] = [.font: Theme.font, .foregroundColor: Theme.commandText]
         let available = Int((bounds.width - 12) / Theme.font.maximumAdvancement.width) - 1
         let visible = String((prompt + commandLine.text).suffix(max(available, 1)))

@@ -24,7 +24,7 @@ enum MainMenu {
 
     private static func fileMenu() -> NSMenu {
         let menu = NSMenu(title: "Datei")
-        menu.addItem(item("SFTP verbinden …", #selector(MainWindowController.connect(_:)), "k"))
+        menu.addItem(item("Verbinden (SFTP/FTP) …", #selector(MainWindowController.connect(_:)), "k"))
         menu.addItem(item("Gehe zu Pfad …", #selector(MainWindowController.goToPath(_:)), "l"))
         menu.addItem(item("Home-Ordner", #selector(MainWindowController.goHome(_:)), "h", [.command, .shift]))
         menu.addItem(.separator())

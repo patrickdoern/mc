@@ -52,6 +52,15 @@ public struct SSHSettings {
     public let identityAgent: String?
     public let knownHostsFile: String
 
+    /// Argumente für `/usr/bin/ssh`, die dieselbe Verbindung wie das SFTP-Panel aufbauen.
+    public var sshArguments: [String] {
+        var arguments = ["-p", String(port), "-l", user]
+        for file in identityFiles { arguments += ["-i", file] }
+        if let identityAgent { arguments += ["-o", "IdentityAgent=" + identityAgent] }
+        arguments.append(hostName)
+        return arguments
+    }
+
     public static func resolve(_ target: SSHTarget) throws -> SSHSettings {
         var arguments = ["-G"]
         if let config = ProcessInfo.processInfo.environment["MC_SSH_CONFIG"] { arguments += ["-F", config] }

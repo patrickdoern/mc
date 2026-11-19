@@ -19,9 +19,10 @@ let package = Package(
     ],
     targets: [
         .systemLibrary(name: "CLibSSH2"),
+        .systemLibrary(name: "CCurl"),
         .target(
             name: "MCCore",
-            dependencies: ["CLibSSH2"],
+            dependencies: ["CLibSSH2", "CCurl"],
             swiftSettings: headerSearch,
             linkerSettings: [.unsafeFlags(["-L" + libraryPath])] + sshLibraries
         ),

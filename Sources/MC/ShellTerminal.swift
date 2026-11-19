@@ -3,14 +3,26 @@ import SwiftTerm
 
 final class ShellTerminal: LocalProcessTerminalView, LocalProcessTerminalViewDelegate {
     var onExit: (() -> Void)?
-    init(directory: String) {
+    let identity: String
+
+    convenience init(directory: String) {
+        self.init(identity: "local", executable: "/bin/zsh", args: ["-l", "-c", "cd \(Shell.quote(directory)) && exec /bin/zsh -l"])
+    }
+
+    /// Interaktive ssh-Sitzung im Ordner des SFTP-Panels.
+    convenience init(identity: String, sshArguments: [String], directory: String) {
+        self.init(identity: identity, executable: "/usr/bin/ssh", args: ["-t"] + sshArguments + ["cd \(Shell.quote(directory)) 2>/dev/null; exec \"${SHELL:-/bin/sh}\" -l"])
+    }
+
+    private init(identity: String, executable: String, args: [String]) {
+        self.identity = identity
         super.init(frame: .zero)
         processDelegate = self
         font = Theme.font
         nativeBackgroundColor = .black
         nativeForegroundColor = NSColor(white: 0.85, alpha: 1)
         let environment = Terminal.getEnvironmentVariables(termName: "xterm-256color")
-        startProcess(executable: "/bin/zsh", args: ["-l", "-c", "cd \(Shell.quote(directory)) && exec /bin/zsh -l"], environment: environment, execName: nil)
+        startProcess(executable: executable, args: args, environment: environment, execName: nil)
     }
 
     required init?(coder: NSCoder) { fatalError() }

@@ -376,12 +376,14 @@ extension MainWindowController {
             ("Panels untereinander statt nebeneinander", Settings.verticalLayout),
             ("Menüzeile anzeigen", Settings.showMenuLine),
             ("Kommandozeile anzeigen", Settings.showCommandLine),
+            ("Tipps anzeigen", Settings.showHints),
             ("Funktionsleiste anzeigen", Settings.showKeyBar),
         ]) else { return }
         Settings.verticalLayout = result.checks[0]
         Settings.showMenuLine = result.checks[1]
         Settings.showCommandLine = result.checks[2]
-        Settings.showKeyBar = result.checks[3]
+        Settings.showHints = result.checks[3]
+        Settings.showKeyBar = result.checks[4]
         applyLayout()
     }
 
