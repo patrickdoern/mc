@@ -223,8 +223,10 @@ final class MainWindowController: NSWindowController {
     @objc func connect(_ sender: Any?) {
         let history = UserDefaults.standard.stringArray(forKey: Self.connectionHistoryKey) ?? []
         guard let text = Dialogs.prompt(title: "Verbindung", message: "user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:", value: history.first ?? "", confirm: "Verbinden", history: history) else { return }
-        let model = activePanel.model
+        let panel = activePanel
+        let model = panel.model
         let interaction = interaction
+        let showList = { if panel.mode == .info || panel.mode == .quickView { panel.setMode(.list) } }
         let remember = { UserDefaults.standard.set(([text] + history.filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
         if FTPTarget.isFTP(text) {
             guard let target = FTPTarget.parse(text) else { return Dialogs.show(error: FileError("Ungültige FTP-Adresse: \(text)")) }
@@ -234,6 +236,7 @@ final class MainWindowController: NSWindowController {
             }, completion: {
                 guard let system = connection.value else { return }
                 remember()
+                showList()
                 model.navigate(to: target.path ?? system.homePath, on: system)
             })
             return
@@ -245,6 +248,7 @@ final class MainWindowController: NSWindowController {
         }, completion: {
             guard let system = connection.value else { return }
             remember()
+            showList()
             model.navigate(to: target.path ?? system.homePath, on: system)
         })
     }
