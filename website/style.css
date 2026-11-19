@@ -1,0 +1,55 @@
+:root {
+  --bg: #fdfbfb;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --accent: #0a66d9;
+  --line: #e5e5ea;
+  --card: #f4f4f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161617;
+    --text: #f5f5f7;
+    --muted: #a1a1a6;
+    --accent: #4da3ff;
+    --line: #2c2c2e;
+    --card: #1f1f21;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+main { max-width: 720px; margin: 0 auto; padding: 48px 16px 32px; }
+header { text-align: center; margin-bottom: 32px; }
+header img { width: 128px; height: 128px; }
+h1 { font-size: 2.2em; margin: 8px 0 4px; letter-spacing: -0.02em; }
+h2 { font-size: 1.25em; margin-top: 2em; }
+h1, h2, h3 { text-wrap: balance; }
+.lead { color: var(--muted); font-size: min(1.15em, 4.4vw); margin: 0; text-wrap: balance; }
+a { color: var(--accent); }
+.download { text-align: center; margin: 28px 0 8px; }
+.button {
+  display: inline-block; padding: 12px 28px; border-radius: 12px;
+  background: var(--accent); color: #fff; text-decoration: none; font-weight: 600;
+}
+.button:hover { filter: brightness(1.1); }
+.note { color: var(--muted); font-size: 0.9em; text-align: center; margin: 8px 0 0; }
+.shot { display: block; width: 100%; height: auto; border-radius: 10px; margin: 32px 0 0; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25); }
+.features { list-style: none; padding: 0; display: grid; gap: 12px; }
+.features li { background: var(--card); border-radius: 12px; padding: 12px 16px; }
+.features strong { display: block; }
+kbd { font: inherit; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; }
+td { padding: 6px 0; border-bottom: 1px solid var(--line); }
+td:last-child { text-align: right; }
+pre { white-space: pre-wrap; background: var(--card); border-radius: 8px; padding: 12px 16px; font-size: 0.8em; line-height: 1.4; overflow-wrap: anywhere; }
+footer {
+  max-width: 720px; margin: 0 auto; padding: 24px 16px 48px;
+  border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9em;
+  display: flex; gap: 16px; flex-wrap: wrap;
+}
+footer a { color: inherit; }

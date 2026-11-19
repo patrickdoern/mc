@@ -87,3 +87,7 @@ Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Pro
 ### Auf einen anderen Mac kopieren
 
 `/Applications/Moonlight Commander.app` per `rsync`, `scp` oder USB-Stick kopieren, dann startet sie direkt. Kommt sie per AirDrop, Download oder Cloud, markiert macOS sie als Quarantäne, und Gatekeeper blockiert sie ohne Notarisierung. Dann einmal `xattr -dr com.apple.quarantine "/Applications/Moonlight Commander.app"` ausführen.
+
+## Webseite
+
+`website/` enthält die statische Seite für moonlight-commander.de (Start, Impressum, Datenschutz, Lizenzen). `./scripts/deploy-website.sh` legt sie samt `build/mc.dmg` nach `/var/www/moonlight-commander.de` auf janus; das Caddyfile dort liefert sie per `file_server` aus. Ein neues Release: `dist.sh`, dann `deploy-website.sh`.
