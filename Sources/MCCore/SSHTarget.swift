@@ -54,7 +54,7 @@ public struct SSHSettings {
 
     /// Argumente für `/usr/bin/ssh`, die dieselbe Verbindung wie das SFTP-Panel aufbauen.
     public var sshArguments: [String] {
-        var arguments = ["-p", String(port), "-l", user]
+        var arguments = ["-p", String(port), "-l", user, "-o", "UserKnownHostsFile=" + knownHostsFile]
         for file in identityFiles { arguments += ["-i", file] }
         if let identityAgent { arguments += ["-o", "IdentityAgent=" + identityAgent] }
         arguments.append(hostName)
