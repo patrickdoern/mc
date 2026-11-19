@@ -1,0 +1,11 @@
+name: Wunsch oder Idee
+description: Eine Funktion, die du dir wünschst
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idee
+    attributes:
+      label: Was wünschst du dir?
+      description: Beschreibe, was du erreichen möchtest.
+    validations:
+      required: true

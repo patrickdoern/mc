@@ -1,0 +1,39 @@
+name: Fehler melden
+description: Etwas funktioniert nicht wie erwartet
+labels: [bug]
+body:
+  - type: textarea
+    id: was
+    attributes:
+      label: Was ist passiert?
+      description: Was hast du erwartet, was ist stattdessen geschehen?
+    validations:
+      required: true
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Schritte zum Nachstellen
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App-Version
+      description: Zu sehen unter „Über Moonlight Commander“.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS-Version und Mac-Typ
+      placeholder: macOS 15.2, MacBook Air M2
+    validations:
+      required: true
+  - type: textarea
+    id: weiteres
+    attributes:
+      label: Weiteres
+      description: Screenshots, Fehlermeldungen. Bitte keine Passwörter oder private Pfade.

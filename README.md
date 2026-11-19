@@ -92,6 +92,10 @@ Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Pro
 
 `website/` enthält die statische Seite für moonlight-commander.de (Start, Impressum, Datenschutz, Lizenzen). `./scripts/deploy-website.sh` legt sie nach `/var/www/moonlight-commander.de` auf janus; das Caddyfile dort liefert sie per `file_server` aus. Der Download-Button der Seite zeigt auf das neueste GitHub-Release. Ein neues Release: `dist.sh`, dann `gh release create vX.Y build/mc.dmg --generate-notes`.
 
+## Fehler und Wünsche
+
+Bitte als [Issue](https://github.com/patrickdoern/mc/issues/new/choose) melden, mit App- und macOS-Version und den Schritten zum Nachstellen.
+
 ## Entstehung
 
 Der Code ist mit KI-gestützter Softwareentwicklung (Claude Code von Anthropic) entstanden und wurde von Patrick Dörn konzipiert, geprüft und getestet.
