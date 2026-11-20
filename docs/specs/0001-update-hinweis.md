@@ -1,6 +1,6 @@
 # 0001: Hinweis auf neue Versionen bei GitHub
 
-Status: Ready
+Status: Done
 
 ## Ziel
 Die installierte App merkt, dass bei GitHub ein neueres Release vorliegt, und zeigt einen Hinweis mit Weg zum Download. Die Prüfung läuft nur, wenn der Nutzer das erlaubt hat, oder auf ausdrücklichen Wunsch per Menüpunkt.
@@ -51,4 +51,4 @@ Checks nach jedem Task: `swift build` und `swift test` (keine Checks-Sektion in 
 
 - [x] T1: Update-Logik in `MCCore` (R1, R2, R10): `UpdateCheck.swift` mit Abruf, JSON-Parsing, Versionsvergleich, `UpdateCheckTests.swift`. Dateien: `Sources/MCCore/UpdateCheck.swift`, `Tests/MCCoreTests/UpdateCheckTests.swift`.
 - [x] T2: Einbindung in die App (R3–R8, R11): Einstellungen (Zustimmung, Zeitpunkt, angezeigte Version), Erstfrage und Start-Prüfung im `AppDelegate`, Update-Dialog, Menüpunkt „Nach Updates suchen …“, Option in den Einstellungen. Dateien: `Sources/MC/Settings.swift`, `AppDelegate.swift`, `Dialogs.swift`, `MainMenu.swift` bzw. `MainWindowController+Menus.swift`.
-- [ ] T3: Doku (R9): Datenschutzseite, README und Website-Hinweise korrigieren, neues ADR 0011 samt Eintrag in `docs/adr/README.md`. Dateien: `website/datenschutz/index.html`, `README.md`, `docs/adr/`.
+- [x] T3: Doku (R9): Datenschutzseite, README und Website-Hinweise korrigieren, neues ADR 0011 samt Eintrag in `docs/adr/README.md`. Dateien: `website/datenschutz/index.html`, `README.md`, `docs/adr/`.
