@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !pendingPaths.isEmpty { mainWindow?.open(paths: pendingPaths) }
         pendingEdits.forEach { mainWindow?.edit(path: $0) }
         NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.async { UpdateNotifier.shared.checkOnLaunch() }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

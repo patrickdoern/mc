@@ -16,6 +16,9 @@ enum MainMenu {
         let about = item("Über Moonlight Commander", #selector(AboutPanel.show))
         about.target = AboutPanel.shared
         menu.addItem(about)
+        let updates = item("Nach Updates suchen …", #selector(UpdateNotifier.checkNow))
+        updates.target = UpdateNotifier.shared
+        menu.addItem(updates)
         let imprint = item("Impressum …", #selector(AboutPanel.openImprint))
         imprint.target = AboutPanel.shared
         menu.addItem(imprint)

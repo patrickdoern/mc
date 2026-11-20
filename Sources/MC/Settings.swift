@@ -1,6 +1,12 @@
 import Foundation
 import MCCore
 
+enum UpdateConsent: String {
+    case unasked
+    case enabled
+    case disabled
+}
+
 enum Settings {
     private static let defaults = UserDefaults.standard
 
@@ -57,6 +63,21 @@ enum Settings {
     static var viewedFiles: [ViewedFile] {
         get { (defaults.stringArray(forKey: "viewedFiles") ?? []).compactMap(ViewedFile.init(encoded:)) }
         set { defaults.set(newValue.map(\.encoded), forKey: "viewedFiles") }
+    }
+
+    static var updateCheck: UpdateConsent {
+        get { defaults.string(forKey: "updateCheck").flatMap(UpdateConsent.init(rawValue:)) ?? .unasked }
+        set { defaults.set(newValue.rawValue, forKey: "updateCheck") }
+    }
+
+    static var lastUpdateCheck: Date? {
+        get { defaults.object(forKey: "lastUpdateCheck") as? Date }
+        set { defaults.set(newValue, forKey: "lastUpdateCheck") }
+    }
+
+    static var shownUpdateVersion: String? {
+        get { defaults.string(forKey: "shownUpdateVersion") }
+        set { defaults.set(newValue, forKey: "shownUpdateVersion") }
     }
 
     static var hotlist: [String] {

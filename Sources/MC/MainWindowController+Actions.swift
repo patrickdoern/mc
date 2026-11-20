@@ -366,9 +366,11 @@ extension MainWindowController {
 
     @objc func showConfiguration(_ sender: Any?) {
         let hidden = activePanel.model.showHidden
-        guard let result = Dialogs.form(title: "Konfiguration", checks: [("Versteckte Dateien anzeigen", hidden), ("Lokal in den Papierkorb statt endgültig löschen", Settings.useTrash)]) else { return }
+        let checksForUpdates = Settings.updateCheck == .enabled
+        guard let result = Dialogs.form(title: "Konfiguration", checks: [("Versteckte Dateien anzeigen", hidden), ("Lokal in den Papierkorb statt endgültig löschen", Settings.useTrash), ("Beim Start nach Updates suchen", checksForUpdates)]) else { return }
         if result.checks[0] != hidden { panelViews.forEach { $0.model.toggleHidden() } }
         Settings.useTrash = result.checks[1]
+        if result.checks[2] != checksForUpdates { Settings.updateCheck = result.checks[2] ? .enabled : .disabled }
     }
 
     @objc func showLayout(_ sender: Any?) {

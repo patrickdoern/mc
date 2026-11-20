@@ -65,10 +65,10 @@ enum Dialogs {
         return PasswordEntry(password: field.stringValue, remember: dialog.isChecked(remember))
     }
 
-    static func confirm(title: String, message: String, confirm: String, destructive: Bool = false) -> Bool {
+    static func confirm(title: String, message: String, confirm: String, cancel: String = "Abbrechen", destructive: Bool = false) -> Bool {
         let dialog = ClassicDialog(title: title, message: message, warning: destructive)
         dialog.addButton(confirm, isDefault: true)
-        dialog.addButton("Abbrechen", isCancel: true)
+        dialog.addButton(cancel, isCancel: true)
         return dialog.run() == 0
     }
 
