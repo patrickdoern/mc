@@ -51,10 +51,13 @@ public struct SSHSettings {
     public let identityFiles: [String]
     public let identityAgent: String?
     public let knownHostsFile: String
+    /// Wert von ProxyJump aus der SSH-Konfiguration; die Verbindung läuft dann über `ssh -W`.
+    public var proxyJump: String?
 
     /// Argumente für `/usr/bin/ssh`, die dieselbe Verbindung wie das SFTP-Panel aufbauen.
     public var sshArguments: [String] {
         var arguments = ["-p", String(port), "-l", user, "-o", "UserKnownHostsFile=" + knownHostsFile]
+        if let proxyJump { arguments += ["-J", proxyJump] }
         for file in identityFiles { arguments += ["-i", file] }
         if let identityAgent { arguments += ["-o", "IdentityAgent=" + identityAgent] }
         arguments.append(hostName)
@@ -73,7 +76,7 @@ public struct SSHSettings {
             let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
             if parts.count == 2 { values[parts[0], default: []].append(parts[1]) }
         }
-        if let jump = values["proxyjump"]?.first, jump != "none" { throw FileError("ProxyJump wird nicht unterstützt: \(jump)") }
+        let jump = values["proxyjump"]?.first.flatMap { $0 == "none" ? nil : $0 }
         if let command = values["proxycommand"]?.first, command != "none" { throw FileError("ProxyCommand wird nicht unterstützt") }
         guard let hostName = values["hostname"]?.first, let user = values["user"]?.first else { throw FileError("SSH-Konfiguration für \(target.alias) nicht lesbar") }
         let agent = values["identityagent"]?.first.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "\"")) }
@@ -83,7 +86,8 @@ public struct SSHSettings {
             port: values["port"]?.first.flatMap { Int($0) } ?? 22,
             identityFiles: (values["identityfile"] ?? []).map(expandHome),
             identityAgent: agent.flatMap { $0 == "none" || $0 == "SSH_AUTH_SOCK" ? nil : expandHome($0) },
-            knownHostsFile: expandHome((values["userknownhostsfile"]?.first ?? "~/.ssh/known_hosts").split(separator: " ").first.map(String.init) ?? "~/.ssh/known_hosts")
+            knownHostsFile: expandHome((values["userknownhostsfile"]?.first ?? "~/.ssh/known_hosts").split(separator: " ").first.map(String.init) ?? "~/.ssh/known_hosts"),
+            proxyJump: jump
         )
     }
 

@@ -5,6 +5,7 @@ final class SSHSession {
     let handle: OpaquePointer
     private var socketDescriptor: Int32
     private let interaction: SSHInteraction
+    private var jumpProcess: Process?
 
     private static let initialized: Bool = {
         libssh2_init(0)
@@ -14,9 +15,16 @@ final class SSHSession {
     init(settings: SSHSettings, interaction: SSHInteraction) throws {
         _ = Self.initialized
         self.interaction = interaction
-        socketDescriptor = try Self.connectSocket(host: settings.hostName, port: settings.port)
+        if let jump = settings.proxyJump {
+            let (descriptor, process) = try Self.connectViaJump(jump, settings: settings)
+            socketDescriptor = descriptor
+            jumpProcess = process
+        } else {
+            socketDescriptor = try Self.connectSocket(host: settings.hostName, port: settings.port)
+        }
         guard let handle = libssh2_session_init_ex(nil, nil, nil, nil) else {
             Darwin.close(socketDescriptor)
+            jumpProcess?.terminate()
             throw FileError("SSH-Sitzung konnte nicht angelegt werden")
         }
         self.handle = handle
@@ -36,6 +44,7 @@ final class SSHSession {
         libssh2_session_disconnect_ex(handle, SSH_DISCONNECT_BY_APPLICATION, "bye", "")
         libssh2_session_free(handle)
         Darwin.close(socketDescriptor)
+        jumpProcess?.terminate()
     }
 
     func lastError(_ context: String) -> FileError {
@@ -43,6 +52,33 @@ final class SSHSession {
         var length: Int32 = 0
         libssh2_session_last_error(handle, &message, &length, 0)
         return FileError("\(context): \(message.map { String(cString: $0) } ?? "unbekannter Fehler")")
+    }
+
+    /// Tunnelt die Verbindung über `ssh -W`, damit ProxyJump-Ketten (auch mit eigener Konfiguration) wie bei OpenSSH funktionieren.
+    private static func connectViaJump(_ jump: String, settings: SSHSettings) throws -> (Int32, Process) {
+        var pair: [Int32] = [0, 0]
+        guard socketpair(AF_UNIX, SOCK_STREAM, 0, &pair) == 0 else { throw FileError("Socket für ProxyJump konnte nicht angelegt werden") }
+        var hops = jump.split(separator: ",").map(String.init)
+        let last = hops.removeLast()
+        var arguments = ["-o", "BatchMode=yes", "-o", "ClearAllForwardings=yes", "-W", "\(settings.hostName):\(settings.port)"]
+        if let config = ProcessInfo.processInfo.environment["MC_SSH_CONFIG"] { arguments += ["-F", config] }
+        if !hops.isEmpty { arguments += ["-J", hops.joined(separator: ",")] }
+        arguments.append(last)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
+        process.arguments = arguments
+        let child = FileHandle(fileDescriptor: pair[1], closeOnDealloc: false)
+        process.standardInput = child
+        process.standardOutput = child
+        process.standardError = FileHandle.nullDevice
+        do { try process.run() } catch {
+            Darwin.close(pair[0]); Darwin.close(pair[1])
+            throw FileError("ssh für ProxyJump konnte nicht gestartet werden")
+        }
+        Darwin.close(pair[1])
+        var noSigPipe: Int32 = 1
+        setsockopt(pair[0], SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
+        return (pair[0], process)
     }
 
     private static func connectSocket(host: String, port: Int) throws -> Int32 {

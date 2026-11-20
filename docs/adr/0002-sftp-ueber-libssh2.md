@@ -13,7 +13,7 @@ Verbindungen nutzen libssh2 aus Homebrew (synchrone API, durch ein Lock je Verbi
 
 ## Konsequenzen
 
-Die App hängt zur Laufzeit an `/opt/homebrew/opt/libssh2`. ProxyJump und ProxyCommand werden nicht unterstützt. Symlinks lassen sich per SFTP nicht anlegen, weil libssh2s Symlink-Anfrage vom OpenSSH-Server mit einem Protokollfehler beantwortet wird und die Sitzung danach abbricht.
+Die App hängt zur Laufzeit an `/opt/homebrew/opt/libssh2`. ProxyJump läuft über einen `ssh -W`-Prozess als Transport (ohne Rückfrage per `BatchMode`, der Hostkey des Sprungrechners muss bekannt sein). ProxyCommand wird nicht unterstützt. Symlinks lassen sich per SFTP nicht anlegen, weil libssh2s Symlink-Anfrage vom OpenSSH-Server mit einem Protokollfehler beantwortet wird und die Sitzung danach abbricht.
 
 ## Verworfene Alternativen
 
