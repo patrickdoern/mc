@@ -36,3 +36,8 @@ static inline long mc_curl_response_code(CURL *handle) {
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &code);
     return code;
 }
+
+static inline struct curl_certinfo *mc_curl_certinfo(CURL *handle) {
+    struct curl_certinfo *info = NULL;
+    return curl_easy_getinfo(handle, CURLINFO_CERTINFO, &info) == CURLE_OK ? info : NULL;
+}

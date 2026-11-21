@@ -169,6 +169,22 @@ final class DialogInteraction: SSHInteraction {
         }
     }
 
+    func trustCertificate(_ host: String, certificate: FTPCertificate, changed: Bool) -> Bool {
+        var lines = [changed ? localized("Das Zertifikat dieses Servers hat sich geändert. Das kann ein Angriff sein oder ein erneuertes Zertifikat.") : localized("Das Zertifikat dieses Servers ist keiner bekannten Zertifizierungsstelle zugeordnet, z. B. weil es selbstsigniert ist.")]
+        if let subject = certificate.subject { lines.append(localized("Inhaber: %@", subject as NSString)) }
+        if let issuer = certificate.issuer { lines.append(localized("Aussteller: %@", issuer as NSString)) }
+        if let expires = certificate.expires { lines.append(localized("Gültig bis: %@", expires as NSString)) }
+        lines.append("SHA256: " + certificate.fingerprint)
+        return onMain {
+            Dialogs.confirm(
+                title: changed ? localized("Zertifikat von %@ geändert", host as NSString) : localized("Unbekanntes Zertifikat von %@", host as NSString),
+                message: lines.joined(separator: "\n") + "\n\n" + localized("Diesem Zertifikat vertrauen und es für künftige Verbindungen speichern?"),
+                confirm: localized("Vertrauen"),
+                destructive: changed
+            )
+        }
+    }
+
     func requestSecret(_ prompt: String) -> String? {
         onMain { Dialogs.secret(prompt) }
     }

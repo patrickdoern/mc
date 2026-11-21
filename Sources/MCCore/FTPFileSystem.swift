@@ -10,20 +10,27 @@ public final class FTPFileSystem: FileSystem {
     private let target: FTPTarget
     private var password: String
     private var requiresTLS: Bool
+    private var trustedNow = false
+    private let trustStore: FTPTrustStore
     private let handle: UnsafeMutableRawPointer
     private let lock = NSRecursiveLock()
 
-    public init(target: FTPTarget, interaction: SSHInteraction) throws {
+    public init(target: FTPTarget, interaction: SSHInteraction, trustStore: FTPTrustStore = .standard) throws {
         guard let handle = curl_easy_init() else { throw FileError(localized("libcurl konnte nicht gestartet werden")) }
         self.handle = handle
         self.target = target
+        self.trustStore = trustStore
         requiresTLS = target.user != "anonymous"
         identity = target.displayName
         displayName = target.displayName
         let account = target.displayName
         if target.user == "anonymous" {
             password = "anonymous@"
-            _ = try list("/")
+            do {
+                try connect(interaction)
+            } catch is FTPLoginError {
+                throw FileError(localized("%@ erlaubt keine anonyme Anmeldung. Bitte mit Benutzer verbinden, z. B. %@", target.host as NSString, "\(target.secure ? "ftps" : "ftp")://name@\(target.host)" as NSString))
+            }
             return
         }
         var stored = interaction.storedPassword(for: account)
@@ -31,7 +38,6 @@ public final class FTPFileSystem: FileSystem {
         while true {
             if stored == nil {
                 guard let entry = interaction.requestPassword(localized("Passwort für %@:", account as NSString), account: account) else {
-                    curl_easy_cleanup(handle)
                     throw FileError(localized("Anmeldung abgebrochen"))
                 }
                 password = entry.password
@@ -41,9 +47,6 @@ public final class FTPFileSystem: FileSystem {
                     stored = nil
                     _ = error
                     continue
-                } catch {
-                    curl_easy_cleanup(handle)
-                    throw error
                 }
                 if entry.remember { interaction.savePassword(entry.password, for: account) }
                 return
@@ -54,9 +57,6 @@ public final class FTPFileSystem: FileSystem {
             } catch is FTPLoginError {
                 interaction.deletePassword(for: account)
                 stored = nil
-            } catch {
-                curl_easy_cleanup(handle)
-                throw error
             }
         }
     }
@@ -69,8 +69,36 @@ public final class FTPFileSystem: FileSystem {
         } catch is FTPWithoutTLS {
             guard interaction.allowUnencryptedLogin(target.host) else { throw FileError(localized("%@ bietet kein TLS an, Verbindung abgebrochen", target.host as NSString)) }
             requiresTLS = false
-            _ = try list("/")
+            try connect(interaction)
+        } catch is FTPUntrustedCertificate {
+            guard !trustedNow, let certificate = fetchCertificate() else { throw FileError(localized("Das Zertifikat von %@ ist nicht vertrauenswürdig", target.host as NSString)) }
+            let changed = trustStore.trustedFile(host: target.host, port: target.port) != nil
+            guard interaction.trustCertificate(target.host, certificate: certificate, changed: changed) else { throw OperationAborted() }
+            try trustStore.trust(certificate, host: target.host, port: target.port)
+            trustedNow = true
+            try connect(interaction)
         }
+    }
+
+    private func fetchCertificate() -> FTPCertificate? {
+        lock.lock()
+        defer { lock.unlock() }
+        prepare("/")
+        _ = mc_curl_setopt_long(handle, CURLOPT_USE_SSL, Int(CURLUSESSL_ALL.rawValue))
+        _ = mc_curl_setopt_long(handle, CURLOPT_SSL_VERIFYPEER, 0)
+        _ = mc_curl_setopt_long(handle, CURLOPT_SSL_VERIFYHOST, 0)
+        _ = mc_curl_setopt_long(handle, CURLOPT_CERTINFO, 1)
+        _ = mc_curl_setopt_long(handle, CURLOPT_NOBODY, 1)
+        _ = mc_curl_setopt_string(handle, CURLOPT_PINNEDPUBLICKEY, "sha256//" + String(repeating: "A", count: 43) + "=")
+        _ = curl_easy_perform(handle)
+        guard let info = mc_curl_certinfo(handle)?.pointee, info.num_of_certs > 0, let first = info.certinfo?[0] else { return nil }
+        var entries: [String] = []
+        var item: UnsafeMutablePointer<curl_slist>? = first
+        while let current = item {
+            if let data = current.pointee.data { entries.append(String(cString: data)) }
+            item = current.pointee.next
+        }
+        return FTPCertificate(entries: entries)
     }
 
     // MARK: FileSystem
@@ -145,6 +173,10 @@ public final class FTPFileSystem: FileSystem {
         _ = mc_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT, 20)
         _ = mc_curl_setopt_long(handle, CURLOPT_FTP_SKIP_PASV_IP, 1)
         _ = mc_curl_setopt_long(handle, CURLOPT_NOSIGNAL, 1)
+        if let trusted = trustStore.trustedFile(host: target.host, port: target.port) {
+            _ = mc_curl_setopt_string(handle, CURLOPT_CAINFO, trusted)
+            _ = mc_curl_setopt_long(handle, CURLOPT_SSL_VERIFYHOST, 0)
+        }
         if target.secure || requiresTLS {
             _ = mc_curl_setopt_long(handle, CURLOPT_USE_SSL, Int(CURLUSESSL_ALL.rawValue))
         } else {
@@ -156,6 +188,7 @@ public final class FTPFileSystem: FileSystem {
         switch code {
         case CURLE_LOGIN_DENIED: return FTPLoginError()
         case CURLE_USE_SSL_FAILED where requiresTLS && !target.secure: return FTPWithoutTLS()
+        case CURLE_PEER_FAILED_VERIFICATION: return FTPUntrustedCertificate()
         case CURLE_REMOTE_FILE_NOT_FOUND: return FileError(localized("%@: Datei nicht gefunden", path as NSString))
         case CURLE_COULDNT_RESOLVE_HOST: return FileError(localized("Host %@ nicht gefunden", target.host as NSString))
         case CURLE_COULDNT_CONNECT: return FileError(localized("Keine Verbindung zu %@:%ld", target.host as NSString, target.port))
@@ -309,6 +342,8 @@ public final class FTPFileSystem: FileSystem {
 private struct FTPLoginError: Error {}
 
 private struct FTPWithoutTLS: Error {}
+
+private struct FTPUntrustedCertificate: Error {}
 
 private final class FTPDownload: FileReader {
     private var file: UnsafeMutablePointer<FILE>?

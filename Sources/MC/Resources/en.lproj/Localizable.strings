@@ -530,3 +530,13 @@
 "Der Server bietet kein TLS an. Benutzername und Passwort würden unverschlüsselt übertragen." = "The server does not offer TLS. User name and password would be sent unencrypted.";
 "Trotzdem unverschlüsselt anmelden?" = "Log in unencrypted anyway?";
 "Unverschlüsselt anmelden" = "Log In Unencrypted";
+"%@ erlaubt keine anonyme Anmeldung. Bitte mit Benutzer verbinden, z. B. %@" = "%@ does not allow anonymous login. Please connect with a user, e.g. %@";
+"Das Zertifikat von %@ ist nicht vertrauenswürdig" = "The certificate of %@ is not trusted";
+"Das Zertifikat dieses Servers hat sich geändert. Das kann ein Angriff sein oder ein erneuertes Zertifikat." = "This server's certificate has changed. This may be an attack or a renewed certificate.";
+"Das Zertifikat dieses Servers ist keiner bekannten Zertifizierungsstelle zugeordnet, z. B. weil es selbstsigniert ist." = "This server's certificate is not issued by a known certificate authority, e.g. because it is self-signed.";
+"Inhaber: %@" = "Subject: %@";
+"Aussteller: %@" = "Issuer: %@";
+"Gültig bis: %@" = "Valid until: %@";
+"Zertifikat von %@ geändert" = "Certificate of %@ Changed";
+"Unbekanntes Zertifikat von %@" = "Unknown Certificate of %@";
+"Diesem Zertifikat vertrauen und es für künftige Verbindungen speichern?" = "Trust this certificate and save it for future connections?";

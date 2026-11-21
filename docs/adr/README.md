@@ -19,3 +19,4 @@ Entscheidungen, die nicht aus dem Code ablesbar sind. Ein akzeptiertes ADR wird 
 | [0013](0013-website-auf-github-pages-zweisprachig.md) | Die Website läuft auf GitHub Pages unter moonlight-commander.org, mit je einer statischen Seite pro Sprache | Accepted |
 | [0014](0014-sprache-nach-system-und-in-der-app-waehlbar.md) | Texte der App stehen auf Deutsch im Code und werden über `localized` mit englischer Tabelle übersetzt; die Sprache folgt dem System und lässt sich in der App überschreiben | Accepted |
 | [0015](0015-ftp-anmeldung-nur-mit-tls-oder-zustimmung.md) | FTP läuft über das System-libcurl; Anmeldungen mit Passwort laufen nur über TLS oder nach ausdrücklicher Zustimmung im Klartext | Accepted |
+| [0016](0016-ftp-zertifikate-beim-ersten-verbinden-bestaetigen.md) | FTP-Zertifikate ohne bekannte Zertifizierungsstelle werden beim ersten Verbinden bestätigt und gespeichert | Accepted |

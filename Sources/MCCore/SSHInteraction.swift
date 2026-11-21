@@ -11,6 +11,7 @@ public struct PasswordEntry {
 public protocol SSHInteraction: AnyObject {
     func trustUnknownHost(_ host: String, keyType: String, fingerprint: String) -> Bool
     func allowUnencryptedLogin(_ host: String) -> Bool
+    func trustCertificate(_ host: String, certificate: FTPCertificate, changed: Bool) -> Bool
     func requestSecret(_ prompt: String) -> String?
     func requestPassword(_ prompt: String, account: String) -> PasswordEntry?
     func storedPassword(for account: String) -> String?
