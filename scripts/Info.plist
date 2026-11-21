@@ -24,9 +24,9 @@
     <key>NSHumanReadableCopyright</key>
     <string>© 2026 Patrick Dörn</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.6.7</string>
+    <string>1.6.8</string>
     <key>CFBundleVersion</key>
-    <string>14</string>
+    <string>15</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>CFBundleURLTypes</key>
