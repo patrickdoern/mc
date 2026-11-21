@@ -3,9 +3,9 @@ import AppKit
 final class AboutPanel: NSObject {
     static let shared = AboutPanel()
 
-    static let website = URL(string: "https://moonlight-commander.de")!
-    static let licenses = URL(string: "https://moonlight-commander.de/lizenzen")!
-    static let imprint = URL(string: "https://moonlight-commander.de/impressum")!
+    static let website = URL(string: "https://moonlight-commander.org")!
+    static let licenses = URL(string: "https://moonlight-commander.org/lizenzen")!
+    static let imprint = URL(string: "https://moonlight-commander.org/impressum")!
 
     @objc func show() {
         let paragraph = NSMutableParagraphStyle()
@@ -14,7 +14,7 @@ final class AboutPanel: NSObject {
         let link: [NSAttributedString.Key: Any] = body.merging([.link: Self.website]) { $1 }
         let licenses: [NSAttributedString.Key: Any] = body.merging([.link: Self.licenses]) { $1 }
         let credits = NSMutableAttributedString(string: "Zwei-Panel-Dateimanager für macOS\nKostenlos, ohne Werbung und Tracking\n\nEntwickelt von Patrick Dörn\n", attributes: body)
-        credits.append(NSAttributedString(string: "moonlight-commander.de", attributes: link))
+        credits.append(NSAttributedString(string: "moonlight-commander.org", attributes: link))
         credits.append(NSAttributedString(string: "\n\n", attributes: body))
         credits.append(NSAttributedString(string: "Lizenzen der enthaltenen Software", attributes: licenses))
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])

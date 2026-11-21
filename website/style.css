@@ -53,3 +53,5 @@ footer {
   display: flex; gap: 16px; flex-wrap: wrap;
 }
 footer a { color: inherit; }
+.lang { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 16px; font-size: 0.9em; color: var(--muted); }
+.lang [aria-current] { color: var(--text); font-weight: 600; }

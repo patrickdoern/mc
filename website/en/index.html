@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moonlight Commander – File manager for macOS</title>
+  <meta name="description" content="Moonlight Commander is a free two-pane file manager for macOS in the style of Norton Commander, with SFTP, FTP, terminal, viewer and editor.">
+  <meta property="og:title" content="Moonlight Commander – File manager for macOS">
+  <meta property="og:image" content="https://moonlight-commander.org/screenshot.png">
+  <link rel="canonical" href="https://moonlight-commander.org/en/">
+  <link rel="alternate" hreflang="de" href="https://moonlight-commander.org/">
+  <link rel="alternate" hreflang="en" href="https://moonlight-commander.org/en/">
+  <link rel="alternate" hreflang="x-default" href="https://moonlight-commander.org/">
+  <link rel="icon" href="/icon.png">
+  <link rel="stylesheet" href="/style.css">
+  <!-- Matomo -->
+  <script>
+    var _paq = window._paq = window._paq || [];
+    /* ohne Cookies, damit kein Einwilligungsbanner nötig ist */
+    _paq.push(['disableCookies']);
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+      var u="https://metrics.doern.eu/";
+      _paq.push(['setTrackerUrl', u+'matomo.php']);
+      _paq.push(['setSiteId', '26']);
+      var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+      g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+  </script>
+  <!-- End Matomo Code -->
+</head>
+<body>
+<main>
+<nav class="lang" aria-label="Language">
+  <a href="/" hreflang="de" lang="de">Deutsch</a>
+  <span aria-current="true">English</span>
+</nav>
+<header>
+  <img src="/icon.png" alt="Moonlight Commander icon" width="128" height="128">
+  <h1>Moonlight Commander</h1>
+  <p class="lead">The two-pane file manager for macOS in the style of Norton Commander. Fast, fully keyboard-driven, free.</p>
+</header>
+
+<p class="download"><a class="button" href="https://github.com/patrickdoern/mc/releases/latest/download/mc.dmg">Download for macOS (DMG, approx. 4 MB)</a></p>
+<p class="note">Free and open source (MIT) · macOS 14 or later · Apple silicon · signed and notarized by Apple</p>
+
+<img class="shot" src="/screenshot.png" alt="Moonlight Commander with two file panels in blue Norton style" width="1800" height="1061">
+
+<h2>What the app can do</h2>
+<ul class="features">
+  <li><strong>Two panels, full keyboard control</strong>Copy, move, delete and rename with F5 to F8, masks like <kbd>*.bak</kbd>, selecting by pattern, quick search.</li>
+  <li><strong>SFTP and FTP/FTPS</strong>Open servers like local folders and copy files between your Mac and the server. SSH aliases and keys from <kbd>~/.ssh</kbd> work, and passwords can be stored in the keychain.</li>
+  <li><strong>A real terminal</strong>Ctrl-O opens a shell in the active panel's folder, or an ssh session on the server for SFTP panels.</li>
+  <li><strong>Viewer and editor</strong>Syntax highlighting, hex view, regex search, diff, Markdown and HTML preview.</li>
+  <li><strong>Archives as folders</strong>zip, tar, 7z, rar, iso and more open with Enter like a directory.</li>
+  <li><strong>Live updates</strong>Local panels reload automatically when the folder changes from outside.</li>
+  <li><strong>Three color schemes</strong>Norton Blue, Dark and Light.</li>
+</ul>
+
+<h2>Essential keys</h2>
+<table>
+  <tr><td><kbd>Tab</kbd></td><td>Switch panel</td></tr>
+  <tr><td><kbd>F3</kbd> / <kbd>F4</kbd></td><td>View / Edit</td></tr>
+  <tr><td><kbd>F5</kbd> / <kbd>F6</kbd></td><td>Copy / Move</td></tr>
+  <tr><td><kbd>F7</kbd> / <kbd>F8</kbd></td><td>Create folder / Delete</td></tr>
+  <tr><td><kbd>⌘K</kbd></td><td>Connect to an SFTP or FTP server</td></tr>
+  <tr><td><kbd>Ctrl-O</kbd></td><td>Show or hide terminal</td></tr>
+  <tr><td><kbd>⌘D</kbd></td><td>Directory hotlist</td></tr>
+</table>
+<p class="note">The F-keys need "Use F1, F2, etc. keys as standard function keys" in the keyboard settings, or the Fn key. All functions are also available in the menu bar (F9).</p>
+
+<h2>Installation</h2>
+<p>Open the DMG and drag "Moonlight Commander" to "Applications". On first launch, macOS only asks whether you want to open an app downloaded from the internet.</p>
+
+<h2>Open source</h2>
+<p>Moonlight Commander is released under the MIT license. The source code is on <a href="https://github.com/patrickdoern/mc">GitHub</a>, along with all versions as <a href="https://github.com/patrickdoern/mc/releases">Releases</a>.</p>
+<p>The code was written with AI-assisted software development (using Claude Code by Anthropic) and was designed, reviewed and tested by Patrick Dörn.</p>
+
+<h2>Report bugs</h2>
+<p>The project takes bug reports and feature requests on GitHub as an <a href="https://github.com/patrickdoern/mc/issues/new/choose">issue</a>. Without a GitHub account you can reach me via the details in the <a href="/en/legal-notice/">legal notice</a>.</p>
+
+<h2>Privacy</h2>
+<p>The app has no ads, no tracking and no accounts. It only checks for new versions with your consent (without personal data); otherwise connections are only made when you open a server yourself. Details in the <a href="/en/privacy/">privacy policy</a>.</p>
+</main>
+<footer>
+  <span>© 2026 Patrick Dörn</span>
+  <a href="/en/legal-notice/">Legal notice</a>
+  <a href="/en/privacy/">Privacy</a>
+  <a href="/en/licenses/">Licenses</a>
+  <a href="https://github.com/patrickdoern/mc">Source code</a>
+</footer>
+</body>
+</html>

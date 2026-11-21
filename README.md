@@ -90,7 +90,7 @@ Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Pro
 
 ## Webseite
 
-`website/` enthält die statische Seite für moonlight-commander.de (Start, Impressum, Datenschutz, Lizenzen). `./scripts/deploy-website.sh` legt sie nach `/var/www/moonlight-commander.de` auf janus; das Caddyfile dort liefert sie per `file_server` aus. Der Download-Button der Seite zeigt auf das neueste GitHub-Release. Ein neues Release: `dist.sh`, dann `gh release create vX.Y build/mc.dmg --generate-notes`.
+`website/` enthält die statische Seite für moonlight-commander.org (Start, Impressum, Datenschutz, Lizenzen), deutsch im Wurzelverzeichnis und englisch unter `/en/`, mit Sprachumschalter. Sie läuft auf GitHub Pages; `.github/workflows/pages.yml` veröffentlicht `website/` bei jeder Änderung auf `main`. Der Download-Button der Seite zeigt auf das neueste GitHub-Release. Ein neues Release: `dist.sh`, dann `gh release create vX.Y build/mc.dmg --generate-notes`.
 
 ## Fehler und Wünsche
 
@@ -102,4 +102,4 @@ Der Code ist mit KI-gestützter Softwareentwicklung (Claude Code von Anthropic) 
 
 ## Lizenz
 
-MIT-Lizenz, siehe [LICENSE](LICENSE). Lizenzen der enthaltenen Drittsoftware stehen auf moonlight-commander.de/lizenzen.
+MIT-Lizenz, siehe [LICENSE](LICENSE). Lizenzen der enthaltenen Drittsoftware stehen auf moonlight-commander.org/lizenzen.
