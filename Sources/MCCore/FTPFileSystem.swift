@@ -11,6 +11,7 @@ public final class FTPFileSystem: FileSystem {
     private var password: String
     private var requiresTLS: Bool
     private var trustedNow = false
+    private var limitedToTLS12 = false
     private let trustStore: FTPTrustStore
     private let handle: UnsafeMutableRawPointer
     private let lock = NSRecursiveLock()
@@ -76,6 +77,9 @@ public final class FTPFileSystem: FileSystem {
             guard interaction.trustCertificate(target.host, certificate: certificate, changed: changed) else { throw OperationAborted() }
             try trustStore.trust(certificate, host: target.host, port: target.port)
             trustedNow = true
+            try connect(interaction)
+        } catch is FTPSessionNotResumed {
+            limitedToTLS12 = true
             try connect(interaction)
         }
     }
@@ -177,6 +181,9 @@ public final class FTPFileSystem: FileSystem {
             _ = mc_curl_setopt_string(handle, CURLOPT_CAINFO, trusted)
             _ = mc_curl_setopt_long(handle, CURLOPT_SSL_VERIFYHOST, 0)
         }
+        if limitedToTLS12 {
+            _ = mc_curl_setopt_long(handle, CURLOPT_SSLVERSION, Int(CURL_SSLVERSION_TLSv1_2) | Int(CURL_SSLVERSION_MAX_TLSv1_2))
+        }
         if target.secure || requiresTLS {
             _ = mc_curl_setopt_long(handle, CURLOPT_USE_SSL, Int(CURLUSESSL_ALL.rawValue))
         } else {
@@ -189,6 +196,7 @@ public final class FTPFileSystem: FileSystem {
         case CURLE_LOGIN_DENIED: return FTPLoginError()
         case CURLE_USE_SSL_FAILED where requiresTLS && !target.secure: return FTPWithoutTLS()
         case CURLE_PEER_FAILED_VERIFICATION: return FTPUntrustedCertificate()
+        case CURLE_PARTIAL_FILE where !limitedToTLS12 && mc_curl_response_code(handle) == 425: return FTPSessionNotResumed()
         case CURLE_REMOTE_FILE_NOT_FOUND: return FileError(localized("%@: Datei nicht gefunden", path as NSString))
         case CURLE_COULDNT_RESOLVE_HOST: return FileError(localized("Host %@ nicht gefunden", target.host as NSString))
         case CURLE_COULDNT_CONNECT: return FileError(localized("Keine Verbindung zu %@:%ld", target.host as NSString, target.port))
@@ -344,6 +352,8 @@ private struct FTPLoginError: Error {}
 private struct FTPWithoutTLS: Error {}
 
 private struct FTPUntrustedCertificate: Error {}
+
+private struct FTPSessionNotResumed: Error {}
 
 private final class FTPDownload: FileReader {
     private var file: UnsafeMutablePointer<FILE>?
