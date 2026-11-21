@@ -53,6 +53,6 @@ Checks nach jedem Task: `swift build` (ohne Warnung) und `swift test` (aktuell 6
 - [x] T2: F1-Hilfe und Prozentanzeige (R2, R3, R8): `showHelp()` zeilenweise, `Formatting.percent(_:)` an beiden Stellen. Dateien: `Sources/MC/MainWindowController.swift`, `Formatting.swift`, `OperationRunner.swift`, `MainWindowController+Actions.swift`, `en.lproj/Localizable.strings`.
 - [x] T3: Dokumenttyp-Namen, `ext`-Beispieltext und Benutzermenü-Standardtext (R4, R6, R8): `en.lproj/InfoPlist.strings`, Test gegen `scripts/Info.plist`, `FileActions.defaultText` und `UserMenu.defaultText` je Sprache. Dateien: `Sources/MC/Resources/en.lproj/InfoPlist.strings`, `Tests/MCCoreTests/InfoPlistLocalizationTests.swift`, `Sources/MC/FileActions.swift`, `Sources/MC/UserMenu.swift`, `en.lproj/Localizable.strings`.
 - [x] T4: Skripte `mc` und `mcedit` (R5): Sprachbestimmung über `defaults read -g AppleLanguages`, Meldungen in Deutsch und Englisch; Test mit `defaults`-Attrappe. Dateien: `scripts/mc`, `scripts/mcedit`.
-- [ ] T5: README (R7, R10): `README.en.md`, Verweise und Sprachabschnitt in beiden Fassungen. Dateien: `README.md`, `README.en.md`.
+- [x] T5: README (R7, R10): `README.en.md`, Verweise und Sprachabschnitt in beiden Fassungen. Dateien: `README.md`, `README.en.md`.
 
 Danach: Reste-Prüfung (R9) und Abnahme aus dieser Spec.

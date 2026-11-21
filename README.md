@@ -1,5 +1,7 @@
 # Moonlight Commander
 
+[English version](README.en.md)
+
 Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateioperationen, SFTP, FTP/FTPS und ein mcedit-artiger Editor.
 
 ```bash
@@ -11,7 +13,7 @@ Bauen: `./scripts/build-libssh2.sh` baut OpenSSL und libssh2 einmalig statisch n
 
 ## Kommandozeile
 
-`./scripts/install.sh` legt `mc` und `mcedit` nach `~/.local/bin`:
+`./scripts/install.sh` legt `mc` und `mcedit` nach `~/.local/bin`; ihre Meldungen erscheinen in der Systemsprache (Deutsch oder Englisch):
 
 ```bash
 mc                    # aktuellen Ordner im aktiven Panel öffnen
@@ -87,6 +89,10 @@ Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Pro
 ### Auf einen anderen Mac kopieren
 
 `/Applications/Moonlight Commander.app` per `rsync`, `scp` oder USB-Stick kopieren, dann startet sie direkt. Kommt sie per AirDrop, Download oder Cloud, markiert macOS sie als Quarantäne, und Gatekeeper blockiert sie ohne Notarisierung. Dann einmal `xattr -dr com.apple.quarantine "/Applications/Moonlight Commander.app"` ausführen.
+
+## Sprache
+
+Die App zeigt ihre Oberfläche nach der macOS-Systemsprache auf Deutsch oder Englisch; ist weder Deutsch noch Englisch eingestellt, erscheint Englisch. Die Sprache lässt sich pro App ändern unter Systemeinstellungen → Allgemein → Sprache & Region → Apps; die Änderung gilt nach einem Neustart der App. Tastenkürzel und Befehle sind in beiden Sprachen gleich.
 
 ## Webseite
 
