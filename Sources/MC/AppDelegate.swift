@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWindow: MainWindowController?
     private var pendingPaths: [String] = []
     private var pendingEdits: [String] = []
+    private var relaunchRequested = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
@@ -39,7 +40,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let mainWindow { mainWindow.edit(path: path) } else { pendingEdits.append(path) }
     }
 
+    func relaunch() {
+        relaunchRequested = true
+        NSApp.terminate(nil)
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let reply = terminateReply()
+        if reply == .terminateCancel { relaunchRequested = false }
+        return reply
+    }
+
+    private func terminateReply() -> NSApplication.TerminateReply {
         if Settings.confirmExit, !Dialogs.confirm(title: localized("Moonlight Commander beenden?"), message: "", confirm: localized("Beenden")) { return .terminateCancel }
         guard mainWindow?.hasUnsavedEditors == true else { return .terminateNow }
         let proceed = Dialogs.confirm(title: localized("Ungespeicherte Änderungen"), message: localized("In geöffneten Editor-Fenstern gibt es ungespeicherte Änderungen. Trotzdem beenden?"), confirm: localized("Beenden"), destructive: true)
@@ -48,6 +60,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         mainWindow?.saveState()
+        guard relaunchRequested else { return }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-n", Bundle.main.bundlePath]
+        try? process.run()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

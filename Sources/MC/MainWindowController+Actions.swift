@@ -367,10 +367,25 @@ extension MainWindowController {
     @objc func showConfiguration(_ sender: Any?) {
         let hidden = activePanel.model.showHidden
         let checksForUpdates = Settings.updateCheck == .enabled
-        guard let result = Dialogs.form(title: localized("Konfiguration"), checks: [(localized("Versteckte Dateien anzeigen"), hidden), (localized("Lokal in den Papierkorb statt endgültig löschen"), Settings.useTrash), (localized("Beim Start nach Updates suchen"), checksForUpdates)]) else { return }
+        let language = Settings.language
+        guard let result = Dialogs.form(title: localized("Konfiguration"), popup: (localized("Sprache:"), AppLanguagePreference.allCases.map(languageName), AppLanguagePreference.allCases.firstIndex(of: language) ?? 0), checks: [(localized("Versteckte Dateien anzeigen"), hidden), (localized("Lokal in den Papierkorb statt endgültig löschen"), Settings.useTrash), (localized("Beim Start nach Updates suchen"), checksForUpdates)]) else { return }
         if result.checks[0] != hidden { panelViews.forEach { $0.model.toggleHidden() } }
         Settings.useTrash = result.checks[1]
         if result.checks[2] != checksForUpdates { Settings.updateCheck = result.checks[2] ? .enabled : .disabled }
+        let newLanguage = AppLanguagePreference.allCases[result.choice]
+        guard newLanguage != language else { return }
+        Settings.language = newLanguage
+        guard Bundle.main.bundlePath.hasSuffix(".app"),
+              Dialogs.confirm(title: localized("Sprache ändern"), message: localized("Die neue Sprache gilt nach einem Neustart. Jetzt neu starten?"), confirm: localized("Neu starten"), cancel: localized("Später")) else { return }
+        (NSApp.delegate as? AppDelegate)?.relaunch()
+    }
+
+    private func languageName(_ language: AppLanguagePreference) -> String {
+        switch language {
+        case .automatic: localized("Automatisch")
+        case .german: "Deutsch"
+        case .english: "English"
+        }
     }
 
     @objc func showLayout(_ sender: Any?) {

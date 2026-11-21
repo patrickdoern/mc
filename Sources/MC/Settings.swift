@@ -80,6 +80,13 @@ enum Settings {
         set { defaults.set(newValue, forKey: "shownUpdateVersion") }
     }
 
+    static var language: AppLanguagePreference {
+        get { AppLanguagePreference(stored: defaults.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "")?["AppleLanguages"] as? [String]) }
+        set {
+            if let list = newValue.stored { defaults.set(list, forKey: "AppleLanguages") } else { defaults.removeObject(forKey: "AppleLanguages") }
+        }
+    }
+
     static var hotlist: [String] {
         get { defaults.stringArray(forKey: "hotlist") ?? [] }
         set { defaults.set(newValue, forKey: "hotlist") }

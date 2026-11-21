@@ -488,3 +488,8 @@
 "Auswahl als tar.gz packen" = "Pack selection as tar.gz";
 "Archiv entpacken" = "Extract archive";
 "Größe der Auswahl (du -sh)" = "Size of selection (du -sh)";
+"Automatisch" = "Automatic";
+"Sprache:" = "Language:";
+"Sprache ändern" = "Change Language";
+"Die neue Sprache gilt nach einem Neustart. Jetzt neu starten?" = "The new language takes effect after a restart. Restart now?";
+"Neu starten" = "Restart";
