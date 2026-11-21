@@ -26,7 +26,7 @@ let package = Package(
             swiftSettings: headerSearch,
             linkerSettings: [.unsafeFlags(["-L" + libraryPath])] + sshLibraries
         ),
-        .executableTarget(name: "MC", dependencies: ["MCCore", .product(name: "SwiftTerm", package: "SwiftTerm")], resources: [.copy("Resources/AppIcon.icns")], swiftSettings: headerSearch),
+        .executableTarget(name: "MC", dependencies: ["MCCore", .product(name: "SwiftTerm", package: "SwiftTerm")], exclude: ["Resources/en.lproj"], resources: [.copy("Resources/AppIcon.icns")], swiftSettings: headerSearch),
         .testTarget(name: "MCCoreTests", dependencies: ["MCCore"], swiftSettings: headerSearch),
     ],
     swiftLanguageModes: [.v5]

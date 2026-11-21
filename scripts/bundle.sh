@@ -11,6 +11,7 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$frameworks"
 cp "$bin" "$app/Contents/MacOS/MC"
 cp scripts/Info.plist "$app/Contents/Info.plist"
 cp Sources/MC/Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
+cp -R Sources/MC/Resources/en.lproj "$app/Contents/Resources/en.lproj"
 
 external_dependencies() {
     otool -L "$1" | awk 'NR > 1 && ($1 ~ /^\/opt\/homebrew\// || $1 ~ /^\/usr\/local\//) { print $1 }'

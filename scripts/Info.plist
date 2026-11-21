@@ -10,6 +10,13 @@
     <string>digital.doern.mc</string>
     <key>CFBundleExecutable</key>
     <string>MC</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>de</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>de</string>
+        <string>en</string>
+    </array>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
