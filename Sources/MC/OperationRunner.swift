@@ -71,7 +71,7 @@ final class OperationRunner {
         switch background.count {
         case 0: onStatusChange?("")
         case 1: onStatusChange?("⟳ \(background[0].title)" + (background[0].percent.map { " \($0) %" } ?? ""))
-        default: onStatusChange?("⟳ \(background.count) Hintergrundaufgaben")
+        default: onStatusChange?("⟳ " + localized("%ld Hintergrundaufgaben", background.count))
         }
     }
 }
@@ -85,8 +85,8 @@ private final class ProgressSheet {
     init(title: String) {
         dialog = ClassicDialog(title: title)
         dialog.addProgress()
-        dialog.addButton("Im Hintergrund", isDefault: true)
-        dialog.addButton("Abbrechen", isCancel: true)
+        dialog.addButton(localized("Im Hintergrund"), isDefault: true)
+        dialog.addButton(localized("Abbrechen"), isCancel: true)
     }
 
     func present(on window: NSWindow) {
@@ -105,8 +105,8 @@ private final class ProgressSheet {
     func update(_ progress: OperationProgress) {
         let total = progress.bytesTotal > 0 ? progress.bytesTotal : Int64(progress.filesTotal)
         let done = progress.bytesTotal > 0 ? progress.bytesDone : Int64(progress.filesDone)
-        var detail = "\(progress.filesDone) von \(progress.filesTotal) Dateien"
-        if progress.bytesTotal > 0 { detail += " · \(Formatting.exactSize(progress.bytesDone)) von \(Formatting.exactSize(progress.bytesTotal))" }
+        var detail = localized("%ld von %ld Dateien", progress.filesDone, progress.filesTotal)
+        if progress.bytesTotal > 0 { detail += " · " + localized("%@ von %@", Formatting.exactSize(progress.bytesDone) as NSString, Formatting.exactSize(progress.bytesTotal) as NSString) }
         dialog.updateProgress(path: progress.currentPath, fraction: total > 0 ? Double(done) / Double(total) : nil, detail: detail)
     }
 }

@@ -14,10 +14,10 @@ final class UpdateNotifier: NSObject {
         guard let installed = installedVersion else { return }
         if Settings.updateCheck == .unasked {
             let allowed = Dialogs.confirm(
-                title: "Nach Updates suchen",
-                message: "Beim Start nach neuen Versionen suchen?\n\nDazu wird api.github.com kontaktiert. Es werden keine persönlichen Daten gesendet. Das lässt sich unter Konfiguration jederzeit ändern.",
-                confirm: "Ja",
-                cancel: "Nein"
+                title: localized("Nach Updates suchen"),
+                message: localized("Beim Start nach neuen Versionen suchen?") + "\n\n" + localized("Dazu wird api.github.com kontaktiert. Es werden keine persönlichen Daten gesendet. Das lässt sich unter Konfiguration jederzeit ändern."),
+                confirm: localized("Ja"),
+                cancel: localized("Nein")
             )
             Settings.updateCheck = allowed ? .enabled : .disabled
         }
@@ -35,14 +35,14 @@ final class UpdateNotifier: NSObject {
 
     @objc func checkNow() {
         guard let installed = installedVersion else {
-            Dialogs.info(title: "Nach Updates suchen", message: "Version unbekannt (Entwicklungsbuild)")
+            Dialogs.info(title: localized("Nach Updates suchen"), message: localized("Version unbekannt (Entwicklungsbuild)"))
             return
         }
         Task { @MainActor in
             do {
                 switch try await UpdateCheck.check(installedVersion: installed) {
                 case .newer(let release): offer(release, installed: installed)
-                case .upToDate: Dialogs.info(title: "Nach Updates suchen", message: "Du hast die neueste Version.")
+                case .upToDate: Dialogs.info(title: localized("Nach Updates suchen"), message: localized("Du hast die neueste Version."))
                 }
             } catch {
                 Dialogs.show(error: error)
@@ -53,10 +53,10 @@ final class UpdateNotifier: NSObject {
     private func offer(_ release: ReleaseInfo, installed: String) {
         let version = release.tag.hasPrefix("v") ? String(release.tag.dropFirst()) : release.tag
         let open = Dialogs.confirm(
-            title: "Update verfügbar",
-            message: "Version \(version) ist verfügbar (installiert: \(installed)).",
-            confirm: "Download-Seite",
-            cancel: "Später"
+            title: localized("Update verfügbar"),
+            message: localized("Version %@ ist verfügbar (installiert: %@).", version as NSString, installed as NSString),
+            confirm: localized("Download-Seite"),
+            cancel: localized("Später")
         )
         if open { NSWorkspace.shared.open(release.url) }
     }

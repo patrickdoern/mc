@@ -6,7 +6,7 @@ final class FindDialog: NSView {
     var onPanelize: (([String]) -> Void)?
     var onClose: (() -> Void)?
 
-    private static let buttonTitles = ["Gehe zu", "Als Panel", "Abbrechen"]
+    private static let buttonTitles = [localized("Gehe zu"), localized("Als Panel"), localized("Abbrechen")]
     private let colors = Theme.dialogColors(warning: false)
     private let titleText: String
     private let characterWidth = Theme.font.maximumAdvancement.width
@@ -28,7 +28,7 @@ final class FindDialog: NSView {
     private var listFrame = NSRect.zero
 
     init(fileSystem: FileSystem, root: String, criteria: SearchCriteria) {
-        titleText = "Suche in \(root)"
+        titleText = localized("Suche in %@", root as NSString)
         super.init(frame: NSRect(x: 0, y: 0, width: CGFloat(columns) * characterWidth + 2 * padding, height: 40 + CGFloat(14) * 19 + 90))
         timer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in self?.drain() }
         DispatchQueue.global(qos: .userInitiated).async { [self] in
@@ -121,7 +121,7 @@ final class FindDialog: NSView {
         lock.lock()
         let done = finished
         lock.unlock()
-        return "\(results.count) gefunden" + (done ? "" : " – Suche läuft …")
+        return localized("%ld gefunden", results.count) + (done ? "" : " – " + localized("Suche läuft …"))
     }
 
     override func draw(_ dirtyRect: NSRect) {

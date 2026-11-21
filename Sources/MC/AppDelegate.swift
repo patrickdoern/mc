@@ -1,4 +1,5 @@
 import AppKit
+import MCCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWindow: MainWindowController?
@@ -39,9 +40,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if Settings.confirmExit, !Dialogs.confirm(title: "Moonlight Commander beenden?", message: "", confirm: "Beenden") { return .terminateCancel }
+        if Settings.confirmExit, !Dialogs.confirm(title: localized("Moonlight Commander beenden?"), message: "", confirm: localized("Beenden")) { return .terminateCancel }
         guard mainWindow?.hasUnsavedEditors == true else { return .terminateNow }
-        let proceed = Dialogs.confirm(title: "Ungespeicherte Änderungen", message: "In geöffneten Editor-Fenstern gibt es ungespeicherte Änderungen. Trotzdem beenden?", confirm: "Beenden", destructive: true)
+        let proceed = Dialogs.confirm(title: localized("Ungespeicherte Änderungen"), message: localized("In geöffneten Editor-Fenstern gibt es ungespeicherte Änderungen. Trotzdem beenden?"), confirm: localized("Beenden"), destructive: true)
         return proceed ? .terminateNow : .terminateCancel
     }
 

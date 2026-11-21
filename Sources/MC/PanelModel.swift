@@ -10,11 +10,11 @@ enum ListFormat: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .full: return "Name, Größe, Datum"
-        case .sizeOnly: return "Name, Größe"
-        case .permissions: return "Name, Rechte, Größe"
-        case .namesOnly: return "Nur Name"
-        case .brief: return "Kurz (mehrspaltig)"
+        case .full: return localized("Name, Größe, Datum")
+        case .sizeOnly: return localized("Name, Größe")
+        case .permissions: return localized("Name, Rechte, Größe")
+        case .namesOnly: return localized("Nur Name")
+        case .brief: return localized("Kurz (mehrspaltig)")
         }
     }
 }
