@@ -1,1 +1,5 @@
 blank_issues_enabled: true
+contact_links:
+  - name: Frage oder Idee? / Question or idea?
+    url: https://github.com/patrickdoern/mc/discussions
+    about: Fragen, Ideen und Feedback gehören in die Discussions, Fehler und konkrete Wünsche in ein Issue. / Questions, ideas and feedback go to Discussions, bugs and concrete requests to an issue.
