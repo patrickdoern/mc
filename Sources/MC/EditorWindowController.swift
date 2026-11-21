@@ -41,7 +41,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 920, height: 660), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         super.init(window: window)
         window.delegate = self
-        window.title = PosixPath.name(path) + (readOnly ? " (nur lesen)" : "")
+        window.title = PosixPath.name(path) + (readOnly ? " " + localized("(nur lesen)") : "")
         window.representedFilename = fileSystem is LocalFileSystem ? path : ""
         window.minSize = NSSize(width: 720, height: 320)
         window.setFrameAutosaveName("EditorWindow")
@@ -56,8 +56,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         scroll.drawsBackground = true
         scroll.backgroundColor = Theme.background
         let keyBar = KeyBar(
-            labels: readOnly ? ["Hilfe", "Umbruch", "Ende", "Hex", "Gehe zu", "", "Suchen", "Codierung", markup == nil ? "" : "Vorschau", "Ende"] : ["Hilfe", "Sichern", "Markieren", "Ersetzen", "Kopieren", "Verschieben", "Suchen", "Löschen", "", "Ende"],
-            shortLabels: readOnly ? ["Hilfe", "Umbr", "Ende", "Hex", "Gehe", "", "Suche", "Codg", markup == nil ? "" : "Vorsch", "Ende"] : ["Hilfe", "Sichrn", "Markr", "Ersetz", "Kopie", "Versch", "Suche", "Lösch", "", "Ende"]
+            labels: readOnly ? [localized("Hilfe"), localized("Umbruch"), localized("Ende"), "Hex", localized("Gehe zu"), "", localized("Suchen"), localized("Codierung"), markup == nil ? "" : localized("Vorschau"), localized("Ende")] : [localized("Hilfe"), localized("Sichern"), localized("Markieren"), localized("Ersetzen"), localized("Kopieren"), localized("Verschieben"), localized("Suchen"), localized("Löschen"), "", localized("Ende")],
+            shortLabels: readOnly ? [localized("Hilfe"), localized("Umbr"), localized("Ende"), "Hex", localized("Gehe"), "", localized("Suche"), localized("Codg"), markup == nil ? "" : localized("Vorsch"), localized("Ende")] : [localized("Hilfe"), localized("Sichrn"), localized("Markr"), localized("Ersetz"), localized("Kopie"), localized("Versch"), localized("Suche"), localized("Lösch"), "", localized("Ende")]
         ) { [weak self] number in
             self?.perform(functionKey: number, shifted: false)
         }
@@ -170,7 +170,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func findText(_ sender: Any?) {
-        guard let input = Dialogs.searchForm(title: "Suchen", fields: [("Suchen:", lastSearch)], checks: [("Regulärer Ausdruck", searchUsesRegex), ("Groß-/Kleinschreibung beachten", searchIsCaseSensitive)], confirm: "Suchen") else { return }
+        guard let input = Dialogs.searchForm(title: localized("Suchen"), fields: [(localized("Suchen:"), lastSearch)], checks: [(localized("Regulärer Ausdruck"), searchUsesRegex), (localized("Groß-/Kleinschreibung beachten"), searchIsCaseSensitive)], confirm: localized("Suchen")) else { return }
         guard !input.values[0].isEmpty else { return }
         lastSearch = input.values[0]
         searchUsesRegex = input.checks[0]
@@ -203,10 +203,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     @objc func replaceText(_ sender: Any?) {
         guard !readOnly, !isHex, let input = Dialogs.searchForm(
-            title: "Ersetzen",
-            fields: [("Suchen:", lastSearch), ("Ersetzen durch:", lastReplacement)],
-            checks: [("Regulärer Ausdruck ($1 für Gruppen)", searchUsesRegex), ("Groß-/Kleinschreibung beachten", searchIsCaseSensitive), ("Alle ersetzen", true)],
-            confirm: "Ersetzen"
+            title: localized("Ersetzen"),
+            fields: [(localized("Suchen:"), lastSearch), (localized("Ersetzen durch:"), lastReplacement)],
+            checks: [(localized("Regulärer Ausdruck ($1 für Gruppen)"), searchUsesRegex), (localized("Groß-/Kleinschreibung beachten"), searchIsCaseSensitive), (localized("Alle ersetzen"), true)],
+            confirm: localized("Ersetzen")
         ), !input.values[0].isEmpty else { return }
         lastSearch = input.values[0]
         lastReplacement = input.values[1]
@@ -221,7 +221,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             guard count > 0, textView.shouldChangeText(in: full, replacementString: nil) else { return NSSound.beep() }
             textView.textStorage?.replaceCharacters(in: full, with: regex.stringByReplacingMatches(in: text, range: full, withTemplate: template))
             textView.didChangeText()
-            Dialogs.info(title: "Ersetzen", message: "\(count) Ersetzung\(count == 1 ? "" : "en")")
+            Dialogs.info(title: localized("Ersetzen"), message: count == 1 ? localized("%ld Ersetzung", count) : localized("%ld Ersetzungen", count))
         } else if let match = nextMatch(from: textView.selectedRange().location) {
             textView.insertText(regex.replacementString(for: match, in: text, offset: 0, template: template), replacementRange: match.range)
         } else {
@@ -258,7 +258,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         textView.textStorage?.setAttributedString(rendered)
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         textView.scrollToBeginningOfDocument(nil)
-        window?.title = PosixPath.name(path) + " (Vorschau)"
+        window?.title = PosixPath.name(path) + " " + localized("(Vorschau)")
     }
 
     private func showSource() {
@@ -271,7 +271,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         applyHighlighting()
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         textView.scrollToBeginningOfDocument(nil)
-        window?.title = PosixPath.name(path) + (readOnly ? " (nur lesen)" : "")
+        window?.title = PosixPath.name(path) + (readOnly ? " " + localized("(nur lesen)") : "")
     }
 
     @objc func toggleHex(_ sender: Any?) {
@@ -286,17 +286,17 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             textView.string = textBeforeHex
             applyHighlighting()
         }
-        window?.title = PosixPath.name(path) + (isHex ? " (Hex)" : " (nur lesen)")
+        window?.title = PosixPath.name(path) + " " + (isHex ? localized("(Hex)") : localized("(nur lesen)"))
     }
 
     @objc func chooseEncoding(_ sender: Any?) {
         guard !isHex else { return }
         showSource()
-        guard !hasUnsavedChanges else { return Dialogs.show(error: FileError("Die Codierung lässt sich nur ohne ungespeicherte Änderungen wechseln")) }
+        guard !hasUnsavedChanges else { return Dialogs.show(error: FileError(localized("Die Codierung lässt sich nur ohne ungespeicherte Änderungen wechseln"))) }
         let encodings: [(String, String.Encoding)] = [("UTF-8", .utf8), ("ISO-8859-1 (Latin 1)", .isoLatin1), ("Windows-1252", .windowsCP1252), ("Mac Roman", .macOSRoman), ("UTF-16", .utf16)]
-        guard let result = Dialogs.form(title: "Codierung", popup: ("Zeichensatz:", encodings.map(\.0), encodings.firstIndex { $0.1 == encoding } ?? 0), confirm: "Übernehmen") else { return }
+        guard let result = Dialogs.form(title: localized("Codierung"), popup: (localized("Zeichensatz:"), encodings.map(\.0), encodings.firstIndex { $0.1 == encoding } ?? 0), confirm: localized("Übernehmen")) else { return }
         let chosen = encodings[result.choice].1
-        guard let text = String(data: rawData, encoding: chosen) else { return Dialogs.show(error: FileError("Die Datei lässt sich nicht als \(encodings[result.choice].0) lesen")) }
+        guard let text = String(data: rawData, encoding: chosen) else { return Dialogs.show(error: FileError(localized("Die Datei lässt sich nicht als %@ lesen", encodings[result.choice].0 as NSString))) }
         encoding = chosen
         sourceText = text
         let caret = textView.selectedRange().location
@@ -307,7 +307,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func insertFile(_ sender: Any?) {
-        guard !readOnly, let text = Dialogs.prompt(title: "Datei einfügen", message: "Pfad der Datei:", value: PosixPath.parent(path) + "/", confirm: "Einfügen") else { return }
+        guard !readOnly, let text = Dialogs.prompt(title: localized("Datei einfügen"), message: localized("Pfad der Datei:"), value: PosixPath.parent(path) + "/", confirm: localized("Einfügen")) else { return }
         do {
             let data = try fileSystem.readAll(PosixPath.resolve(text, relativeTo: PosixPath.parent(path), home: fileSystem.homePath))
             textView.insertText(Self.decode(data).0, replacementRange: textView.selectedRange())
@@ -319,7 +319,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @objc func saveBlock(_ sender: Any?) {
         let selection = textView.selectedRange()
         guard let range = selection.length > 0 ? selection : blockRange else { return NSSound.beep() }
-        guard let text = Dialogs.prompt(title: "Block sichern", message: "Speichern als:", value: PosixPath.parent(path) + "/", confirm: "Sichern") else { return }
+        guard let text = Dialogs.prompt(title: localized("Block sichern"), message: localized("Speichern als:"), value: PosixPath.parent(path) + "/", confirm: localized("Sichern")) else { return }
         let block = (textView.string as NSString).substring(with: range)
         do {
             try fileSystem.writeAll(block.data(using: encoding) ?? Data(block.utf8), to: PosixPath.resolve(text, relativeTo: PosixPath.parent(path), home: fileSystem.homePath), permissions: permissions)
@@ -329,7 +329,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func goToLine(_ sender: Any?) {
-        guard let value = Dialogs.prompt(title: "Gehe zu Zeile", message: "Zeilennummer:", confirm: "Gehen"), let line = Int(value), line > 0 else { return }
+        guard let value = Dialogs.prompt(title: localized("Gehe zu Zeile"), message: localized("Zeilennummer:"), confirm: localized("Gehen")), let line = Int(value), line > 0 else { return }
         let text = textView.string as NSString
         var location = 0
         for _ in 1..<line {
@@ -384,9 +384,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func showHelp() {
-        Dialogs.info(title: readOnly ? "Viewer-Tasten" : "Editor-Tasten", message: readOnly
-            ? "F2 Zeilenumbruch · F3/F10/Esc Ende · F4 Hex-Ansicht · F5 Gehe zu Zeile · F7 Suchen (⇧F7 weiter) · F8 Codierung wählen · F9 Vorschau/Quelltext (Markdown, HTML)"
-            : "F2 Sichern · F3 Block markieren (Anfang/Ende) · F4 Ersetzen (auch Regex) · F5 Block kopieren · F6 Block verschieben · F7 Suchen (⇧F7 weiter) · F8 Block löschen · Ctrl-Y Zeile löschen · F10/Esc Ende · Menü Bearbeiten: Datei einfügen, Block sichern, Codierung")
+        let lines = readOnly
+            ? [localized("F2 Zeilenumbruch"), localized("F3/F10/Esc Ende"), localized("F4 Hex-Ansicht"), localized("F5 Gehe zu Zeile"), localized("F7 Suchen (⇧F7 weiter)"), localized("F8 Codierung wählen"), localized("F9 Vorschau/Quelltext (Markdown, HTML)")]
+            : [localized("F2 Sichern"), localized("F3 Block markieren (Anfang/Ende)"), localized("F4 Ersetzen (auch Regex)"), localized("F5 Block kopieren"), localized("F6 Block verschieben"), localized("F7 Suchen (⇧F7 weiter)"), localized("F8 Block löschen"), localized("Ctrl-Y Zeile löschen"), localized("F10/Esc Ende"), localized("Menü Bearbeiten: Datei einfügen, Block sichern, Codierung")]
+        Dialogs.info(title: readOnly ? localized("Viewer-Tasten") : localized("Editor-Tasten"), message: lines.joined(separator: " · "))
     }
 }
 
