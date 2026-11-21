@@ -150,7 +150,8 @@
 "<Binärdatei, %@>" = "<Binary file, %@>";
 "Suche: " = "Search: ";
 "%d markiert (%@)" = "%d marked (%@)";
-"%d Einträge" = "Entries: %d";
+"%ld Eintrag" = "%ld entry";
+"%ld Einträge" = "%ld entries";
 "Zwei-Panel-Dateimanager für macOS" = "Two-panel file manager for macOS";
 "Kostenlos, ohne Werbung und Tracking" = "Free, no ads, no tracking";
 "Entwickelt von Patrick Dörn" = "Developed by Patrick Dörn";

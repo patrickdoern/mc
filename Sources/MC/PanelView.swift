@@ -261,7 +261,8 @@ final class PanelView: NSView {
                 let size = entry.isDirectory ? "<DIR>" : Formatting.exactSize(entry.size)
                 text = "\(entry.name)  \(size)  \(Formatting.permissions(entry.permissions))"
             } else {
-                text = localized("%d Einträge", max(model.rows.count - (model.hasParentRow ? 1 : 0), 0))
+                let count = max(model.rows.count - (model.hasParentRow ? 1 : 0), 0)
+                text = count == 1 ? localized("%ld Eintrag", count) : localized("%ld Einträge", count)
             }
         }
         draw(abbreviated(text, columns: columns), at: NSPoint(x: margin + 6, y: y), color: color)
