@@ -21,7 +21,7 @@ public final class PanelizedFileSystem: FileSystem {
         guard path == "/" else { return try base.list(mapped(path)) }
         return relativePaths.compactMap { relative in
             guard let entry = try? base.stat(PosixPath.join(root, relative)) else { return nil }
-            return FileEntry(name: relative, isDirectory: entry.isDirectory, isSymlink: entry.isSymlink, size: entry.size, modified: entry.modified, permissions: entry.permissions)
+            return FileEntry(name: relative, isDirectory: entry.isDirectory, isSymlink: entry.isSymlink, size: entry.size, modified: entry.modified, permissions: entry.permissions, accessed: entry.accessed, changed: entry.changed, created: entry.created)
         }
     }
 

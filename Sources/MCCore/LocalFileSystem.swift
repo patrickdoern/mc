@@ -121,9 +121,16 @@ public final class LocalFileSystem: FileSystem {
             isDirectory: isDirectory,
             isSymlink: isSymlink,
             size: Int64(info.st_size),
-            modified: Date(timeIntervalSince1970: TimeInterval(info.st_mtimespec.tv_sec) + TimeInterval(info.st_mtimespec.tv_nsec) / 1_000_000_000),
-            permissions: UInt16(info.st_mode & 0o7777)
+            modified: date(info.st_mtimespec),
+            permissions: UInt16(info.st_mode & 0o7777),
+            accessed: date(info.st_atimespec),
+            changed: date(info.st_ctimespec),
+            created: date(info.st_birthtimespec)
         )
+    }
+
+    private static func date(_ time: timespec) -> Date {
+        Date(timeIntervalSince1970: TimeInterval(time.tv_sec) + TimeInterval(time.tv_nsec) / 1_000_000_000)
     }
 }
 

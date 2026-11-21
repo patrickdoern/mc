@@ -159,7 +159,7 @@ public final class SFTPFileSystem: FileSystem {
         guard entry.isSymlink else { return entry }
         var attributes = LIBSSH2_SFTP_ATTRIBUTES()
         guard libssh2_sftp_stat_ex(sftp, path, UInt32(path.utf8.count), LIBSSH2_SFTP_STAT, &attributes) == 0 else { return entry }
-        return FileEntry(name: entry.name, isDirectory: UInt(attributes.permissions) & Self.typeMask == Self.directoryType, isSymlink: true, size: entry.size, modified: entry.modified, permissions: entry.permissions)
+        return FileEntry(name: entry.name, isDirectory: UInt(attributes.permissions) & Self.typeMask == Self.directoryType, isSymlink: true, size: entry.size, modified: entry.modified, permissions: entry.permissions, accessed: entry.accessed, changed: entry.changed, created: entry.created)
     }
 
     private static func entry(named name: String, attributes: LIBSSH2_SFTP_ATTRIBUTES) -> FileEntry {
@@ -171,7 +171,8 @@ public final class SFTPFileSystem: FileSystem {
             isSymlink: hasPermissions && type == linkType,
             size: attributes.flags & UInt(LIBSSH2_SFTP_ATTR_SIZE) != 0 ? Int64(attributes.filesize) : 0,
             modified: attributes.flags & UInt(LIBSSH2_SFTP_ATTR_ACMODTIME) != 0 ? Date(timeIntervalSince1970: TimeInterval(attributes.mtime)) : nil,
-            permissions: hasPermissions ? UInt16(attributes.permissions & 0o7777) : 0o644
+            permissions: hasPermissions ? UInt16(attributes.permissions & 0o7777) : 0o644,
+            accessed: attributes.flags & UInt(LIBSSH2_SFTP_ATTR_ACMODTIME) != 0 ? Date(timeIntervalSince1970: TimeInterval(attributes.atime)) : nil
         )
     }
 }
