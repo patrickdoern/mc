@@ -1,6 +1,6 @@
 # 0011: In Archiv packen
 
-Status: Ready
+Status: Done
 
 ## Ziel
 Der Nutzer kann markierte Dateien und Ordner eines Panels mit einem Befehl in ein neues oder vorhandenes Archiv (zip, tar, tar.gz, tar.bz2, tar.xz, 7z) packen, ohne vorher ein Archiv von Hand anzulegen. Ziel-Release 1.6.5.
