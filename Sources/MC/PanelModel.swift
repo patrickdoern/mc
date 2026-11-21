@@ -19,6 +19,19 @@ enum ListFormat: Int, CaseIterable {
     }
 }
 
+private struct Place: Equatable {
+    let fileSystem: FileSystem
+    let path: String
+
+    var key: String { fileSystem.identity + "\n" + path }
+
+    var text: String { fileSystem is LocalFileSystem ? path : fileSystem.displayName + ":" + path }
+
+    static func == (lhs: Place, rhs: Place) -> Bool {
+        lhs.fileSystem.identity == rhs.fileSystem.identity && lhs.path == rhs.path
+    }
+}
+
 final class PanelModel {
     static let parentName = ".."
 
@@ -45,6 +58,8 @@ final class PanelModel {
     private var watcher: DirectoryWatcher?
     private var watchedPath: String?
     private var refreshPending = false
+    private var history = NavigationHistory<Place>()
+    private var leftNames: [String: String] = [:]
 
     init(fileSystem: FileSystem, path: String, sortKey: SortKey, ascending: Bool, showHidden: Bool, dirsFirst: Bool, caseSensitive: Bool, format: ListFormat) {
         self.fileSystem = fileSystem
@@ -78,7 +93,48 @@ final class PanelModel {
 
     func isParentRow(_ index: Int) -> Bool { hasParentRow && index == 0 }
 
+    var canGoBack: Bool { history.canGoBack }
+
+    var canGoForward: Bool { history.canGoForward }
+
+    var historyItems: [(text: String, isCurrent: Bool)] {
+        history.elements.indices.reversed().map { (text: history.elements[$0].text, isCurrent: $0 == history.position) }
+    }
+
+    var localHistoryPaths: [String] {
+        history.elements.filter { $0.fileSystem is LocalFileSystem }.map(\.path)
+    }
+
+    func restoreHistory(localPaths: [String]) {
+        history = NavigationHistory(elements: localPaths.map { Place(fileSystem: LocalFileSystem.shared, path: $0) })
+    }
+
+    func goBack() {
+        guard history.canGoBack else { return }
+        step(to: history.position - 1)
+    }
+
+    func goForward() {
+        guard history.canGoForward else { return }
+        step(to: history.position + 1)
+    }
+
+    func goToHistory(item index: Int) {
+        let target = history.elements.count - 1 - index
+        guard history.elements.indices.contains(target), target != history.position else { return }
+        step(to: target)
+    }
+
+    private func step(to index: Int) {
+        let place = history.elements[index]
+        load(to: place.path, on: place.fileSystem, selecting: leftNames[place.key], quiet: false, historyIndex: index)
+    }
+
     func navigate(to newPath: String, on newSystem: FileSystem? = nil, selecting name: String? = nil, quiet: Bool = false) {
+        load(to: newPath, on: newSystem, selecting: name, quiet: quiet, historyIndex: nil)
+    }
+
+    private func load(to newPath: String, on newSystem: FileSystem?, selecting name: String?, quiet: Bool, historyIndex: Int?) {
         generation += 1
         let token = generation
         let system = newSystem ?? fileSystem
@@ -93,15 +149,32 @@ final class PanelModel {
                 switch result {
                 case .success(let listing):
                     let keptMarks = keepMarks ? marked.intersection(listing.map(\.name)) : []
+                    let previous = Place(fileSystem: fileSystem, path: path)
+                    let arrived = Place(fileSystem: system, path: newPath)
+                    if previous != arrived, !isParentRow(cursor), let current = currentEntry {
+                        leftNames[previous.key] = current.name
+                    }
                     fileSystem = system
                     path = newPath
                     entries = listing
                     marked = keptMarks
                     if !keepMarks { directorySizes = [:] }
+                    if let historyIndex {
+                        history.jump(to: historyIndex)
+                        cursor = 0
+                    } else if !quiet {
+                        history.record(arrived)
+                        if leftNames.count > history.limit {
+                            let keys = Set(history.elements.map(\.key))
+                            leftNames = leftNames.filter { keys.contains($0.key) }
+                        }
+                    }
                     rebuild(selecting: name)
                     watchDirectory()
                 case .failure(let error):
-                    if newSystem == nil, newPath == path, path != "/" {
+                    if let historyIndex {
+                        history.remove(at: historyIndex)
+                    } else if newSystem == nil, newPath == path, path != "/" {
                         navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path))
                         return
                     }
