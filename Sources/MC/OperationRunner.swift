@@ -70,7 +70,7 @@ final class OperationRunner {
         let background = backgroundJobs
         switch background.count {
         case 0: onStatusChange?("")
-        case 1: onStatusChange?("⟳ \(background[0].title)" + (background[0].percent.map { " \($0) %" } ?? ""))
+        case 1: onStatusChange?("⟳ \(background[0].title)" + (background[0].percent.map { " " + Formatting.percent($0) } ?? ""))
         default: onStatusChange?("⟳ " + localized("%ld Hintergrundaufgaben", background.count))
         }
     }

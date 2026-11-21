@@ -468,3 +468,15 @@
 "Ctrl-Y Zeile löschen" = "Ctrl-Y Delete line";
 "F10/Esc Ende" = "F10/Esc Quit";
 "Menü Bearbeiten: Datei einfügen, Block sichern, Codierung" = "Edit menu: Insert File, Save Block, Encoding";
+"Tastenbelegung" = "Key Bindings";
+"Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch" = "Tab switch panel · Enter open · Backspace/⌘↑ up one level";
+"Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren" = "Space/Ins/⇧↑↓ mark · + − mark by pattern · * invert marks";
+"Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)" = "Ctrl-S quick search · ⌘L go to path · ⇧⌘H Home · ⌘K connect SFTP/FTP (ftp://, ftps://)";
+"F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren · F6 Verschieben (⇧F6 Umbenennen)" = "F3 View · F4 Edit (⇧F4 new file) · F5 Copy · F6 Move (⇧F6 Rename)";
+"F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden" = "F2 User menu · F7 Make folder · F8 Delete (⇧F8 permanently) · F9 Menus · F10 Quit";
+"Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf" = "Typing writes to the command line · Tab completes · Enter runs in terminal · ⌘Enter inserts file name · Ctrl-P/N history";
+"Ctrl-O Terminal ein/aus (auf SFTP-Panels: ssh-Sitzung auf dem Server) · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner" = "Ctrl-O terminal on/off (on SFTP panels: ssh session on the server) · ⌘Y Quick Look · F6/⇧F6 with mask, e.g. *.bak · Enter on archive opens it as folder";
+"Menü Befehl: Chronik angesehener Dateien (Ziffern 1–9 öffnen) · Verzeichnis-Hotlist ⌘D (Ziffern 1–9 springen) · Dateien/Verzeichnisse vergleichen" = "Command menu: history of viewed files (digits 1–9 open) · Directory hotlist ⌘D (digits 1–9 jump) · Compare files/directories";
+"Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP, FTP und Archive neu ein" = "Local panels reload by themselves on outside changes · ⌘R rereads SFTP, FTP and archives";
+"Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste." = "Note: The F keys need “F1, F2 etc. as standard function keys” or the Fn key.";
+"%ld %%" = "%ld%%";

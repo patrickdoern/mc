@@ -265,7 +265,7 @@ extension MainWindowController {
     @objc func showBackgroundJobs(_ sender: Any?) {
         let menu = NSMenu()
         for job in runner.backgroundJobs {
-            menu.addItem(ClosureMenuItem(localized("Abbrechen: %@", job.title as NSString) + (job.percent.map { " (\($0) %)" } ?? "")) { job.operation.cancel() })
+            menu.addItem(ClosureMenuItem(localized("Abbrechen: %@", job.title as NSString) + (job.percent.map { " (" + Formatting.percent($0) + ")" } ?? "")) { job.operation.cancel() })
         }
         if menu.items.isEmpty { menu.addItem(NSMenuItem(title: localized("Keine Hintergrundaufgaben"), action: nil, keyEquivalent: "")) }
         popUp(menu, title: localized("Hintergrundaufgaben"))

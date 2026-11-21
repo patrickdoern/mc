@@ -1,4 +1,5 @@
 import Foundation
+import MCCore
 
 enum Formatting {
     private static let dateFormatter: DateFormatter = {
@@ -25,6 +26,10 @@ enum Formatting {
 
     static func exactSize(_ bytes: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
+
+    static func percent(_ value: Int) -> String {
+        localized("%ld %%", value)
     }
 
     static func permissions(_ mode: UInt16) -> String {

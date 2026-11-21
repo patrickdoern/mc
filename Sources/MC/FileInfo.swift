@@ -64,7 +64,7 @@ enum FileInfo {
             row(localized("Mount-Punkt"), string(from: stats.f_mntonname)),
             row(localized("Typ"), string(from: stats.f_fstypename)),
             row(localized("Größe"), Formatting.exactSize(total)),
-            row(localized("Frei"), "\(Formatting.exactSize(free))" + (total > 0 ? " (\(Int((Double(free) / Double(total) * 100).rounded())) %)" : "")),
+            row(localized("Frei"), "\(Formatting.exactSize(free))" + (total > 0 ? " (" + Formatting.percent(Int((Double(free) / Double(total) * 100).rounded())) + ")" : "")),
         ]
         if stats.f_files > 0 { lines.append(row(localized("Inodes frei"), localized("%lld von %lld", Int64(stats.f_ffree), Int64(stats.f_files)))) }
         return lines

@@ -620,18 +620,18 @@ final class MainWindowController: NSWindowController {
     }
 
     private func showHelp() {
-        Dialogs.info(title: "Tastenbelegung", message: """
-        Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch
-        Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren
-        Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)
-        F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren · F6 Verschieben (⇧F6 Umbenennen)
-        F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden
-        Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf
-        Ctrl-O Terminal ein/aus (auf SFTP-Panels: ssh-Sitzung auf dem Server) · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner
-        Menü Befehl: Chronik angesehener Dateien (Ziffern 1–9 öffnen) · Verzeichnis-Hotlist ⌘D (Ziffern 1–9 springen) · Dateien/Verzeichnisse vergleichen
-        Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP, FTP und Archive neu ein
-        Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste.
-        """)
+        Dialogs.info(title: localized("Tastenbelegung"), message: [
+            localized("Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch"),
+            localized("Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren"),
+            localized("Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)"),
+            localized("F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren · F6 Verschieben (⇧F6 Umbenennen)"),
+            localized("F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden"),
+            localized("Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf"),
+            localized("Ctrl-O Terminal ein/aus (auf SFTP-Panels: ssh-Sitzung auf dem Server) · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner"),
+            localized("Menü Befehl: Chronik angesehener Dateien (Ziffern 1–9 öffnen) · Verzeichnis-Hotlist ⌘D (Ziffern 1–9 springen) · Dateien/Verzeichnisse vergleichen"),
+            localized("Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP, FTP und Archive neu ein"),
+            localized("Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste.")
+        ].joined(separator: "\n"))
     }
 }
 

@@ -254,7 +254,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         if let fraction = item.fraction {
             colors.focusBackground.setFill()
             NSRect(x: bar.minX, y: bar.minY, width: bar.width * CGFloat(min(max(fraction, 0), 1)), height: bar.height).fill()
-            let label = "\(Int(fraction * 100)) %"
+            let label = Formatting.percent(Int(fraction * 100))
             let width = CGFloat(label.count) * characterWidth
             draw(label, at: NSPoint(x: bar.midX - width / 2, y: bar.minY), color: colors.fieldText)
         }
