@@ -46,7 +46,7 @@ extension MainWindowController {
     private func fileMenu() -> NSMenu {
         let menu = NSMenu()
         add([
-            (localized("Ansicht   F3"), viewFile), (localized("Quick Look   ⌘Y"), quickLookFile), (localized("Datei anzeigen …"), viewFileByName), (localized("Bearbeiten   F4"), editFile), (localized("Neue Datei …   ⇧F4"), newFile), (localized("Kopieren   F5"), copyFiles), nil,
+            (localized("Ansicht   F3"), viewFile), (localized("Quick Look   ⌘Y"), quickLookFile), (localized("Datei anzeigen …"), viewFileByName), (localized("Bearbeiten   F4"), editFile), (localized("Neue Datei …   ⇧F4"), newFile), (localized("Kopieren   F5"), copyFiles), (localized("In Archiv packen …   ⇧F5"), packIntoArchive), nil,
             (localized("Chmod …"), changePermissions), (localized("Link …"), makeHardLink), (localized("Symbolischer Link …"), makeSymbolicLink), (localized("Relativer symbolischer Link …"), makeRelativeSymbolicLink),
             (localized("Symbolischen Link bearbeiten …"), editSymbolicLink), (localized("Chown …"), changeOwner), nil,
             (localized("Umbenennen/Verschieben   F6"), moveFiles), (localized("Umbenennen   ⇧F6"), renameFile), (localized("Neues Verzeichnis erstellen   F7"), makeDirectory),

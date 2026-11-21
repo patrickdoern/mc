@@ -41,7 +41,7 @@ Both also work while the app is running. Folders can also be dragged onto the Do
 | ⌘← / ⌘→ | directory history back / forward (per panel, the history list is under "History …" in the Left/Right menu) |
 | F2 | user menu (entries from `~/.config/moonlight-commander/menu`, mc format, macros `%f %d %s %D %F`) |
 | F3 / F4 | view / edit (⇧F4 new file), both with syntax highlighting |
-| F5 / F6 | copy / move (⇧F6 rename) |
+| F5 / F6 | copy (⇧F5 pack into archive) / move (⇧F6 rename) |
 | F7 / F8 | make folder / delete (local: Trash, ⇧F8 permanent) |
 | F9 / F10 | menu bar (Left, File, Command, Options, Right) / quit; `exit` on the command line also quits |
 | Typing | writes to the command line; Tab completes commands and file names, Enter runs in the terminal (folder of the active panel), `cd` changes the panel |
@@ -66,6 +66,7 @@ Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's fol
 - **Masks:** When copying, moving and renaming, a mask is possible in the target, e.g. `*.bak` (foo.txt → foo.bak) or `neu_*` (foo.txt → neu_foo.txt).
 - **Existing files and copy options:** The F5 and F6 dialog has the selection "If file exists:" (Ask each time, Overwrite, Only if newer, Only if size differs, Skip) and the checkboxes "Preserve attributes" (default on: modification time, permissions and whatever else `copyfile` carries over; off: the copy gets the time of copying, the executable bit is kept) and "Follow symbolic links" (default off: links are copied as links; on: the file or folder with its content instead, loops are detected). Your choice is remembered. "Only if newer" replaces only if the source is more than 2 seconds newer. When moving, a skipped file stays in the source. The conflict dialog additionally has "For all further:" (Ask each time, Only if newer, Only if size differs). FTP has no timestamps and no links, so there the checkboxes do nothing or allow copying links as files.
 - **Archives as folders:** zip, tar, tar.gz/bz2/xz/zst, 7z, rar, iso and more open with Enter. zip, jar, war, tar (also .tgz, .tbz, .txz and the .tar.gz/.bz2/.xz suffixes) and 7z can be written to: copy, move, delete, rename and new folders (F5, F6, F7, F8, ⇧F6) rewrite the archive once per operation. rar, iso, tar.zst and others stay read-only.
+- **Pack into archive (⇧F5):** Packs the selection (or the cursor entry) of the active panel into an archive in the other panel's folder. The name defaults to the entry or the current folder plus `.zip`; the format follows the suffix (zip, tar, tar.gz/.tgz, tar.bz2/.tbz, tar.xz/.txz, 7z). An existing archive is added to (conflicts as with F5, using the saved rule), the archive is written once and packing can be cancelled. The archive must be local; an archive in the source folder is not packed into itself. Also in the Command menu (⌥⇧5).
 - **Panelize:** Search results ("As Panel") or the output of a command (Command → External Panelize) appear as a panel in which you can copy, view and delete.
 - **Multi-column:** Listing format "Brief" shows 2 to 3 columns.
 - **Live refresh:** Local panels reload themselves as soon as their directory changes from outside; cursor and marks are kept. For SFTP, FTP and archives, ⌘R remains.

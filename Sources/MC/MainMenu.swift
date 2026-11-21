@@ -42,6 +42,7 @@ enum MainMenu {
         menu.addItem(item(localized("Bearbeiten (F4)"), #selector(MainWindowController.editFile(_:)), "4", .option))
         menu.addItem(item(localized("Neue Datei …"), #selector(MainWindowController.newFile(_:)), "n"))
         menu.addItem(item(localized("Kopieren (F5)"), #selector(MainWindowController.copyFiles(_:)), "5", .option))
+        menu.addItem(item(localized("In Archiv packen (⇧F5) …"), #selector(MainWindowController.packIntoArchive(_:)), "5", [.option, .shift]))
         menu.addItem(item(localized("Verschieben (F6)"), #selector(MainWindowController.moveFiles(_:)), "6", .option))
         menu.addItem(item(localized("Umbenennen (⇧F6)"), #selector(MainWindowController.renameFile(_:)), "6", [.option, .shift]))
         menu.addItem(item(localized("Neuer Ordner (F7)"), #selector(MainWindowController.makeDirectory(_:)), "7", .option))

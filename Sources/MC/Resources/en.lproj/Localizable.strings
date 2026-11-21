@@ -473,7 +473,7 @@
 "Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch" = "Tab switch panel · Enter open · Backspace/⌘↑ up one level";
 "Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren" = "Space/Ins/⇧↑↓ mark · + − mark by pattern · * invert marks";
 "Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)" = "Ctrl-S quick search · ⌘L go to path · ⇧⌘H Home · ⌘K connect SFTP/FTP (ftp://, ftps://)";
-"F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren · F6 Verschieben (⇧F6 Umbenennen)" = "F3 View · F4 Edit (⇧F4 new file) · F5 Copy · F6 Move (⇧F6 Rename)";
+"F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren (⇧F5 in Archiv packen) · F6 Verschieben (⇧F6 Umbenennen)" = "F3 View · F4 Edit (⇧F4 new file) · F5 Copy (⇧F5 pack into archive) · F6 Move (⇧F6 Rename)";
 "F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden" = "F2 User menu · F7 Make folder · F8 Delete (⇧F8 permanently) · F9 Menus · F10 Quit";
 "Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf" = "Typing writes to the command line · Tab completes · Enter runs in terminal · ⌘Enter inserts file name · Ctrl-P/N history";
 "Ctrl-O Terminal ein/aus (auf SFTP-Panels: ssh-Sitzung auf dem Server) · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner" = "Ctrl-O terminal on/off (on SFTP panels: ssh session on the server) · ⌘Y Quick Look · F6/⇧F6 with mask, e.g. *.bak · Enter on archive opens it as folder";
@@ -512,3 +512,14 @@
 "Attribute erhalten" = "Preserve attributes";
 "Symbolischen Links folgen" = "Follow symbolic links";
 "Archiv lässt sich nicht schreiben: %@" = "Cannot write archive: %@";
+
+"In Archiv packen (⇧F5) …" = "Pack into Archive (⇧F5) …";
+"In Archiv packen …   ⇧F5" = "Pack into Archive …   ⇧F5";
+"In Archiv packen" = "Pack into Archive";
+"Packen" = "Pack";
+"Packen …" = "Packing …";
+"„%@“ packen in Archiv:" = "Pack “%@” into archive:";
+"%ld Objekte packen in Archiv:" = "Pack %ld items into archive:";
+"Archiv" = "Archive";
+"Archive lassen sich nur lokal anlegen" = "Archives can only be created locally";
+"„%@“ hat keine Archiv-Endung, die sich beschreiben lässt (zip, tar, tar.gz, tar.bz2, tar.xz, 7z)" = "“%@” does not have a writable archive suffix (zip, tar, tar.gz, tar.bz2, tar.xz, 7z)";

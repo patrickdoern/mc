@@ -135,4 +135,23 @@ extension ArchiveWriteTests {
         #expect(leftovers(root).isEmpty)
     }
 }
+
+    @Suite struct PackingLogicTests {
+        @Test func defaultNameUsesEntryOrFolder() {
+            #expect(ArchivePacking.defaultName(names: ["bild.png"], directory: "/a/Fotos") == "bild.png.zip")
+            #expect(ArchivePacking.defaultName(names: ["a", "b"], directory: "/a/Fotos") == "Fotos.zip")
+        }
+
+        @Test func validateRejectsUnwritableExtension() {
+            #expect(throws: FileError.self) { try ArchivePacking.validate(archivePath: "/tmp/x.rar", on: local) }
+            #expect(throws: Never.self) { try ArchivePacking.validate(archivePath: "/tmp/x.tar.xz", on: local) }
+        }
+
+        @Test func transfersSkipArchiveInSourceDirectory() {
+            let result = ArchivePacking.transfers(names: ["a", "pack.zip", "b"], sourceDirectory: "/src", archivePath: "/src/pack.zip")
+            #expect(result.map(\.destination) == ["/a", "/b"])
+            #expect(ArchivePacking.transfers(names: ["pack.zip"], sourceDirectory: "/src", archivePath: nil).count == 1)
+            #expect(ArchivePacking.transfers(names: [], sourceDirectory: "/src", archivePath: nil).isEmpty)
+        }
+    }
 }

@@ -181,7 +181,8 @@ final class MainWindowController: NSWindowController {
         case (3, _): viewFile(nil)
         case (4, false): editFile(nil)
         case (4, true): newFile(nil)
-        case (5, _): copyFiles(nil)
+        case (5, false): copyFiles(nil)
+        case (5, true): packIntoArchive(nil)
         case (6, false): moveFiles(nil)
         case (6, true): renameFile(nil)
         case (7, _): makeDirectory(nil)
@@ -320,6 +321,34 @@ final class MainWindowController: NSWindowController {
         }, completion: { [weak self] in
             source.clearMarks()
             self?.reloadPanels()
+        })
+    }
+
+    @objc func packIntoArchive(_ sender: Any?) {
+        let source = activePanel.model
+        let target = inactivePanel.model
+        let names = source.selectedNames
+        guard !names.isEmpty else { return }
+        let message = names.count == 1 ? localized("„%@“ packen in Archiv:", names[0] as NSString) : localized("%ld Objekte packen in Archiv:", names.count)
+        let proposal = ArchivePacking.defaultName(names: names, directory: source.path)
+        guard let text = Dialogs.prompt(title: localized("In Archiv packen"), message: message, value: proposal, confirm: localized("Packen")) else { return }
+        let archivePath = PosixPath.resolve(text, relativeTo: target.path, home: target.fileSystem.homePath)
+        do {
+            try ArchivePacking.validate(archivePath: archivePath, on: target.fileSystem)
+        } catch {
+            Dialogs.show(error: error)
+            return
+        }
+        let options = TransferOptions(overwriteRule: Settings.overwriteRule, preserveAttributes: Settings.preserveAttributes, followSymlinks: false)
+        let sourceSystem = source.fileSystem
+        let transfers = ArchivePacking.transfers(names: names, sourceDirectory: source.path, archivePath: source.isLocal ? archivePath : nil)
+        runner.run(title: localized("Packen …"), options: options, { operation in
+            let archive = try ArchiveFileSystem(path: archivePath)
+            try operation.copy(transfers, from: sourceSystem, to: archive)
+        }, completion: { [weak self] in
+            source.clearMarks()
+            self?.reloadPanels()
+            if PosixPath.parent(archivePath) == target.path { target.reload(selecting: PosixPath.name(archivePath)) }
         })
     }
 
@@ -649,7 +678,7 @@ final class MainWindowController: NSWindowController {
             localized("Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch"),
             localized("Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren"),
             localized("Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)"),
-            localized("F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren · F6 Verschieben (⇧F6 Umbenennen)"),
+            localized("F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren (⇧F5 in Archiv packen) · F6 Verschieben (⇧F6 Umbenennen)"),
             localized("F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden"),
             localized("Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf"),
             localized("Ctrl-O Terminal ein/aus (auf SFTP-Panels: ssh-Sitzung auf dem Server) · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner"),
