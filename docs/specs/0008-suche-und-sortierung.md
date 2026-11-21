@@ -59,6 +59,6 @@ Checks nach jedem Task: `swift build` (ohne Warnung) und `swift test` (aktuell 9
 - [x] T2: Suchlogik (R1, R2, R9 Teil 2, R8 Teil 1): `SearchCriteria` mit `caseSensitive`, `useRegex`, `validate()`, `FileSearch.run` für Maske, regulären Ausdruck und Inhalt ohne und mit Beachtung der Groß-/Kleinschreibung; Tabelleneintrag für den Fehlertext; Tests. Dateien: `Sources/MCCore/FileSearch.swift`, `Tests/MCCoreTests/FileSearchTests.swift`, `en.lproj/Localizable.strings`.
 - [x] T3: Sortierung und Anzeige (R5, R6, R7, R8 Teil 2, R11 optional): neue `SortKey`-Fälle, Sortierung nach den Zeiten, Zeitspalte, Dialog „Sortierreihenfolge“. Dateien: `Sources/MC/PanelModel.swift`, `PanelView.swift`, `MainWindowController+Actions.swift` (`chooseSortOrder`), `en.lproj/Localizable.strings`, ggf. `MainMenu.swift`/`MainWindowController.swift` für R11.
 - [x] T4: Suchdialog (R3, R8 Teil 3): `Dialogs.searchForm` mit `message`, Häkchen im Dialog „Datei suchen“, Validierung vor dem Start, gemerkte Wahl in `Settings`, Textänderungen in der Tabelle. Dateien: `Sources/MC/Dialogs.swift`, `MainWindowController+Actions.swift` (`findFiles`), `Settings.swift`, `en.lproj/Localizable.strings`.
-- [ ] T5: Doku (R10): README deutsch und englisch. Dateien: `README.md`, `README.en.md`.
+- [x] T5: Doku (R10): README deutsch und englisch. Dateien: `README.md`, `README.en.md`.
 
 Danach: Abnahme aus dieser Spec (manuell: Suche mit den Optionen, Sortierung mit den neuen Zeiten; SFTP/FTP nur, soweit eine Verbindung verfügbar ist).
