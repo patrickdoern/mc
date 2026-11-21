@@ -76,7 +76,7 @@ struct Palette {
         editorSelection: NSColor(red: 0.7, green: 0.85, blue: 1.0, alpha: 1)
     )
 
-    static let all: [(name: String, palette: Palette)] = [("Norton Blau", classic), ("Dunkel", dark), ("Hell", light)]
+    static let all: [(name: String, palette: Palette)] = [(localized("Norton Blau"), classic), (localized("Dunkel"), dark), (localized("Hell"), light)]
 }
 
 enum Theme {
