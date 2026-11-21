@@ -27,53 +27,87 @@ public final class FileOperation {
     }
 
     public func copy(_ transfers: [Transfer], from source: FileSystem, to destination: FileSystem) throws {
-        try scan(transfers.map(\.source), on: source)
-        for transfer in transfers {
-            try attempt(transfer.source) {
-                try copyItem(transfer.source, to: transfer.destination, from: source, into: destination, entry: try source.stat(transfer.source))
+        try transaction([source, destination]) {
+            try scan(transfers.map(\.source), on: source)
+            for transfer in transfers {
+                try attempt(transfer.source) {
+                    try copyItem(transfer.source, to: transfer.destination, from: source, into: destination, entry: try source.stat(transfer.source))
+                }
             }
+            report(force: true)
         }
-        report(force: true)
     }
 
     public func move(_ transfers: [Transfer], from source: FileSystem, to destination: FileSystem) throws {
-        if Self.isSameFileSystem(source, destination) {
-            progress.filesTotal = transfers.count
-            for transfer in transfers {
-                try attempt(transfer.source) { try moveItem(transfer.source, to: transfer.destination, on: source) }
-                progress.filesDone += 1
-            }
-        } else {
-            try scan(transfers.map(\.source), on: source)
-            for transfer in transfers {
-                let skippedBefore = skipped
-                try attempt(transfer.source) {
-                    let entry = try source.stat(transfer.source)
-                    try copyItem(transfer.source, to: transfer.destination, from: source, into: destination, entry: entry)
-                    if skipped == skippedBefore { try removeTree(transfer.source, on: source, entry: entry) }
+        try transaction([source, destination]) {
+            if Self.isSameFileSystem(source, destination) {
+                progress.filesTotal = transfers.count
+                for transfer in transfers {
+                    try attempt(transfer.source) { try moveItem(transfer.source, to: transfer.destination, on: source) }
+                    progress.filesDone += 1
+                }
+            } else {
+                try scan(transfers.map(\.source), on: source)
+                for transfer in transfers {
+                    let skippedBefore = skipped
+                    try attempt(transfer.source) {
+                        let entry = try source.stat(transfer.source)
+                        try copyItem(transfer.source, to: transfer.destination, from: source, into: destination, entry: entry)
+                        if skipped == skippedBefore { try removeTree(transfer.source, on: source, entry: entry) }
+                    }
                 }
             }
+            report(force: true)
         }
-        report(force: true)
     }
 
     public func delete(_ paths: [String], on fileSystem: FileSystem, trash: Bool) throws {
-        if trash, let local = fileSystem as? LocalFileSystem {
-            progress.filesTotal = paths.count
+        try transaction([fileSystem]) {
+            if trash, let local = fileSystem as? LocalFileSystem {
+                progress.filesTotal = paths.count
+                for path in paths {
+                    try attempt(path) { try local.trash(path) }
+                    progress.filesDone += 1
+                    progress.currentPath = path
+                    report(force: true)
+                }
+                return
+            }
+            try scan(paths, on: fileSystem)
+            progress.bytesTotal = 0
             for path in paths {
-                try attempt(path) { try local.trash(path) }
-                progress.filesDone += 1
-                progress.currentPath = path
+                try attempt(path) { try removeTree(path, on: fileSystem, entry: try fileSystem.stat(path)) }
+            }
+            report(force: true)
+        }
+    }
+
+    private func transaction(_ systems: [FileSystem], _ body: () throws -> Void) throws {
+        var unique: [FileSystem] = []
+        for system in systems where !unique.contains(where: { Self.isSameFileSystem($0, system) }) {
+            unique.append(system)
+        }
+        unique.forEach { $0.beginTransaction() }
+        do {
+            try body()
+        } catch {
+            unique.forEach { $0.rollbackTransaction() }
+            throw error
+        }
+        var pending = Array(unique.reversed())
+        while let system = pending.first {
+            if system.hasPendingChanges {
+                progress.currentPath = PosixPath.name(system.displayName)
                 report(force: true)
             }
-            return
+            do {
+                try system.commitTransaction()
+            } catch {
+                pending.forEach { $0.rollbackTransaction() }
+                throw error
+            }
+            pending.removeFirst()
         }
-        try scan(paths, on: fileSystem)
-        progress.bytesTotal = 0
-        for path in paths {
-            try attempt(path) { try removeTree(path, on: fileSystem, entry: try fileSystem.stat(path)) }
-        }
-        report(force: true)
     }
 
     private static func isSameFileSystem(_ first: FileSystem, _ second: FileSystem) -> Bool {

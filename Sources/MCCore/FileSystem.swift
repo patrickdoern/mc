@@ -40,6 +40,10 @@ public protocol FileSystem: AnyObject {
     var displayName: String { get }
     var exitLocation: ExitLocation? { get }
     var homePath: String { get }
+    var hasPendingChanges: Bool { get }
+    func beginTransaction()
+    func commitTransaction() throws
+    func rollbackTransaction()
     func list(_ path: String) throws -> [FileEntry]
     func stat(_ path: String) throws -> FileEntry
     func statFollowingLinks(_ path: String) throws -> FileEntry
@@ -60,6 +64,14 @@ public extension FileSystem {
     var displayName: String { identity.replacingOccurrences(of: "sftp://", with: "") }
 
     var exitLocation: ExitLocation? { nil }
+
+    var hasPendingChanges: Bool { false }
+
+    func beginTransaction() {}
+
+    func commitTransaction() throws {}
+
+    func rollbackTransaction() {}
 
     func statFollowingLinks(_ path: String) throws -> FileEntry { try stat(path) }
 
