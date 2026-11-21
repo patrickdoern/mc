@@ -1,6 +1,6 @@
 # 0007: Verzeichnisverlauf mit Zurück und Vorwärts
 
-Status: Ready
+Status: Done
 Slice: 1/4 (siehe [Roadmap](0006-mc-luecken-roadmap.md)), Ziel-Release 1.6.1
 
 ## Ziel
