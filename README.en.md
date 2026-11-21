@@ -17,8 +17,8 @@ Building: `./scripts/build-libssh2.sh` builds OpenSSL and libssh2 once as static
 
 ```bash
 mc                    # open the current folder in the active panel
-mc ordner1 ordner2    # set the left and right panel
-mcedit datei.txt      # open a file directly in the editor (new files are created)
+mc folder1 folder2    # set the left and right panel
+mcedit file.txt       # open a file directly in the editor (new files are created)
 ```
 
 Both also work while the app is running. Folders can also be dragged onto the Dock icon.
@@ -76,7 +76,7 @@ Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's fol
 - **Command:** user menu, directory tree, find file (name and content), compare directories (marks differences and reports the count), compare files (built-in diff in the viewer, works without Xcode; the cursor in the other panel may also be just the same file name) and optionally in FileMerge, directory sizes, command history, viewed files history (the last 30 local files from viewer and editor, reopen the first nine with digits 1 to 9), hotlist (⌘D, jump directly to the first nine entries with digits 1 to 9), active connections.
 - **Options:** configuration, layout, panel options, confirmation, appearance (Norton Blue, Dark, Light), update check: At the first start the app asks whether it may check for new versions at startup (at most once every 24 hours, at GitHub, without personal data, only a notice with a link, no download); the option "Check for updates at startup" changes this, "Check for Updates …" checks immediately.
 
-Not included: FTP/shell connections, encoding, display bits, learn keys, virtual file system, external arrange, background jobs.
+Not included compared to Midnight Commander: shell connections, display bits, learn keys, virtual file system. The encoding can only be chosen in the editor and viewer.
 
 ## Distribution
 

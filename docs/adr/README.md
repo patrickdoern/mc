@@ -16,3 +16,4 @@ Entscheidungen, die nicht aus dem Code ablesbar sind. Ein akzeptiertes ADR wird 
 | [0010](0010-ftp-ueber-libcurl-remote-terminal-ueber-ssh.md) | FTP läuft über das System-libcurl, das Remote-Terminal über /usr/bin/ssh | Accepted |
 | [0011](0011-netzzugriff-nur-mit-zustimmung-update-hinweis.md) | Die App greift nur mit Zustimmung ins Netz: Update-Hinweis per Abfrage der GitHub-Release-API, kein Auto-Update | Accepted |
 | [0012](0012-englische-oberflaeche-ueber-deutsche-schluessel.md) | Texte der App stehen auf Deutsch im Code und werden über `localized` mit englischer Tabelle und Systemsprache übersetzt | Accepted |
+| [0013](0013-website-auf-github-pages-zweisprachig.md) | Die Website läuft auf GitHub Pages unter moonlight-commander.org, mit je einer statischen Seite pro Sprache | Accepted |
