@@ -64,6 +64,7 @@ Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's fol
 ## More features
 
 - **Masks:** When copying, moving and renaming, a mask is possible in the target, e.g. `*.bak` (foo.txt → foo.bak) or `neu_*` (foo.txt → neu_foo.txt).
+- **Existing files and copy options:** The F5 and F6 dialog has the selection "If file exists:" (Ask each time, Overwrite, Only if newer, Only if size differs, Skip) and the checkboxes "Preserve attributes" (default on: modification time, permissions and whatever else `copyfile` carries over; off: the copy gets the time of copying, the executable bit is kept) and "Follow symbolic links" (default off: links are copied as links; on: the file or folder with its content instead, loops are detected). Your choice is remembered. "Only if newer" replaces only if the source is more than 2 seconds newer. When moving, a skipped file stays in the source. The conflict dialog additionally has "For all further:" (Ask each time, Only if newer, Only if size differs). FTP has no timestamps and no links, so there the checkboxes do nothing or allow copying links as files.
 - **Archives as folders:** zip, tar, tar.gz/bz2/xz/zst, 7z, rar, iso and more open with Enter (read-only; copying out and viewing work).
 - **Panelize:** Search results ("As Panel") or the output of a command (Command → External Panelize) appear as a panel in which you can copy, view and delete.
 - **Multi-column:** Listing format "Brief" shows 2 to 3 columns.
