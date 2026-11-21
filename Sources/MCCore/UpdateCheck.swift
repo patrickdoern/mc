@@ -86,10 +86,10 @@ public enum UpdateCheck {
         do {
             (data, response) = try await transport(request(installedVersion: installedVersion))
         } catch {
-            throw FileError("Update-Prüfung fehlgeschlagen: \(error.localizedDescription)")
+            throw FileError(localized("Update-Prüfung fehlgeschlagen: %@", error.localizedDescription as NSString))
         }
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
-            throw FileError("Update-Prüfung fehlgeschlagen: GitHub antwortet mit Status \(http.statusCode)")
+            throw FileError(localized("Update-Prüfung fehlgeschlagen: GitHub antwortet mit Status %ld", http.statusCode))
         }
         return status(of: data, installedVersion: installedVersion)
     }

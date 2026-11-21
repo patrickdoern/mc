@@ -31,23 +31,23 @@ public final class ArchiveFileSystem: FileSystem {
     }
 
     public func list(_ path: String) throws -> [FileEntry] {
-        guard let result = children[path] else { throw FileError("\(path): Ordner nicht gefunden") }
+        guard let result = children[path] else { throw FileError(localized("%@: Ordner nicht gefunden", path as NSString)) }
         return result
     }
 
     public func stat(_ path: String) throws -> FileEntry {
         if path == "/" { return FileEntry(name: "/", isDirectory: true) }
-        guard let entry = entries[path] else { throw FileError("\(path): nicht gefunden") }
+        guard let entry = entries[path] else { throw FileError(localized("%@: nicht gefunden", path as NSString)) }
         return entry
     }
 
     public func readLink(_ path: String) throws -> String {
-        guard let target = links[path] else { throw FileError("\(path): kein Link") }
+        guard let target = links[path] else { throw FileError(localized("%@: kein Link", path as NSString)) }
         return target
     }
 
     public func openReader(_ path: String) throws -> FileReader {
-        guard let member = members[path] else { throw FileError("\(path): nicht gefunden") }
+        guard let member = members[path] else { throw FileError(localized("%@: nicht gefunden", path as NSString)) }
         return try ArchiveReader(archive: archivePath, member: member)
     }
 
@@ -61,7 +61,7 @@ public final class ArchiveFileSystem: FileSystem {
     public func openWriter(_ path: String, permissions: UInt16) throws -> FileWriter { throw readOnly(path) }
 
     private func readOnly(_ path: String) -> FileError {
-        FileError("\(PosixPath.name(archivePath)) ist ein Archiv und nur lesbar")
+        FileError(localized("%@ ist ein Archiv und nur lesbar", PosixPath.name(archivePath) as NSString))
     }
 
     private static func run(_ arguments: [String]) throws -> String {
@@ -74,7 +74,7 @@ public final class ArchiveFileSystem: FileSystem {
         try process.run()
         let data = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw FileError("Archiv lässt sich nicht lesen: \(PosixPath.name(arguments.last ?? ""))") }
+        guard process.terminationStatus == 0 else { throw FileError(localized("Archiv lässt sich nicht lesen: %@", PosixPath.name(arguments.last ?? "") as NSString)) }
         return String(decoding: data, as: UTF8.self)
     }
 

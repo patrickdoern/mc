@@ -92,7 +92,7 @@ public final class SFTPFileSystem: FileSystem {
     }
 
     public func makeSymlink(_ path: String, target: String) throws {
-        throw FileError("\(path): Symlinks können über SFTP nicht angelegt werden")
+        throw FileError(localized("%@: Symlinks können über SFTP nicht angelegt werden", path as NSString))
     }
 
     public func setModified(_ path: String, _ date: Date) throws {
@@ -129,15 +129,15 @@ public final class SFTPFileSystem: FileSystem {
         let status = libssh2_sftp_last_error(sftp)
         let reason: String
         switch status {
-        case 2: reason = "Datei nicht gefunden"
-        case 3: reason = "Zugriff verweigert"
-        case 11: reason = "Existiert bereits"
-        case 12: reason = "Schreibgeschützt"
-        case 14: reason = "Kein Speicherplatz mehr"
-        case 15: reason = "Kontingent überschritten"
-        case 18: reason = "Ordner ist nicht leer"
-        case 19: reason = "Ist ein Ordner"
-        default: reason = "SFTP-Fehler \(status)"
+        case 2: reason = localized("Datei nicht gefunden")
+        case 3: reason = localized("Zugriff verweigert")
+        case 11: reason = localized("Existiert bereits")
+        case 12: reason = localized("Schreibgeschützt")
+        case 14: reason = localized("Kein Speicherplatz mehr")
+        case 15: reason = localized("Kontingent überschritten")
+        case 18: reason = localized("Ordner ist nicht leer")
+        case 19: reason = localized("Ist ein Ordner")
+        default: reason = localized("SFTP-Fehler %lu", status)
         }
         return FileError("\(path): \(reason)")
     }

@@ -73,11 +73,11 @@ public final class LocalFileSystem: FileSystem {
         var owner = uid_t.max
         var groupID = gid_t.max
         if let user, !user.isEmpty {
-            guard let entry = getpwnam(user) else { throw FileError("Unbekannter Benutzer: \(user)") }
+            guard let entry = getpwnam(user) else { throw FileError(localized("Unbekannter Benutzer: %@", user as NSString)) }
             owner = entry.pointee.pw_uid
         }
         if let group, !group.isEmpty {
-            guard let entry = getgrnam(group) else { throw FileError("Unbekannte Gruppe: \(group)") }
+            guard let entry = getgrnam(group) else { throw FileError(localized("Unbekannte Gruppe: %@", group as NSString)) }
             groupID = entry.pointee.gr_gid
         }
         guard chown(path, owner, groupID) == 0 else { throw FileError(path: path, errno: errno) }

@@ -63,7 +63,7 @@ public extension FileSystem {
 
     func makeDirectories(_ path: String) throws {
         if let existing = try? stat(path) {
-            guard existing.isDirectory else { throw FileError("\(path): Existiert bereits und ist kein Ordner") }
+            guard existing.isDirectory else { throw FileError(localized("%@: Existiert bereits und ist kein Ordner", path as NSString)) }
             return
         }
         if path != "/" { try makeDirectories(PosixPath.parent(path)) }

@@ -25,7 +25,7 @@ final class SSHSession {
         guard let handle = libssh2_session_init_ex(nil, nil, nil, nil) else {
             Darwin.close(socketDescriptor)
             jumpProcess?.terminate()
-            throw FileError("SSH-Sitzung konnte nicht angelegt werden")
+            throw FileError(localized("SSH-Sitzung konnte nicht angelegt werden"))
         }
         self.handle = handle
         libssh2_session_set_blocking(handle, 1)
@@ -51,13 +51,13 @@ final class SSHSession {
         var message: UnsafeMutablePointer<CChar>?
         var length: Int32 = 0
         libssh2_session_last_error(handle, &message, &length, 0)
-        return FileError("\(context): \(message.map { String(cString: $0) } ?? "unbekannter Fehler")")
+        return FileError("\(context): \(message.map { String(cString: $0) } ?? localized("unbekannter Fehler"))")
     }
 
     /// Tunnelt die Verbindung über `ssh -W`, damit ProxyJump-Ketten (auch mit eigener Konfiguration) wie bei OpenSSH funktionieren.
     private static func connectViaJump(_ jump: String, settings: SSHSettings) throws -> (Int32, Process) {
         var pair: [Int32] = [0, 0]
-        guard socketpair(AF_UNIX, SOCK_STREAM, 0, &pair) == 0 else { throw FileError("Socket für ProxyJump konnte nicht angelegt werden") }
+        guard socketpair(AF_UNIX, SOCK_STREAM, 0, &pair) == 0 else { throw FileError(localized("Socket für ProxyJump konnte nicht angelegt werden")) }
         var hops = jump.split(separator: ",").map(String.init)
         let last = hops.removeLast()
         var arguments = ["-o", "BatchMode=yes", "-o", "ClearAllForwardings=yes", "-W", "\(settings.hostName):\(settings.port)"]
@@ -73,7 +73,7 @@ final class SSHSession {
         process.standardError = FileHandle.nullDevice
         do { try process.run() } catch {
             Darwin.close(pair[0]); Darwin.close(pair[1])
-            throw FileError("ssh für ProxyJump konnte nicht gestartet werden")
+            throw FileError(localized("ssh für ProxyJump konnte nicht gestartet werden"))
         }
         Darwin.close(pair[1])
         var noSigPipe: Int32 = 1
@@ -86,14 +86,14 @@ final class SSHSession {
         hints.ai_family = AF_UNSPEC
         hints.ai_socktype = SOCK_STREAM
         var result: UnsafeMutablePointer<addrinfo>?
-        guard getaddrinfo(host, String(port), &hints, &result) == 0, let first = result else { throw FileError("Host nicht gefunden: \(host)") }
+        guard getaddrinfo(host, String(port), &hints, &result) == 0, let first = result else { throw FileError(localized("Host nicht gefunden: %@", host as NSString)) }
         defer { freeaddrinfo(result) }
         var current: UnsafeMutablePointer<addrinfo>? = first
         while let info = current {
             if let descriptor = connect(info.pointee, timeout: 10_000) { return descriptor }
             current = info.pointee.ai_next
         }
-        throw FileError("Verbindung zu \(host):\(port) fehlgeschlagen")
+        throw FileError(localized("Verbindung zu %@:%ld fehlgeschlagen", host as NSString, port))
     }
 
     private static func connect(_ info: addrinfo, timeout: Int32) -> Int32? {
@@ -120,7 +120,7 @@ final class SSHSession {
     private func verifyHostKey(_ settings: SSHSettings) throws {
         var length = 0
         var keyType: Int32 = 0
-        guard let key = libssh2_session_hostkey(handle, &length, &keyType), let hosts = libssh2_knownhost_init(handle) else { throw lastError("Hostkey") }
+        guard let key = libssh2_session_hostkey(handle, &length, &keyType), let hosts = libssh2_knownhost_init(handle) else { throw lastError(localized("Hostkey")) }
         defer { libssh2_knownhost_free(hosts) }
         _ = libssh2_knownhost_readfile(hosts, settings.knownHostsFile, LIBSSH2_KNOWNHOST_FILE_OPENSSH)
         let knownHostsType = Self.knownHostsKeyType(keyType)
@@ -131,7 +131,7 @@ final class SSHSession {
         case LIBSSH2_KNOWNHOST_CHECK_MATCH:
             return
         case LIBSSH2_KNOWNHOST_CHECK_MISMATCH:
-            throw FileError("Der Hostkey von \(settings.hostName) hat sich geändert. Verbindung abgebrochen.")
+            throw FileError(localized("Der Hostkey von %@ hat sich geändert. Verbindung abgebrochen.", settings.hostName as NSString))
         default:
             let name = settings.port == 22 ? settings.hostName : "[\(settings.hostName)]:\(settings.port)"
             guard interaction.trustUnknownHost(name, keyType: Self.keyTypeName(keyType), fingerprint: fingerprint()) else { throw OperationAborted() }
@@ -186,7 +186,7 @@ final class SSHSession {
         let user = settings.user
         guard let list = libssh2_userauth_list(handle, user, UInt32(user.utf8.count)) else {
             if isAuthenticated { return }
-            throw lastError("Anmeldung")
+            throw lastError(localized("Anmeldung"))
         }
         let methods = String(cString: list).split(separator: ",").map(String.init)
         if methods.contains("publickey") {
@@ -204,7 +204,7 @@ final class SSHSession {
                 interaction.deletePassword(for: account)
             }
             for _ in 0..<3 {
-                guard let entry = interaction.requestPassword("Passwort für \(user)@\(settings.hostName):", account: account) else { throw OperationAborted() }
+                guard let entry = interaction.requestPassword(localized("Passwort für %@:", "\(user)@\(settings.hostName)" as NSString), account: account) else { throw OperationAborted() }
                 guard login(user, password: entry.password) else { continue }
                 if entry.remember { interaction.savePassword(entry.password, for: account) }
                 return
@@ -213,7 +213,7 @@ final class SSHSession {
             try authenticateInteractively(settings)
             if isAuthenticated { return }
         }
-        throw FileError("Anmeldung an \(settings.hostName) als \(user) fehlgeschlagen")
+        throw FileError(localized("Anmeldung an %@ als %@ fehlgeschlagen", settings.hostName as NSString, user as NSString))
     }
 
     private func login(_ user: String, password: String) -> Bool {
@@ -238,7 +238,7 @@ final class SSHSession {
 
     private func authenticateWithKeyFile(_ file: String, user: String) throws {
         guard libssh2_userauth_publickey_fromfile_ex(handle, user, UInt32(user.utf8.count), nil, file, nil) == LIBSSH2_ERROR_FILE else { return }
-        guard let passphrase = interaction.requestSecret("Passphrase für \(PosixPath.name(file)):") else { throw OperationAborted() }
+        guard let passphrase = interaction.requestSecret(localized("Passphrase für %@:", PosixPath.name(file) as NSString)) else { throw OperationAborted() }
         _ = libssh2_userauth_publickey_fromfile_ex(handle, user, UInt32(user.utf8.count), nil, file, passphrase)
     }
 

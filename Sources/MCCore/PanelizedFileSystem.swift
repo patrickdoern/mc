@@ -39,7 +39,7 @@ public final class PanelizedFileSystem: FileSystem {
     public func openWriter(_ path: String, permissions: UInt16) throws -> FileWriter { throw unsupported() }
 
     private func unsupported() -> FileError {
-        FileError("In einer Ergebnisliste ist diese Aktion nicht möglich")
+        FileError(localized("In einer Ergebnisliste ist diese Aktion nicht möglich"))
     }
 
     private func mapped(_ path: String) -> String {

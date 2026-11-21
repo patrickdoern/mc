@@ -31,7 +31,7 @@ public enum HexDump {
             offset = end
         }
         var text = String(decoding: output, as: UTF8.self)
-        if shown < data.count { text += "… (gekürzt: \(shown) von \(data.count) Bytes)\n" }
+        if shown < data.count { text += localized("… (gekürzt: %ld von %ld Bytes)\n", shown, data.count) }
         return text
     }
 }

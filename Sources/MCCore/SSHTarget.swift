@@ -77,8 +77,8 @@ public struct SSHSettings {
             if parts.count == 2 { values[parts[0], default: []].append(parts[1]) }
         }
         let jump = values["proxyjump"]?.first.flatMap { $0 == "none" ? nil : $0 }
-        if let command = values["proxycommand"]?.first, command != "none" { throw FileError("ProxyCommand wird nicht unterstützt") }
-        guard let hostName = values["hostname"]?.first, let user = values["user"]?.first else { throw FileError("SSH-Konfiguration für \(target.alias) nicht lesbar") }
+        if let command = values["proxycommand"]?.first, command != "none" { throw FileError(localized("ProxyCommand wird nicht unterstützt")) }
+        guard let hostName = values["hostname"]?.first, let user = values["user"]?.first else { throw FileError(localized("SSH-Konfiguration für %@ nicht lesbar", target.alias as NSString)) }
         let agent = values["identityagent"]?.first.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "\"")) }
         return SSHSettings(
             hostName: hostName,
@@ -105,7 +105,7 @@ public struct SSHSettings {
         try process.run()
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw FileError("ssh -G fehlgeschlagen") }
+        guard process.terminationStatus == 0 else { throw FileError(localized("ssh -G fehlgeschlagen")) }
         return String(decoding: data, as: UTF8.self)
     }
 }

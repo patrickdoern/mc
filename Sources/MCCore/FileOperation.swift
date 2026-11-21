@@ -185,8 +185,8 @@ public final class FileOperation {
     private func copyItem(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry) throws {
         try checkCancelled()
         if Self.isSameFileSystem(sourceSystem, destinationSystem) {
-            if source == destination { throw FileError("Quelle und Ziel sind identisch: \(source)") }
-            if entry.isDirectory, destination.hasPrefix(source + "/") { throw FileError("Ein Ordner kann nicht in sich selbst kopiert werden: \(source)") }
+            if source == destination { throw FileError(localized("Quelle und Ziel sind identisch: %@", source as NSString)) }
+            if entry.isDirectory, destination.hasPrefix(source + "/") { throw FileError(localized("Ein Ordner kann nicht in sich selbst kopiert werden: %@", source as NSString)) }
         }
         progress.currentPath = source
         report()
@@ -196,7 +196,7 @@ public final class FileOperation {
             return
         }
         if let existing {
-            if existing.isDirectory && !existing.isSymlink { throw FileError("Ziel ist ein Ordner: \(destination)") }
+            if existing.isDirectory && !existing.isSymlink { throw FileError(localized("Ziel ist ein Ordner: %@", destination as NSString)) }
             guard try shouldOverwrite(destination, source: entry, existing: existing) else { return }
             try destinationSystem.removeFile(destination)
         }
@@ -211,7 +211,7 @@ public final class FileOperation {
 
     private func copyDirectory(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry, existing: FileEntry?) throws {
         if let existing {
-            guard existing.isDirectory else { throw FileError("Ziel ist kein Ordner: \(destination)") }
+            guard existing.isDirectory else { throw FileError(localized("Ziel ist kein Ordner: %@", destination as NSString)) }
         } else {
             try destinationSystem.makeDirectory(destination)
         }

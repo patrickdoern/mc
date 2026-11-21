@@ -13,7 +13,7 @@ public final class FTPFileSystem: FileSystem {
     private let lock = NSRecursiveLock()
 
     public init(target: FTPTarget, interaction: SSHInteraction) throws {
-        guard let handle = curl_easy_init() else { throw FileError("libcurl konnte nicht gestartet werden") }
+        guard let handle = curl_easy_init() else { throw FileError(localized("libcurl konnte nicht gestartet werden")) }
         self.handle = handle
         self.target = target
         identity = target.displayName
@@ -28,9 +28,9 @@ public final class FTPFileSystem: FileSystem {
         password = stored ?? ""
         while true {
             if stored == nil {
-                guard let entry = interaction.requestPassword("Passwort für \(account):", account: account) else {
+                guard let entry = interaction.requestPassword(localized("Passwort für %@:", account as NSString), account: account) else {
                     curl_easy_cleanup(handle)
-                    throw FileError("Anmeldung abgebrochen")
+                    throw FileError(localized("Anmeldung abgebrochen"))
                 }
                 password = entry.password
                 do {
@@ -73,7 +73,7 @@ public final class FTPFileSystem: FileSystem {
         if path == "/" { return FileEntry(name: "/", isDirectory: true, permissions: 0o755) }
         let name = PosixPath.name(path)
         guard let entry = try list(PosixPath.parent(path)).first(where: { $0.name == name }) else {
-            throw FileError("\(path): Datei nicht gefunden")
+            throw FileError(localized("%@: Datei nicht gefunden", path as NSString))
         }
         return entry
     }
@@ -83,8 +83,8 @@ public final class FTPFileSystem: FileSystem {
     public func removeDirectory(_ path: String) throws { try command(["RMD \(path)"], in: PosixPath.parent(path), path: path) }
     public func rename(_ from: String, _ to: String) throws { try command(["RNFR \(from)", "RNTO \(to)"], in: PosixPath.parent(from), path: from) }
 
-    public func readLink(_ path: String) throws -> String { throw FileError("\(path): Symlinks gibt es über FTP nicht") }
-    public func makeSymlink(_ path: String, target: String) throws { throw FileError("\(path): Symlinks können über FTP nicht angelegt werden") }
+    public func readLink(_ path: String) throws -> String { throw FileError(localized("%@: Symlinks gibt es über FTP nicht", path as NSString)) }
+    public func makeSymlink(_ path: String, target: String) throws { throw FileError(localized("%@: Symlinks können über FTP nicht angelegt werden", path as NSString)) }
     public func setModified(_ path: String, _ date: Date) throws {}
 
     public func setPermissions(_ path: String, _ mode: UInt16) throws {
@@ -143,12 +143,12 @@ public final class FTPFileSystem: FileSystem {
     private func failure(_ code: CURLcode, path: String) -> Error {
         switch code {
         case CURLE_LOGIN_DENIED: return FTPLoginError()
-        case CURLE_REMOTE_FILE_NOT_FOUND: return FileError("\(path): Datei nicht gefunden")
-        case CURLE_COULDNT_RESOLVE_HOST: return FileError("Host \(target.host) nicht gefunden")
-        case CURLE_COULDNT_CONNECT: return FileError("Keine Verbindung zu \(target.host):\(target.port)")
-        case CURLE_OPERATION_TIMEDOUT: return FileError("Zeitüberschreitung bei \(target.host)")
-        case CURLE_REMOTE_ACCESS_DENIED: return FileError("\(path): Zugriff verweigert")
-        case CURLE_QUOTE_ERROR: return FileError("\(path): Der Server hat den Befehl abgelehnt")
+        case CURLE_REMOTE_FILE_NOT_FOUND: return FileError(localized("%@: Datei nicht gefunden", path as NSString))
+        case CURLE_COULDNT_RESOLVE_HOST: return FileError(localized("Host %@ nicht gefunden", target.host as NSString))
+        case CURLE_COULDNT_CONNECT: return FileError(localized("Keine Verbindung zu %@:%ld", target.host as NSString, target.port))
+        case CURLE_OPERATION_TIMEDOUT: return FileError(localized("Zeitüberschreitung bei %@", target.host as NSString))
+        case CURLE_REMOTE_ACCESS_DENIED: return FileError(localized("%@: Zugriff verweigert", path as NSString))
+        case CURLE_QUOTE_ERROR: return FileError(localized("%@: Der Server hat den Befehl abgelehnt", path as NSString))
         default: return FileError("\(path): \(String(cString: curl_easy_strerror(code)))")
         }
     }
@@ -328,7 +328,7 @@ private final class FTPUpload: FileWriter {
 
     func write(_ buffer: UnsafeRawBufferPointer) throws {
         guard let file else { return }
-        guard fwrite(buffer.baseAddress, 1, buffer.count, file) == buffer.count else { throw FileError("\(path): Temporäre Datei nicht beschreibbar") }
+        guard fwrite(buffer.baseAddress, 1, buffer.count, file) == buffer.count else { throw FileError(localized("%@: Temporäre Datei nicht beschreibbar", path as NSString)) }
     }
 
     func finish() throws {
