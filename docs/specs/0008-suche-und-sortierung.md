@@ -1,6 +1,6 @@
 # 0008: Suche und Sortierung
 
-Status: Ready
+Status: Done
 Slice: 2/4 (siehe [Roadmap](0006-mc-luecken-roadmap.md)), Ziel-Release 1.6.2
 
 ## Ziel
