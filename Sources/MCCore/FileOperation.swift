@@ -1,18 +1,22 @@
 import Foundation
 
 public final class FileOperation {
+    private static let newerTolerance: TimeInterval = 2
+
     private let handlers: OperationHandlers
+    private let options: TransferOptions
     private let cancelLock = NSLock()
     private var cancelled = false
     private var progress = OperationProgress()
     private var lastReport = Date.distantPast
-    private var overwriteAll = false
-    private var skipAllConflicts = false
+    private var rule: OverwriteRule
     private var skipAllFailures = false
     private var skipped = 0
 
-    public init(handlers: OperationHandlers) {
+    public init(handlers: OperationHandlers, options: TransferOptions = TransferOptions()) {
         self.handlers = handlers
+        self.options = options
+        rule = options.overwriteRule
     }
 
     public func cancel() {
@@ -158,11 +162,12 @@ public final class FileOperation {
             return
         }
         if existing.isDirectory && !existing.isSymlink && entry.isDirectory && !entry.isSymlink {
+            let skippedBefore = skipped
             for child in try fileSystem.list(source) {
                 let childSource = PosixPath.join(source, child.name)
                 try attempt(childSource) { try moveItem(childSource, to: PosixPath.join(destination, child.name), on: fileSystem) }
             }
-            try fileSystem.removeDirectory(source)
+            if skipped == skippedBefore { try fileSystem.removeDirectory(source) }
             return
         }
         guard try shouldOverwrite(destination, source: entry, existing: existing) else { return }
@@ -171,15 +176,35 @@ public final class FileOperation {
     }
 
     private func shouldOverwrite(_ path: String, source: FileEntry, existing: FileEntry) throws -> Bool {
-        if overwriteAll { return true }
-        if skipAllConflicts { skipped += 1; return false }
+        switch rule {
+        case .overwrite:
+            return true
+        case .skip:
+            skipped += 1
+            return false
+        case .ifSizeDiffers:
+            return replaceIf(source.size != existing.size)
+        case .ifNewer:
+            if let sourceTime = source.modified, let existingTime = existing.modified {
+                return replaceIf(sourceTime.timeIntervalSince(existingTime) > Self.newerTolerance)
+            }
+        case .ask:
+            break
+        }
         switch handlers.resolveConflict(ConflictInfo(path: path, source: source, existing: existing)) {
         case .overwrite: return true
-        case .overwriteAll: overwriteAll = true; return true
+        case .overwriteAll: rule = .overwrite; return true
+        case .overwriteThenRule(let next): rule = next; return true
         case .skip: skipped += 1; return false
-        case .skipAll: skipAllConflicts = true; skipped += 1; return false
+        case .skipAll: rule = .skip; skipped += 1; return false
+        case .skipThenRule(let next): rule = next; skipped += 1; return false
         case .cancel: throw OperationAborted()
         }
+    }
+
+    private func replaceIf(_ condition: Bool) -> Bool {
+        if !condition { skipped += 1 }
+        return condition
     }
 
     private func copyItem(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry) throws {

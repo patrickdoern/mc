@@ -24,8 +24,25 @@ public struct ConflictInfo: Sendable {
     public let existing: FileEntry
 }
 
+public enum OverwriteRule: Int, Sendable {
+    case ask, overwrite, ifNewer, ifSizeDiffers, skip
+}
+
+public struct TransferOptions: Sendable {
+    public var overwriteRule: OverwriteRule
+    public var preserveAttributes: Bool
+    public var followSymlinks: Bool
+
+    public init(overwriteRule: OverwriteRule = .ask, preserveAttributes: Bool = true, followSymlinks: Bool = false) {
+        self.overwriteRule = overwriteRule
+        self.preserveAttributes = preserveAttributes
+        self.followSymlinks = followSymlinks
+    }
+}
+
 public enum ConflictChoice: Sendable {
     case overwrite, overwriteAll, skip, skipAll, cancel
+    case overwriteThenRule(OverwriteRule), skipThenRule(OverwriteRule)
 }
 
 public enum FailureChoice: Sendable {
