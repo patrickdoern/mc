@@ -78,9 +78,6 @@ public final class FTPFileSystem: FileSystem {
             try trustStore.trust(certificate, host: target.host, port: target.port)
             trustedNow = true
             try connect(interaction)
-        } catch is FTPSessionNotResumed {
-            limitedToTLS12 = true
-            try connect(interaction)
         }
     }
 
@@ -177,6 +174,7 @@ public final class FTPFileSystem: FileSystem {
         _ = mc_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT, 20)
         _ = mc_curl_setopt_long(handle, CURLOPT_FTP_SKIP_PASV_IP, 1)
         _ = mc_curl_setopt_long(handle, CURLOPT_NOSIGNAL, 1)
+        _ = mc_curl_setopt_long(handle, CURLOPT_MAXCONNECTS, 1)
         if let trusted = trustStore.trustedFile(host: target.host, port: target.port) {
             _ = mc_curl_setopt_string(handle, CURLOPT_CAINFO, trusted)
             _ = mc_curl_setopt_long(handle, CURLOPT_SSL_VERIFYHOST, 0)
@@ -196,7 +194,6 @@ public final class FTPFileSystem: FileSystem {
         case CURLE_LOGIN_DENIED: return FTPLoginError()
         case CURLE_USE_SSL_FAILED where requiresTLS && !target.secure: return FTPWithoutTLS()
         case CURLE_PEER_FAILED_VERIFICATION: return FTPUntrustedCertificate()
-        case CURLE_PARTIAL_FILE where !limitedToTLS12 && mc_curl_response_code(handle) == 425: return FTPSessionNotResumed()
         case CURLE_REMOTE_FILE_NOT_FOUND: return FileError(localized("%@: Datei nicht gefunden", path as NSString))
         case CURLE_COULDNT_RESOLVE_HOST: return FileError(localized("Host %@ nicht gefunden", target.host as NSString))
         case CURLE_COULDNT_CONNECT: return FileError(localized("Keine Verbindung zu %@:%ld", target.host as NSString, target.port))
@@ -210,29 +207,43 @@ public final class FTPFileSystem: FileSystem {
     private func perform(path: String, customRequest: String?) throws -> Data {
         lock.lock()
         defer { lock.unlock() }
-        prepare(path)
-        if let customRequest { _ = mc_curl_setopt_string(handle, CURLOPT_CUSTOMREQUEST, customRequest) }
         var box = Box()
-        let code = withUnsafeMutablePointer(to: &box) { pointer -> CURLcode in
-            _ = mc_curl_setopt_write(handle, { chunk, size, count, user in
-                guard let chunk, let user else { return 0 }
-                user.assumingMemoryBound(to: Box.self).pointee.data.append(UnsafeBufferPointer(start: UnsafeRawPointer(chunk).assumingMemoryBound(to: UInt8.self), count: size * count))
-                return size * count
-            }, pointer)
-            return curl_easy_perform(handle)
+        try withUnsafeMutablePointer(to: &box) { pointer in
+            try transfer(path) {
+                pointer.pointee.data = Data()
+                if let customRequest { _ = mc_curl_setopt_string(handle, CURLOPT_CUSTOMREQUEST, customRequest) }
+                _ = mc_curl_setopt_write(handle, { chunk, size, count, user in
+                    guard let chunk, let user else { return 0 }
+                    user.assumingMemoryBound(to: Box.self).pointee.data.append(UnsafeBufferPointer(start: UnsafeRawPointer(chunk).assumingMemoryBound(to: UInt8.self), count: size * count))
+                    return size * count
+                }, pointer)
+            }
+        }
+        return box.data
+    }
+
+    private func transfer(_ path: String, configure: () -> Void) throws {
+        prepare(path)
+        configure()
+        var code = curl_easy_perform(handle)
+        if code != CURLE_OK, !limitedToTLS12, mc_curl_response_code(handle) == 425 {
+            limitedToTLS12 = true
+            prepare(path)
+            configure()
+            _ = mc_curl_setopt_long(handle, CURLOPT_FRESH_CONNECT, 1)
+            code = curl_easy_perform(handle)
         }
         guard code == CURLE_OK else { throw failure(code, path: path) }
-        return box.data
     }
 
     private func command(_ commands: [String], in directory: String, path: String) throws {
         lock.lock()
         defer { lock.unlock() }
-        prepare(directory.hasSuffix("/") ? directory : directory + "/")
-        _ = mc_curl_setopt_long(handle, CURLOPT_NOBODY, 1)
         var list: UnsafeMutablePointer<curl_slist>?
         for command in commands { list = curl_slist_append(list, command) }
         defer { curl_slist_free_all(list) }
+        prepare(directory.hasSuffix("/") ? directory : directory + "/")
+        _ = mc_curl_setopt_long(handle, CURLOPT_NOBODY, 1)
         _ = mc_curl_setopt_slist(handle, CURLOPT_QUOTE, list)
         let code = curl_easy_perform(handle)
         guard code == CURLE_OK else { throw failure(code, path: path) }
@@ -241,14 +252,14 @@ public final class FTPFileSystem: FileSystem {
     private func download(_ path: String, to file: UnsafeMutablePointer<FILE>) throws {
         lock.lock()
         defer { lock.unlock() }
-        prepare(path)
-        let code = mc_curl_setopt_write(handle, { chunk, size, count, user in
-            guard let chunk, let user else { return 0 }
-            return fwrite(chunk, size, count, user.assumingMemoryBound(to: FILE.self))
-        }, file)
-        guard code == CURLE_OK else { throw failure(code, path: path) }
-        let result = curl_easy_perform(handle)
-        guard result == CURLE_OK else { throw failure(result, path: path) }
+        try transfer(path) {
+            rewind(file)
+            ftruncate(fileno(file), 0)
+            _ = mc_curl_setopt_write(handle, { chunk, size, count, user in
+                guard let chunk, let user else { return 0 }
+                return fwrite(chunk, size, count, user.assumingMemoryBound(to: FILE.self))
+            }, file)
+        }
     }
 
     fileprivate func upload(_ file: UnsafeMutablePointer<FILE>, to path: String) throws {
@@ -256,17 +267,16 @@ public final class FTPFileSystem: FileSystem {
         defer { lock.unlock() }
         fflush(file)
         let size = ftell(file)
-        rewind(file)
-        prepare(path)
-        _ = mc_curl_setopt_long(handle, CURLOPT_UPLOAD, 1)
-        _ = mc_curl_setopt_long(handle, CURLOPT_FTP_CREATE_MISSING_DIRS, 0)
-        _ = mc_curl_setopt_offset(handle, CURLOPT_INFILESIZE_LARGE, curl_off_t(size))
-        _ = mc_curl_setopt_read(handle, { buffer, size, count, user in
-            guard let buffer, let user else { return 0 }
-            return fread(buffer, size, count, user.assumingMemoryBound(to: FILE.self))
-        }, file)
-        let code = curl_easy_perform(handle)
-        guard code == CURLE_OK else { throw failure(code, path: path) }
+        try transfer(path) {
+            rewind(file)
+            _ = mc_curl_setopt_long(handle, CURLOPT_UPLOAD, 1)
+            _ = mc_curl_setopt_long(handle, CURLOPT_FTP_CREATE_MISSING_DIRS, 0)
+            _ = mc_curl_setopt_offset(handle, CURLOPT_INFILESIZE_LARGE, curl_off_t(size))
+            _ = mc_curl_setopt_read(handle, { buffer, size, count, user in
+                guard let buffer, let user else { return 0 }
+                return fread(buffer, size, count, user.assumingMemoryBound(to: FILE.self))
+            }, file)
+        }
     }
 
     private static func temporaryFile() -> String {
@@ -352,8 +362,6 @@ private struct FTPLoginError: Error {}
 private struct FTPWithoutTLS: Error {}
 
 private struct FTPUntrustedCertificate: Error {}
-
-private struct FTPSessionNotResumed: Error {}
 
 private final class FTPDownload: FileReader {
     private var file: UnsafeMutablePointer<FILE>?
