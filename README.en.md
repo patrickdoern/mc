@@ -92,7 +92,7 @@ Copy `/Applications/Moonlight Commander.app` with `rsync`, `scp` or a USB stick,
 
 ## Language
 
-The app shows its interface in German or English according to the macOS system language; if neither German nor English is set, English is shown. The language can be changed per app under System Settings → General → Language & Region → Apps; the change takes effect after restarting the app. Keyboard shortcuts and commands are the same in both languages.
+The app shows its interface in German or English according to the macOS system language; if neither German nor English is set, English is shown. The language can be chosen in the app under Options → Configuration → "Language:" ("Automatic" follows the system language) or per app in System Settings under General → Language & Region → Apps; the change takes effect after restarting the app, and the app asks whether to restart right away when you change it in the app. The scripts `mc` and `mcedit` always follow the system language. Keyboard shortcuts and commands are the same in both languages.
 
 ## Website
 

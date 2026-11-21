@@ -1,6 +1,6 @@
 # ADR-0012: Texte der App stehen auf Deutsch im Code und werden über `localized` mit englischer Tabelle und Systemsprache übersetzt
 
-- Status: Accepted
+- Status: Superseded by ADR-0014
 - Datum: 2026-11-21
 
 ## Kontext

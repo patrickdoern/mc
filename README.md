@@ -92,7 +92,7 @@ Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Pro
 
 ## Sprache
 
-Die App zeigt ihre Oberfläche nach der macOS-Systemsprache auf Deutsch oder Englisch; ist weder Deutsch noch Englisch eingestellt, erscheint Englisch. Die Sprache lässt sich pro App ändern unter Systemeinstellungen → Allgemein → Sprache & Region → Apps; die Änderung gilt nach einem Neustart der App. Tastenkürzel und Befehle sind in beiden Sprachen gleich.
+Die App zeigt ihre Oberfläche nach der macOS-Systemsprache auf Deutsch oder Englisch; ist weder Deutsch noch Englisch eingestellt, erscheint Englisch. Die Sprache lässt sich in der App wählen unter Optionen → Konfiguration → „Sprache:“ („Automatisch“ folgt der Systemsprache) oder pro App in den Systemeinstellungen unter Allgemein → Sprache & Region → Apps; die Änderung gilt nach einem Neustart der App, die App fragt in der App-Auswahl danach, ob sie sich gleich neu starten soll. Die Skripte `mc` und `mcedit` folgen immer der Systemsprache. Tastenkürzel und Befehle sind in beiden Sprachen gleich.
 
 ## Webseite
 
