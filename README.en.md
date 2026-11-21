@@ -38,6 +38,7 @@ Both also work while the app is running. Folders can also be dragged onto the Do
 | Space, Ins, ⇧↑↓ | mark; `+` `-` pattern, `*` invert |
 | Ctrl-S | quick search |
 | ⌘L / ⇧⌘H / ⌘K | path / home / connect via SFTP or FTP |
+| ⌘← / ⌘→ | directory history back / forward (per panel, the history list is under "History …" in the Left/Right menu) |
 | F2 | user menu (entries from `~/.config/moonlight-commander/menu`, mc format, macros `%f %d %s %D %F`) |
 | F3 / F4 | view / edit (⇧F4 new file), both with syntax highlighting |
 | F5 / F6 | copy / move (⇧F6 rename) |
@@ -75,7 +76,7 @@ Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's fol
 
 ## Menu bar (F9, arrow keys switch between menus, Enter selects, Esc closes)
 
-- **Left/Right:** listing, quick view, info, tree, listing format, sort order, filter, SFTP/FTP, path, arrange.
+- **Left/Right:** listing, quick view, info, tree, listing format, sort order, filter, SFTP/FTP, path, home folder, back, forward, history, arrange.
 - **File:** view, edit, copy, chmod, link, symbolic link (also relative, editable), chown, rename, delete, group selection.
 - **Command:** user menu, directory tree, find file (name and content), compare directories (marks differences and reports the count), compare files (built-in diff in the viewer, works without Xcode; the cursor in the other panel may also be just the same file name) and optionally in FileMerge, directory sizes, command history, viewed files history (the last 30 local files from viewer and editor, reopen the first nine with digits 1 to 9), hotlist (⌘D, jump directly to the first nine entries with digits 1 to 9), active connections.
 - **Options:** configuration, layout, panel options, confirmation, appearance (Norton Blue, Dark, Light), update check: At the first start the app asks whether it may check for new versions at startup (at most once every 24 hours, at GitHub, without personal data, only a notice with a link, no download); the option "Check for updates at startup" changes this, "Check for Updates …" checks immediately.

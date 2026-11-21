@@ -59,6 +59,6 @@ Checks nach jedem Task: `swift build` (ohne Warnung) und `swift test` (aktuell 7
 - [x] T1: Baustein `NavigationHistory` in `MCCore` (R1, R9): Aufzeichnen, Abschneiden, Obergrenze, `back`/`forward`/`jump`, Tests. Dateien: `Sources/MCCore/NavigationHistory.swift`, `Tests/MCCoreTests/NavigationHistoryTests.swift`.
 - [x] T2: Verlauf im `PanelModel` (R2, R3, R10 optional): Orte aufzeichnen in `navigate`, `goBack()`, `goForward()`, Entfernen nicht ladbarer Einträge, Cursor auf dem zuvor verlassenen Eintrag, Zugriff auf die Verlaufsliste und das Springen für die Oberfläche, Aufbauen aus gespeicherten lokalen Pfaden. Dateien: `Sources/MC/PanelModel.swift`.
 - [x] T3: Oberfläche und Speichern (R4, R5, R6, R7): ⌘←/⌘→ in `PanelView`, Menüeinträge „Zurück“, „Vorwärts“, „Verlauf …“ mit Popup, Speichern und Wiederherstellen in `saveState`, F1-Hilfe-Zeile, Tabelleneinträge. Dateien: `Sources/MC/PanelView.swift`, `MainWindowController+Menus.swift`, `MainWindowController+Actions.swift`, `MainWindowController.swift`, `Sources/MC/Resources/en.lproj/Localizable.strings`.
-- [ ] T4: Doku (R8): README deutsch und englisch (Tastentabelle, Menüzeile). Dateien: `README.md`, `README.en.md`.
+- [x] T4: Doku (R8): README deutsch und englisch (Tastentabelle, Menüzeile). Dateien: `README.md`, `README.en.md`.
 
 Danach: Abnahme aus dieser Spec (die manuelle Prüfung der Tasten und des Popups; der Test mit einem getrennten Server bleibt manuell).
