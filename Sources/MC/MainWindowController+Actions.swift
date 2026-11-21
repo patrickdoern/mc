@@ -262,6 +262,16 @@ extension MainWindowController {
         popUp(menu, title: localized("Verzeichnis-Hotlist"))
     }
 
+    func showHistory(of panel: PanelView) {
+        let menu = NSMenu()
+        let items = panel.model.historyItems
+        for (index, item) in items.enumerated() {
+            menu.addItem(ClosureMenuItem(item.text, checked: item.isCurrent) { panel.model.goToHistory(item: index) })
+        }
+        if items.isEmpty { menu.addItem(NSMenuItem(title: localized("Noch kein Verlauf"), action: nil, keyEquivalent: "")) }
+        popUp(menu, title: localized("Verzeichnisverlauf"))
+    }
+
     @objc func showBackgroundJobs(_ sender: Any?) {
         let menu = NSMenu()
         for job in runner.backgroundJobs {

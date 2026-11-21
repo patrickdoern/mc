@@ -348,6 +348,7 @@ final class PanelView: NSView {
         if mode == .list, model.searchText != nil, handleSearch(event) { return }
         if handleCommandLine(event, modifiers: modifiers) { return }
         let shifted = modifiers.contains(.shift)
+        if modifiers.contains(.command), !modifiers.contains(.option), !modifiers.contains(.control), handleHistoryKey(event.specialKey) { return }
         if mode != .list, handleViewKey(event) { return }
         if let key = event.specialKey, handleSpecial(key, modifiers: modifiers, shifted: shifted) { return }
         if modifiers.contains(.control), event.charactersIgnoringModifiers == "s" { return model.beginSearch() }
@@ -359,6 +360,15 @@ final class PanelView: NSView {
         default:
             if event.keyCode == 53 { model.clearMarks() } else { super.keyDown(with: event) }
         }
+    }
+
+    private func handleHistoryKey(_ key: NSEvent.SpecialKey?) -> Bool {
+        switch key {
+        case .leftArrow: model.goBack()
+        case .rightArrow: model.goForward()
+        default: return false
+        }
+        return true
     }
 
     private func handleViewKey(_ event: NSEvent) -> Bool {

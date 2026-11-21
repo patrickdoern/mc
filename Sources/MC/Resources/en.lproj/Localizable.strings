@@ -494,3 +494,9 @@
 "Sprache ändern" = "Change Language";
 "Die neue Sprache gilt nach einem Neustart. Jetzt neu starten?" = "The new language takes effect after a restart. Restart now?";
 "Neu starten" = "Restart";
+"Zurück   ⌘←" = "Back   ⌘←";
+"Vorwärts   ⌘→" = "Forward   ⌘→";
+"Verlauf …" = "History …";
+"Verzeichnisverlauf" = "Directory History";
+"Noch kein Verlauf" = "No history yet";
+"⌘← und ⌘→ springen im Verzeichnisverlauf zurück und vorwärts." = "⌘← and ⌘→ go back and forward in the directory history.";

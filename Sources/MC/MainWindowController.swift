@@ -39,10 +39,12 @@ final class MainWindowController: NSWindowController {
             let path = saved.flatMap { FileManager.default.fileExists(atPath: $0, isDirectory: &isDirectory) && isDirectory.boolValue ? $0 : nil } ?? NSHomeDirectory()
             let key = SortKey(rawValue: defaults.integer(forKey: side + "SortKey")) ?? .name
             let ascending = defaults.object(forKey: side + "SortAscending") as? Bool ?? true
-            return PanelView(model: PanelModel(fileSystem: LocalFileSystem.shared, path: path, sortKey: key, ascending: ascending, showHidden: showHidden,
+            let model = PanelModel(fileSystem: LocalFileSystem.shared, path: path, sortKey: key, ascending: ascending, showHidden: showHidden,
                 dirsFirst: defaults.object(forKey: side + "DirsFirst") as? Bool ?? true,
                 caseSensitive: defaults.bool(forKey: side + "CaseSensitive"),
-                format: ListFormat(rawValue: defaults.integer(forKey: side + "Format")) ?? .full), commandLine: commandLine)
+                format: ListFormat(rawValue: defaults.integer(forKey: side + "Format")) ?? .full)
+            model.restoreHistory(localPaths: defaults.stringArray(forKey: side + "History") ?? [])
+            return PanelView(model: model, commandLine: commandLine)
         }
         activePanel = panels[0]
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1180, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
@@ -112,6 +114,7 @@ final class MainWindowController: NSWindowController {
         for (side, panel) in zip(["left", "right"], panels) {
             let model = panel.model
             if model.isLocal { defaults.set(model.path, forKey: side + "Path") }
+            defaults.set(model.localHistoryPaths, forKey: side + "History")
             defaults.set(model.sortKey.rawValue, forKey: side + "SortKey")
             defaults.set(model.ascending, forKey: side + "SortAscending")
             defaults.set(model.dirsFirst, forKey: side + "DirsFirst")
@@ -629,6 +632,7 @@ final class MainWindowController: NSWindowController {
             localized("Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf"),
             localized("Ctrl-O Terminal ein/aus (auf SFTP-Panels: ssh-Sitzung auf dem Server) · ⌘Y Quick Look · F6/⇧F6 mit Maske, z. B. *.bak · Enter auf Archiv öffnet es als Ordner"),
             localized("Menü Befehl: Chronik angesehener Dateien (Ziffern 1–9 öffnen) · Verzeichnis-Hotlist ⌘D (Ziffern 1–9 springen) · Dateien/Verzeichnisse vergleichen"),
+            localized("⌘← und ⌘→ springen im Verzeichnisverlauf zurück und vorwärts."),
             localized("Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP, FTP und Archive neu ein"),
             localized("Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste.")
         ].joined(separator: "\n"))
