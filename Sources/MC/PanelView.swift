@@ -180,7 +180,7 @@ final class PanelView: NSView {
         let size = isParent ? "<UP>" : entry.isDirectory ? model.directorySizes[entry.name].map(Formatting.size) ?? "<DIR>" : Formatting.size(entry.size)
         switch model.format {
         case .full:
-            return [(size, 8)] + (columns >= 42 && !isParent ? [(Formatting.date(entry.modified), 14)] : [])
+            return [(size, 8)] + (columns >= 42 && !isParent ? [(Formatting.date(entry.time(model.sortKey.entryTime)), 14)] : [])
         case .sizeOnly:
             return [(size, 8)]
         case .permissions:

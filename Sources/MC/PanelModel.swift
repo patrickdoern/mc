@@ -2,7 +2,16 @@ import Foundation
 import MCCore
 
 enum SortKey: Int {
-    case name, fileExtension, size, date
+    case name, fileExtension, size, date, accessTime, changeTime, creationTime
+
+    var entryTime: EntryTime {
+        switch self {
+        case .name, .fileExtension, .size, .date: .modified
+        case .accessTime: .accessed
+        case .changeTime: .changed
+        case .creationTime: .created
+        }
+    }
 }
 
 enum ListFormat: Int, CaseIterable {
@@ -380,9 +389,9 @@ final class PanelModel {
             result = first.fileExtension == second.fileExtension ? byName() : first.fileExtension < second.fileExtension
         case .size:
             result = first.size == second.size ? byName() : first.size < second.size
-        case .date:
-            let firstDate = first.modified ?? .distantPast
-            let secondDate = second.modified ?? .distantPast
+        case .date, .accessTime, .changeTime, .creationTime:
+            let firstDate = first.time(sortKey.entryTime) ?? .distantPast
+            let secondDate = second.time(sortKey.entryTime) ?? .distantPast
             result = firstDate == secondDate ? byName() : firstDate < secondDate
         }
         return ascending ? result : !result

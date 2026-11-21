@@ -359,7 +359,8 @@ extension MainWindowController {
 
     @objc func chooseSortOrder(_ sender: Any?) {
         let model = activePanel.model
-        let keys: [(String, SortKey)] = [(localized("Name"), .name), (localized("Endung"), .fileExtension), (localized("Größe"), .size), (localized("Datum"), .date)]
+        let keys: [(String, SortKey)] = [(localized("Name"), .name), (localized("Endung"), .fileExtension), (localized("Größe"), .size), (localized("Datum"), .date),
+                                       (localized("Zugriffszeit"), .accessTime), (localized("Statusänderung"), .changeTime), (localized("Erstellungszeit"), .creationTime)]
         guard let result = Dialogs.form(
             title: localized("Sortierreihenfolge"),
             popup: (localized("Sortieren nach:"), keys.map(\.0), keys.firstIndex { $0.1 == model.sortKey } ?? 0),
