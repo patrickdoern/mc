@@ -1,6 +1,6 @@
 # 0002: Englische Oberfläche, Slice 1: Infrastruktur und Hauptfenster
 
-Status: Ready
+Status: Done
 Slice: 1/3 (siehe [Roadmap](0002-englische-oberflaeche-roadmap.md))
 
 ## Ziel
