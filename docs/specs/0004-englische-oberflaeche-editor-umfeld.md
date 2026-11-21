@@ -1,6 +1,6 @@
 # 0004: Englische Oberfläche, Slice 3: Editor, Hilfe und Umfeld
 
-Status: Ready
+Status: Done
 Slice: 3/3 (siehe [Roadmap](0002-englische-oberflaeche-roadmap.md), Mechanismus in [Spec 0002](0002-englische-oberflaeche.md) und ADR-0012)
 
 ## Ziel
