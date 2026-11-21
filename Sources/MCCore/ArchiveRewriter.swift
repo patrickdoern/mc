@@ -40,6 +40,8 @@ public enum ArchiveRewriter {
         guard let format = formatArguments(for: name) else { throw failure(name, nil) }
         guard !changes.isEmpty else { return }
         let fileManager = FileManager.default
+        let exists = fileManager.fileExists(atPath: archivePath)
+        guard exists || (changes.deletions.isEmpty && changes.exactDeletions.isEmpty && changes.renames.isEmpty) else { throw failure(name, nil) }
         let id = UUID().uuidString
         let folder = PosixPath.parent(archivePath)
         let work = NSTemporaryDirectory() + "mc-archive-" + id
@@ -77,7 +79,7 @@ public enum ArchiveRewriter {
                 }
                 let list = work + "/replace.txt"
                 try write(replaced, to: list)
-                try run(base + ["-cf", output, "-X", list] + rules + ["@" + current] + additions.map(\.staged), archive: name)
+                try run(base + ["-cf", output, "-X", list] + rules + (exists ? ["@" + current] : []) + additions.map(\.staged), archive: name)
                 current = output
             }
             if let permissions = try? fileManager.attributesOfItem(atPath: archivePath)[.posixPermissions] {

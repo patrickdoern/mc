@@ -391,6 +391,10 @@ public final class ArchiveFileSystem: FileSystem {
     }
 
     private func load() throws {
+        if writable, !FileManager.default.fileExists(atPath: archivePath) {
+            model = Model()
+            return
+        }
         let listing = try Self.run(["-tvf", archivePath])
         model = Model()
         for line in listing.split(separator: "\n") { parse(String(line)) }

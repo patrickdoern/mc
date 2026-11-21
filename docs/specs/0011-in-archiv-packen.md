@@ -35,4 +35,10 @@ Der Nutzer kann markierte Dateien und Ordner eines Panels mit einem Befehl in ei
 - In der App: Dateien markieren, ⌥F5, Name `test.zip` bzw. `test.tar.gz`/`test.7z`, im anderen Panel entsteht das Archiv; Enter darauf zeigt die Einträge, `bsdtar -tf` bestätigt es. Erneut packen mit weiteren Dateien fügt hinzu, Konflikt fragt wie bei F5.
 - Name ohne bekannte Endung (`test.rar`) wird abgelehnt; Abbrechen mitten im Packen hinterlässt keine Datei.
 
+## Plan
+- [x] T1: Kern (R1, R2, R10 Teil 1): `ArchiveFileSystem` für fehlende Datei, `ArchiveRewriter` legt Archiv an (nur Hinzufügungen/Ordner, atomar, keine Teil-Datei bei Fehler); Tests über `FileOperation.copy` in ein neues Archiv je Format, Hinzufügen zu vorhandenem, Ordner, Abbruch/Fehler. Dateien: `Sources/MCCore/ArchiveFileSystem.swift`, `Sources/MCCore/ArchiveRewriter.swift`, `Tests/MCCoreTests/ArchivePackTests.swift`.
+- [ ] T2: Oberfläche und Doku (R3–R9, R10 Rest): Menüeintrag und ⌥F5, Dialog mit Namensprüfung und lokalem Ziel, Packen über `FileOperation.copy` in `ArchiveFileSystem` (Archiv im Quellordner überspringen, Markierung, Neulesen), englische Texte, README deutsch und englisch. Dateien: `Sources/MC/MainMenu.swift`, `Sources/MC/MainWindowController*.swift`, `Sources/MC/Resources/en.lproj/Localizable.strings`, `README.md`, `README.en.md`, ggf. MCCore für das Überspringen.
+
+Danach: Abnahme (manuell in der App).
+
 ## Offene Fragen
