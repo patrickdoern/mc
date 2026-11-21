@@ -10,6 +10,7 @@ private final class TrustingInteraction: SSHInteraction {
         return true
     }
 
+    func allowUnencryptedLogin(_ host: String) -> Bool { false }
     func requestSecret(_ prompt: String) -> String? { nil }
     func requestPassword(_ prompt: String, account: String) -> PasswordEntry? { nil }
     func storedPassword(for account: String) -> String? { nil }

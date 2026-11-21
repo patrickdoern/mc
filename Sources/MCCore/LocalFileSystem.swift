@@ -107,6 +107,10 @@ public final class LocalFileSystem: FileSystem {
         return LocalFile(descriptor: descriptor, path: path)
     }
 
+    public func adoptMetadata(of original: String, to path: String) {
+        copyfile(original, path, nil, copyfile_flags_t(COPYFILE_METADATA))
+    }
+
     public func trash(_ path: String) throws {
         try FileManager.default.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: nil)
     }

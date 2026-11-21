@@ -523,3 +523,10 @@
 "Archiv" = "Archive";
 "Archive lassen sich nur lokal anlegen" = "Archives can only be created locally";
 "„%@“ hat keine Archiv-Endung, die sich beschreiben lässt (zip, tar, tar.gz, tar.bz2, tar.xz, 7z)" = "“%@” does not have a writable archive suffix (zip, tar, tar.gz, tar.bz2, tar.xz, 7z)";
+"verschlüsselte Archive werden nicht unterstützt" = "encrypted archives are not supported";
+"%@ konnte nicht ersetzt werden, der neue Inhalt liegt in %@" = "Could not replace %@, the new content is in %@";
+"%@ bietet kein TLS an, Verbindung abgebrochen" = "%@ does not offer TLS, connection cancelled";
+"Keine Verschlüsselung bei %@" = "No Encryption on %@";
+"Der Server bietet kein TLS an. Benutzername und Passwort würden unverschlüsselt übertragen." = "The server does not offer TLS. User name and password would be sent unencrypted.";
+"Trotzdem unverschlüsselt anmelden?" = "Log in unencrypted anyway?";
+"Unverschlüsselt anmelden" = "Log In Unencrypted";

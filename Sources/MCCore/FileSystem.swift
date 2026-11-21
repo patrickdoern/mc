@@ -58,6 +58,7 @@ public protocol FileSystem: AnyObject {
     func setPermissions(_ path: String, _ mode: UInt16) throws
     func openReader(_ path: String) throws -> FileReader
     func openWriter(_ path: String, permissions: UInt16) throws -> FileWriter
+    func adoptMetadata(of original: String, to path: String)
 }
 
 public extension FileSystem {
@@ -76,6 +77,37 @@ public extension FileSystem {
     func statFollowingLinks(_ path: String) throws -> FileEntry { try stat(path) }
 
     func canonicalPath(_ path: String) -> String? { nil }
+
+    func adoptMetadata(of original: String, to path: String) {}
+
+    func replace(_ path: String, with temporary: String) throws {
+        if (try? rename(temporary, path)) != nil { return }
+        do {
+            try removeFile(path)
+        } catch {
+            try? removeFile(temporary)
+            throw error
+        }
+        do {
+            try rename(temporary, path)
+        } catch {
+            throw FileError(localized("%@ konnte nicht ersetzt werden, der neue Inhalt liegt in %@", path as NSString, temporary as NSString))
+        }
+    }
+
+    func writeAllSafely(_ data: Data, to path: String, permissions: UInt16) throws {
+        guard let existing = try? stat(path) else { return try writeAll(data, to: path, permissions: permissions) }
+        guard let target = existing.isSymlink ? canonicalPath(path) : path else { return try writeAll(data, to: path, permissions: permissions) }
+        let temporary = PosixPath.join(PosixPath.parent(target), "." + PosixPath.name(target) + ".mc-save-" + UUID().uuidString)
+        do {
+            try writeAll(data, to: temporary, permissions: permissions)
+        } catch {
+            try? removeFile(temporary)
+            return try writeAll(data, to: target, permissions: permissions)
+        }
+        adoptMetadata(of: target, to: temporary)
+        try replace(target, with: temporary)
+    }
 
     func exists(_ path: String) -> Bool { (try? stat(path)) != nil }
 

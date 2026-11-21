@@ -1,6 +1,6 @@
 # ADR-0010: FTP läuft über das System-libcurl, das Remote-Terminal über /usr/bin/ssh
 
-- Status: Accepted
+- Status: Superseded by ADR-0015
 - Datum: 2026-11-19
 
 ## Kontext

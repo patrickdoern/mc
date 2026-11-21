@@ -131,20 +131,10 @@ extension MainWindowController {
         let status = Box<Int32>()
         runner.run(title: localized("Vergleiche …"), { _ in
             try FileManager.default.createDirectory(atPath: PosixPath.parent(outputPath), withIntermediateDirectories: true)
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/diff")
-            process.arguments = ["-u", pair.left, pair.right]
-            let output = Pipe()
-            let errors = Pipe()
-            process.standardOutput = output
-            process.standardError = errors
-            try process.run()
-            let data = output.fileHandleForReading.readDataToEndOfFile()
-            let errorData = errors.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-            guard process.terminationStatus < 2 else { throw FileError(String(decoding: errorData, as: UTF8.self)) }
-            try data.write(to: URL(fileURLWithPath: outputPath))
-            status.value = process.terminationStatus
+            let result = try ProcessRunner.run("/usr/bin/diff", ["-u", pair.left, pair.right])
+            guard result.status < 2 else { throw FileError(result.errorText) }
+            try result.output.write(to: URL(fileURLWithPath: outputPath))
+            status.value = result.status
         }, completion: { [weak self] in
             guard let status = status.value else { return }
             if status == 0 {
@@ -157,7 +147,7 @@ extension MainWindowController {
 
     @objc func compareFilesInFileMerge(_ sender: Any?) {
         guard let pair = selectedFilePair() else { return }
-        let developer = (try? Process.output("/usr/bin/xcode-select", ["-p"]))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let developer = (try? ProcessRunner.run("/usr/bin/xcode-select", ["-p"]))?.outputText.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard FileManager.default.fileExists(atPath: developer + "/../Applications/FileMerge.app") else {
             return Dialogs.show(error: FileError(localized("FileMerge wurde nicht gefunden. Es gehört zu Xcode; „Dateien vergleichen“ funktioniert auch ohne.")))
         }
@@ -206,17 +196,8 @@ extension MainWindowController {
         let directory = model.path
         let found = Box<[String]>()
         runner.run(title: localized("Führe aus …"), { _ in
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-            process.arguments = ["-l", "-c", command]
-            process.currentDirectoryURL = URL(fileURLWithPath: directory)
-            let output = Pipe()
-            process.standardOutput = output
-            process.standardError = FileHandle.nullDevice
-            try process.run()
-            let data = output.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-            found.value = String(decoding: data, as: UTF8.self).split(separator: "\n").map { PosixPath.resolve(String($0), relativeTo: directory, home: NSHomeDirectory()) }.filter { LocalFileSystem.shared.exists($0) }
+            let result = try ProcessRunner.run("/bin/zsh", ["-l", "-c", command], directory: directory)
+            found.value = result.outputText.split(separator: "\n").map { PosixPath.resolve(String($0), relativeTo: directory, home: NSHomeDirectory()) }.filter { LocalFileSystem.shared.exists($0) }
         }, completion: {
             guard let paths = found.value, !paths.isEmpty else { return Dialogs.show(error: FileError(localized("Der Befehl hat keine vorhandenen Pfade geliefert"))) }
             model.navigate(to: "/", on: PanelizedFileSystem(base: LocalFileSystem.shared, paths: paths, title: command))

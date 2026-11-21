@@ -548,22 +548,15 @@ final class MainWindowController: NSWindowController {
         let other = inactivePanel.model
         let context = UserMenuContext(currentName: name, directory: model.path, selection: model.selectedNames, otherDirectory: other.path, otherName: other.currentEntry?.name ?? "")
         let expanded = UserMenu.expand(command, context: context)
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-l", "-c", expanded]
-        process.currentDirectoryURL = URL(fileURLWithPath: model.path)
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = output
-        process.terminationHandler = { finished in
-            guard finished.terminationStatus != 0 else { return }
-            let text = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            DispatchQueue.main.async { Dialogs.show(error: FileError("\(expanded)\n\n\(text)")) }
-        }
-        do {
-            try process.run()
-        } catch {
-            Dialogs.show(error: error)
+        let directory = model.path
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let result = try ProcessRunner.run("/bin/zsh", ["-l", "-c", expanded], directory: directory, mergingErrors: true)
+                guard !result.succeeded else { return }
+                DispatchQueue.main.async { Dialogs.show(error: FileError("\(expanded)\n\n\(result.outputText)")) }
+            } catch {
+                DispatchQueue.main.async { Dialogs.show(error: error) }
+            }
         }
     }
 

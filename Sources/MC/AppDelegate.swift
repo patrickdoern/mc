@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
                 if isDirectory.boolValue { navigate(to: [url.path]) } else { edit(url.path) }
             } else if url.scheme == "moonlight-commander" {
-                let paths = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.filter { $0.name == "path" }.compactMap(\.value) ?? []
+                let paths = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.filter { $0.name == "path" }.compactMap(\.value).filter { $0.hasPrefix("/") } ?? []
                 if url.host == "edit" { paths.forEach(edit) } else if url.host == "open" { navigate(to: paths) }
             }
         }

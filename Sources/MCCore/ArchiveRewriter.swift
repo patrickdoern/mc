@@ -19,7 +19,6 @@ public struct ArchiveChanges {
 }
 
 public enum ArchiveRewriter {
-    private static let bsdtar = "/usr/bin/bsdtar"
     private static let formats: [(suffixes: [String], arguments: [String])] = [
         ([".zip", ".jar", ".war"], ["--format", "zip"]),
         ([".tar"], ["--format", "pax"]),
@@ -137,7 +136,7 @@ public enum ArchiveRewriter {
         let keep = source == .archive ? #"\1"# : ""
         let target = to.replacingOccurrences(of: "\\", with: "\\\\")
         func rule(_ pattern: String, _ end: String, _ replacement: String) -> [String] {
-            ["-s", delimiter + prefix + basic(pattern) + end + delimiter + keep + replacement + delimiter]
+            ["-s", delimiter + prefix + basic(pattern) + end + delimiter + keep + replacement + delimiter + "S"]
         }
         return rule(from, "$", target) + rule(from + "/", "", target + "/")
     }
@@ -148,18 +147,6 @@ public enum ArchiveRewriter {
     }
 
     private static func run(_ arguments: [String], archive name: String) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: bsdtar)
-        process.arguments = arguments
-        let errors = Pipe()
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = errors
-        try process.run()
-        let data = errors.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            let line = String(decoding: data, as: UTF8.self).split(separator: "\n").first.map(String.init)
-            throw failure(name, line)
-        }
+        if let detail = try Bsdtar(arguments, capturesOutput: false).failure() { throw failure(name, detail.isEmpty ? nil : detail) }
     }
 }

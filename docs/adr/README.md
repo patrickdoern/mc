@@ -13,8 +13,9 @@ Entscheidungen, die nicht aus dem Code ablesbar sind. Ein akzeptiertes ADR wird 
 | [0007](0007-live-aktualisierung-nur-fuer-lokale-panels.md) | Nur lokale Panels aktualisieren sich selbst, über FSEvents | Accepted |
 | [0008](0008-sftp-passwoerter-im-schluesselbund.md) | SFTP-Passwörter liegen ausschließlich im macOS-Schlüsselbund | Accepted |
 | [0009](0009-tastenkuerzel-muessen-auf-deutscher-tastatur-gehen.md) | Eigene Tastenkürzel müssen auf einer deutschen Tastatur direkt erreichbar sein | Accepted |
-| [0010](0010-ftp-ueber-libcurl-remote-terminal-ueber-ssh.md) | FTP läuft über das System-libcurl, das Remote-Terminal über /usr/bin/ssh | Accepted |
+| [0010](0010-ftp-ueber-libcurl-remote-terminal-ueber-ssh.md) | FTP läuft über das System-libcurl, das Remote-Terminal über /usr/bin/ssh | Superseded by ADR-0015 |
 | [0011](0011-netzzugriff-nur-mit-zustimmung-update-hinweis.md) | Die App greift nur mit Zustimmung ins Netz: Update-Hinweis per Abfrage der GitHub-Release-API, kein Auto-Update | Accepted |
 | [0012](0012-englische-oberflaeche-ueber-deutsche-schluessel.md) | Texte der App stehen auf Deutsch im Code und werden über `localized` mit englischer Tabelle und Systemsprache übersetzt | Superseded by ADR-0014 |
 | [0013](0013-website-auf-github-pages-zweisprachig.md) | Die Website läuft auf GitHub Pages unter moonlight-commander.org, mit je einer statischen Seite pro Sprache | Accepted |
 | [0014](0014-sprache-nach-system-und-in-der-app-waehlbar.md) | Texte der App stehen auf Deutsch im Code und werden über `localized` mit englischer Tabelle übersetzt; die Sprache folgt dem System und lässt sich in der App überschreiben | Accepted |
+| [0015](0015-ftp-anmeldung-nur-mit-tls-oder-zustimmung.md) | FTP läuft über das System-libcurl; Anmeldungen mit Passwort laufen nur über TLS oder nach ausdrücklicher Zustimmung im Klartext | Accepted |

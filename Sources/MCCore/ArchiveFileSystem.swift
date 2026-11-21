@@ -9,7 +9,6 @@ public final class ArchiveFileSystem: FileSystem {
         ExitLocation(system: LocalFileSystem.shared, path: PosixPath.parent(archivePath), selecting: PosixPath.name(archivePath))
     }
 
-    private static let bsdtar = "/usr/bin/bsdtar"
     private static let suffixes = [".zip", ".jar", ".war", ".tar", ".tgz", ".tar.gz", ".tbz", ".tbz2", ".tar.bz2", ".txz", ".tar.xz", ".tar.zst", ".7z", ".rar", ".iso", ".cpio", ".xar"]
     private static let linePattern = try! NSRegularExpression(pattern: #"^([\-dlpcbs][rwxsStT\-]{9})[+@.]?\s+\S+\s+.+?\s+(\d+)\s+([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}:\d{2}|\d{4})\s(.*)$"#)
 
@@ -377,17 +376,15 @@ public final class ArchiveFileSystem: FileSystem {
     }
 
     private static func run(_ arguments: [String]) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: bsdtar)
-        process.arguments = arguments
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = Pipe()
-        try process.run()
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw FileError(localized("Archiv lässt sich nicht lesen: %@", PosixPath.name(arguments.last ?? "") as NSString)) }
+        let tar = try Bsdtar(arguments, capturesOutput: true)
+        let data = tar.output?.readDataToEndOfFile() ?? Data()
+        if let detail = tar.failure() { throw unreadable(arguments.last ?? "", detail) }
         return String(decoding: data, as: UTF8.self)
+    }
+
+    fileprivate static func unreadable(_ archive: String, _ detail: String) -> FileError {
+        let suffix = detail.isEmpty ? "" : ": " + detail
+        return FileError(localized("Archiv lässt sich nicht lesen: %@", (PosixPath.name(archive) + suffix) as NSString))
     }
 
     private func load() throws {
@@ -535,19 +532,17 @@ private final class StagedWriter: FileWriter {
 }
 
 private final class ArchiveReader: FileReader {
-    private let process = Process()
+    private let archive: String
+    private let tar: Bsdtar
     private let handle: FileHandle
     private var finished = false
 
     init(archive: String, member: String) throws {
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/bsdtar")
+        self.archive = archive
         let escaped = member.map { "*?[]\\".contains($0) ? "\\\($0)" : String($0) }.joined()
-        process.arguments = ["-xOf", archive, escaped]
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = Pipe()
-        handle = output.fileHandleForReading
-        try process.run()
+        tar = try Bsdtar(["-xOf", archive, escaped], capturesOutput: true)
+        guard let output = tar.output else { throw ArchiveFileSystem.unreadable(archive, "") }
+        handle = output
     }
 
     deinit { close() }
@@ -555,15 +550,22 @@ private final class ArchiveReader: FileReader {
     func read(into buffer: UnsafeMutableRawBufferPointer) throws -> Int {
         while true {
             let count = Darwin.read(handle.fileDescriptor, buffer.baseAddress, buffer.count)
-            if count >= 0 { return count }
-            if errno != EINTR { throw FileError(path: "Archiv", errno: errno) }
+            if count > 0 { return count }
+            if count == 0 {
+                guard !finished else { return 0 }
+                finished = true
+                try? handle.close()
+                if let detail = tar.failure() { throw ArchiveFileSystem.unreadable(archive, detail) }
+                return 0
+            }
+            if errno != EINTR { throw FileError(path: archive, errno: errno) }
         }
     }
 
     func close() {
         guard !finished else { return }
         finished = true
-        if process.isRunning { process.terminate() }
+        tar.terminate()
         try? handle.close()
     }
 }

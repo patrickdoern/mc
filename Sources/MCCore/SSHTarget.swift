@@ -96,16 +96,8 @@ public struct SSHSettings {
     }
 
     private static func run(_ executable: String, _ arguments: [String]) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = Pipe()
-        try process.run()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw FileError(localized("ssh -G fehlgeschlagen")) }
-        return String(decoding: data, as: UTF8.self)
+        let result = try ProcessRunner.run(executable, arguments)
+        guard result.succeeded else { throw FileError(localized("ssh -G fehlgeschlagen")) }
+        return result.outputText
     }
 }

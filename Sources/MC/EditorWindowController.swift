@@ -159,7 +159,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private func save() -> Bool {
         let data = textView.string.data(using: encoding, allowLossyConversion: false) ?? Data(textView.string.utf8)
         do {
-            try fileSystem.writeAll(data, to: path, permissions: permissions)
+            try fileSystem.writeAllSafely(data, to: path, permissions: permissions)
         } catch {
             Dialogs.show(error: error)
             return false

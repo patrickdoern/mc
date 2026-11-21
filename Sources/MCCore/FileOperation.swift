@@ -199,12 +199,7 @@ public final class FileOperation {
         report()
         let entry = try fileSystem.stat(source)
         guard let existing = try? fileSystem.stat(destination) else {
-            do {
-                try fileSystem.rename(source, destination)
-            } catch {
-                try copyItem(source, to: destination, from: fileSystem, into: fileSystem, entry: entry)
-                try removeTree(source, on: fileSystem, entry: entry)
-            }
+            try relocate(source, to: destination, on: fileSystem, entry: entry)
             return
         }
         if existing.isDirectory && !existing.isSymlink && entry.isDirectory && !entry.isSymlink {
@@ -217,8 +212,19 @@ public final class FileOperation {
             return
         }
         guard try shouldOverwrite(destination, source: entry, existing: existing) else { return }
+        if (try? fileSystem.rename(source, destination)) != nil { return }
         try removeTree(destination, on: fileSystem, entry: existing)
-        try fileSystem.rename(source, destination)
+        try relocate(source, to: destination, on: fileSystem, entry: entry)
+    }
+
+    private func relocate(_ source: String, to destination: String, on fileSystem: FileSystem, entry: FileEntry) throws {
+        do {
+            try fileSystem.rename(source, destination)
+        } catch {
+            let skippedBefore = skipped
+            try copyItem(source, to: destination, from: fileSystem, into: fileSystem, entry: entry)
+            if skipped == skippedBefore { try removeTree(source, on: fileSystem, entry: entry) }
+        }
     }
 
     private func shouldOverwrite(_ path: String, source: FileEntry, existing: FileEntry) throws -> Bool {
@@ -281,6 +287,7 @@ public final class FileOperation {
         if let existing {
             if existing.isDirectory && !existing.isSymlink { throw FileError(localized("Ziel ist ein Ordner: %@", destination as NSString)) }
             guard try shouldOverwrite(destination, source: entry, existing: existing) else { return }
+            if !entry.isSymlink { return try replaceFile(source, at: destination, from: sourceSystem, into: destinationSystem, entry: entry) }
             try destinationSystem.removeFile(destination)
         }
         if entry.isSymlink {
@@ -310,6 +317,13 @@ public final class FileOperation {
             }
         }
         if options.preserveAttributes, let modified = entry.modified { try? destinationSystem.setModified(destination, modified) }
+    }
+
+    private func replaceFile(_ source: String, at destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry) throws {
+        let temporary = PosixPath.join(PosixPath.parent(destination), "." + PosixPath.name(destination) + ".mc-tmp-" + UUID().uuidString)
+        try copyFile(source, to: temporary, from: sourceSystem, into: destinationSystem, entry: entry)
+        try destinationSystem.replace(destination, with: temporary)
+        report()
     }
 
     private func copyFile(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry) throws {

@@ -158,6 +158,17 @@ final class DialogInteraction: SSHInteraction {
         }
     }
 
+    func allowUnencryptedLogin(_ host: String) -> Bool {
+        onMain {
+            Dialogs.confirm(
+                title: localized("Keine Verschlüsselung bei %@", host as NSString),
+                message: localized("Der Server bietet kein TLS an. Benutzername und Passwort würden unverschlüsselt übertragen.") + "\n\n" + localized("Trotzdem unverschlüsselt anmelden?"),
+                confirm: localized("Unverschlüsselt anmelden"),
+                destructive: true
+            )
+        }
+    }
+
     func requestSecret(_ prompt: String) -> String? {
         onMain { Dialogs.secret(prompt) }
     }

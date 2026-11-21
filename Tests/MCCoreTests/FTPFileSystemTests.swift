@@ -3,6 +3,7 @@ import XCTest
 
 private final class NoInteraction: SSHInteraction {
     func trustUnknownHost(_ host: String, keyType: String, fingerprint: String) -> Bool { false }
+    func allowUnencryptedLogin(_ host: String) -> Bool { false }
     func requestSecret(_ prompt: String) -> String? { nil }
     func requestPassword(_ prompt: String, account: String) -> PasswordEntry? { nil }
     func storedPassword(for account: String) -> String? { nil }

@@ -9,6 +9,7 @@ public final class FTPFileSystem: FileSystem {
     public private(set) var homePath = "/"
     private let target: FTPTarget
     private var password: String
+    private var requiresTLS: Bool
     private let handle: UnsafeMutableRawPointer
     private let lock = NSRecursiveLock()
 
@@ -16,6 +17,7 @@ public final class FTPFileSystem: FileSystem {
         guard let handle = curl_easy_init() else { throw FileError(localized("libcurl konnte nicht gestartet werden")) }
         self.handle = handle
         self.target = target
+        requiresTLS = target.user != "anonymous"
         identity = target.displayName
         displayName = target.displayName
         let account = target.displayName
@@ -34,7 +36,7 @@ public final class FTPFileSystem: FileSystem {
                 }
                 password = entry.password
                 do {
-                    _ = try list("/")
+                    try connect(interaction)
                 } catch let error as FTPLoginError {
                     stored = nil
                     _ = error
@@ -47,7 +49,7 @@ public final class FTPFileSystem: FileSystem {
                 return
             }
             do {
-                _ = try list("/")
+                try connect(interaction)
                 return
             } catch is FTPLoginError {
                 interaction.deletePassword(for: account)
@@ -60,6 +62,16 @@ public final class FTPFileSystem: FileSystem {
     }
 
     deinit { curl_easy_cleanup(handle) }
+
+    private func connect(_ interaction: SSHInteraction) throws {
+        do {
+            _ = try list("/")
+        } catch is FTPWithoutTLS {
+            guard interaction.allowUnencryptedLogin(target.host) else { throw FileError(localized("%@ bietet kein TLS an, Verbindung abgebrochen", target.host as NSString)) }
+            requiresTLS = false
+            _ = try list("/")
+        }
+    }
 
     // MARK: FileSystem
 
@@ -133,7 +145,7 @@ public final class FTPFileSystem: FileSystem {
         _ = mc_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT, 20)
         _ = mc_curl_setopt_long(handle, CURLOPT_FTP_SKIP_PASV_IP, 1)
         _ = mc_curl_setopt_long(handle, CURLOPT_NOSIGNAL, 1)
-        if target.secure {
+        if target.secure || requiresTLS {
             _ = mc_curl_setopt_long(handle, CURLOPT_USE_SSL, Int(CURLUSESSL_ALL.rawValue))
         } else {
             _ = mc_curl_setopt_long(handle, CURLOPT_USE_SSL, Int(CURLUSESSL_TRY.rawValue))
@@ -143,6 +155,7 @@ public final class FTPFileSystem: FileSystem {
     private func failure(_ code: CURLcode, path: String) -> Error {
         switch code {
         case CURLE_LOGIN_DENIED: return FTPLoginError()
+        case CURLE_USE_SSL_FAILED where requiresTLS && !target.secure: return FTPWithoutTLS()
         case CURLE_REMOTE_FILE_NOT_FOUND: return FileError(localized("%@: Datei nicht gefunden", path as NSString))
         case CURLE_COULDNT_RESOLVE_HOST: return FileError(localized("Host %@ nicht gefunden", target.host as NSString))
         case CURLE_COULDNT_CONNECT: return FileError(localized("Keine Verbindung zu %@:%ld", target.host as NSString, target.port))
@@ -294,6 +307,8 @@ public final class FTPFileSystem: FileSystem {
 }
 
 private struct FTPLoginError: Error {}
+
+private struct FTPWithoutTLS: Error {}
 
 private final class FTPDownload: FileReader {
     private var file: UnsafeMutablePointer<FILE>?

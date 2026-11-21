@@ -13,6 +13,15 @@ fail() {
     if [[ "$(language)" == de ]]; then echo "$1" >&2; else echo "$2" >&2; fi
     exit 1
 }
+encode() {
+    local LC_ALL=C text=$1 result= character
+    local -i index
+    for (( index = 1; index <= ${#text}; index++ )); do
+        character=$text[index]
+        if [[ $character == [A-Za-z0-9._~-] ]]; then result+=$character; else result+=$(printf '%%%02X' "'$character"); fi
+    done
+    print -r -- $result
+}
 if [[ ! -d "$app" ]]; then
     fail "mc: Moonlight Commander ist nicht installiert ($app)" "mc: Moonlight Commander is not installed ($app)"
 fi
@@ -21,7 +30,7 @@ for argument in "${@:-.}"; do
     if [[ ! -e "$argument" ]]; then
         fail "mc: $argument existiert nicht" "mc: $argument does not exist"
     fi
-    encoded="$(/usr/bin/python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "${argument:A}")"
+    encoded="$(encode "${argument:A}")"
     query+="${query:+&}path=$encoded"
 done
 exec open "moonlight-commander://open?$query"
