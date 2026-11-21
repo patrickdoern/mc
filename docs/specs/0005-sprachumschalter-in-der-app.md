@@ -1,6 +1,6 @@
 # 0005: Sprachumschalter in der App
 
-Status: Ready
+Status: Done
 
 ## Ziel
 Der Nutzer wählt die Sprache der App unter Optionen → Konfiguration selbst: „Automatisch“ (wie bisher die Systemsprache, sonst Englisch), „Deutsch“ oder „English“. Nach der Auswahl startet sich die App auf Wunsch neu und erscheint in der gewählten Sprache. Das kehrt die Entscheidung „kein Schalter in der App“ aus ADR-0012 um; ein neues ADR ersetzt sie.
