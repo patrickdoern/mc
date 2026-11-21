@@ -25,11 +25,15 @@ struct Localization: Sendable {
 
     static func detectLanguage(_ identifiers: [String]) -> AppLanguage {
         for identifier in identifiers {
-            let code = identifier.split(whereSeparator: { $0 == "-" || $0 == "_" }).first?.lowercased()
+            let code = languageCode(of: identifier)
             if code == "de" { return .german }
             if code == "en" { return .english }
         }
         return .english
+    }
+
+    static func languageCode(of identifier: String) -> String? {
+        identifier.split(whereSeparator: { $0 == "-" || $0 == "_" }).first?.lowercased()
     }
 
     static func loadEnglishTable(from bundle: Bundle) -> [String: String] {

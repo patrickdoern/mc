@@ -47,7 +47,7 @@ Keine.
 
 Checks nach jedem Task: `swift build` (ohne Warnung) und `swift test` (aktuell 72 Tests; keine Checks-Sektion in CLAUDE.md, abgeleitet aus Package.swift wie bei den früheren Specs). Zum Schluss `./scripts/bundle.sh` und die Abnahme.
 
-- [ ] T1: Baustein in `MCCore` (R2): `AppLanguagePreference` mit `init(stored:)` und `stored`, Tests für alle Fälle und die Rundreise. Dateien: `Sources/MCCore/AppLanguagePreference.swift`, `Tests/MCCoreTests/AppLanguagePreferenceTests.swift`.
+- [x] T1: Baustein in `MCCore` (R2): `AppLanguagePreference` mit `init(stored:)` und `stored`, Tests für alle Fälle und die Rundreise. Dateien: `Sources/MCCore/AppLanguagePreference.swift`, `Tests/MCCoreTests/AppLanguagePreferenceTests.swift`.
 - [ ] T2: Einstellung, Dialog, Neustart (R1, R3, R4, R5, R6, R7, R10 optional): `Settings.language`, Auswahlfeld „Sprache:“ im Dialog „Konfiguration“, Nachfrage „Sprache ändern“, Neustart über `AppDelegate`, Tabelleneinträge. Dateien: `Sources/MC/Settings.swift`, `Sources/MC/MainWindowController+Actions.swift`, `Sources/MC/AppDelegate.swift`, `Sources/MC/Resources/en.lproj/Localizable.strings`.
 - [ ] T3: ADR und Doku (R8, R9): ADR-0014 (ersetzt ADR-0012, dessen Statuszeile ändert sich), Index, Abschnitt „Sprache“ in beiden READMEs. Dateien: `docs/adr/0014-…md`, `docs/adr/0012-…md` (nur Statuszeile), `docs/adr/README.md`, `README.md`, `README.en.md`.
 
