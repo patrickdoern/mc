@@ -37,8 +37,8 @@ enum Dialogs {
         return inputs.map { $0.stringValue.trimmingCharacters(in: .whitespaces) }
     }
 
-    static func searchForm(title: String, fields: [(label: String, value: String)], checks: [(title: String, value: Bool)], confirm: String) -> (values: [String], checks: [Bool])? {
-        let dialog = ClassicDialog(title: title)
+    static func searchForm(title: String, fields: [(label: String, value: String)], checks: [(title: String, value: Bool)], message: String = "", confirm: String) -> (values: [String], checks: [Bool])? {
+        let dialog = ClassicDialog(title: title, message: message)
         let inputs = fields.map { dialog.addText(label: $0.label, value: $0.value) }
         let checkItems = checks.map { dialog.addCheck($0.title, value: $0.value) }
         dialog.addButton(confirm, isDefault: true)

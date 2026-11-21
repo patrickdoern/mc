@@ -177,9 +177,19 @@ extension MainWindowController {
 
     @objc func findFiles(_ sender: Any?) {
         let model = activePanel.model
-        guard let values = Dialogs.fields(title: localized("Datei suchen"), message: localized("Start: %@", model.path as NSString) + "\n" + localized("Inhaltssuche nur im lokalen Dateisystem, Groß-/Kleinschreibung wird beachtet."), fields: [(localized("Name:"), "*"), (localized("Inhalt:"), "")], confirm: localized("Suchen")) else { return }
+        let message = localized("Start: %@", model.path as NSString) + "\n" + localized("Inhaltssuche nur im lokalen Dateisystem.")
+        guard let input = Dialogs.searchForm(title: localized("Datei suchen"), fields: [(localized("Name:"), Settings.findRegex ? "" : "*"), (localized("Inhalt:"), "")], checks: [(localized("Groß-/Kleinschreibung beachten"), Settings.findCaseSensitive), (localized("Regulärer Ausdruck"), Settings.findRegex)], message: message, confirm: localized("Suchen")) else { return }
+        Settings.findCaseSensitive = input.checks[0]
+        Settings.findRegex = input.checks[1]
+        let name = input.values[0].trimmingCharacters(in: .whitespaces)
+        let criteria = SearchCriteria(namePattern: input.checks[1] && name == "*" ? "" : name, content: input.values[1].trimmingCharacters(in: .whitespaces), caseSensitive: input.checks[0], useRegex: input.checks[1])
+        do {
+            try criteria.validate()
+        } catch {
+            return Dialogs.show(error: error)
+        }
         guard let window else { return }
-        let finder = FindDialog(fileSystem: model.fileSystem, root: model.path, criteria: SearchCriteria(namePattern: values[0], content: values[1]))
+        let finder = FindDialog(fileSystem: model.fileSystem, root: model.path, criteria: criteria)
         finder.onSelect = { path in model.navigate(to: PosixPath.parent(path), selecting: PosixPath.name(path)) }
         finder.onPanelize = { paths in model.navigate(to: "/", on: PanelizedFileSystem(base: model.fileSystem, paths: paths, title: localized("Suchergebnis"))) }
         finder.onClose = { [weak self] in self?.activeFind = nil }

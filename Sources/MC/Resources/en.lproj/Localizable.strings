@@ -352,7 +352,7 @@
 "FileMerge wurde nicht gefunden. Es gehört zu Xcode; „Dateien vergleichen“ funktioniert auch ohne." = "FileMerge was not found. It is part of Xcode; “Compare Files” also works without it.";
 "Datei suchen" = "Find File";
 "Start: %@" = "Start: %@";
-"Inhaltssuche nur im lokalen Dateisystem, Groß-/Kleinschreibung wird beachtet." = "Content search only in the local filesystem, case-sensitive.";
+"Inhaltssuche nur im lokalen Dateisystem." = "Content search only in the local filesystem.";
 "Name:" = "Name:";
 "Inhalt:" = "Content:";
 "Suchen" = "Find";

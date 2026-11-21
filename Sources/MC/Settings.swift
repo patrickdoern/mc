@@ -20,6 +20,16 @@ enum Settings {
         set { defaults.set(newValue, forKey: "confirmDelete") }
     }
 
+    static var findCaseSensitive: Bool {
+        get { defaults.bool(forKey: "findCaseSensitive") }
+        set { defaults.set(newValue, forKey: "findCaseSensitive") }
+    }
+
+    static var findRegex: Bool {
+        get { defaults.bool(forKey: "findRegex") }
+        set { defaults.set(newValue, forKey: "findRegex") }
+    }
+
     static var confirmOverwrite: Bool {
         get { defaults.object(forKey: "confirmOverwrite") as? Bool ?? true }
         set { defaults.set(newValue, forKey: "confirmOverwrite") }
