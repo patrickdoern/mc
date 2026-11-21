@@ -84,17 +84,35 @@ enum Dialogs {
         _ = dialog.run()
     }
 
+    static func transfer(title: String, message: String, value: String, options: TransferOptions) -> (text: String, options: TransferOptions)? {
+        let dialog = ClassicDialog(title: title, message: message)
+        let field = dialog.addText(value: value)
+        let rule = dialog.addChoice(label: localized("Bei vorhandener Datei:"), options: [localized("Jedes Mal fragen"), localized("Überschreiben"), localized("Nur wenn neuer"), localized("Nur wenn Größe abweicht"), localized("Überspringen")], selected: options.overwriteRule.rawValue)
+        let preserve = dialog.addCheck(localized("Attribute erhalten"), value: options.preserveAttributes)
+        let follow = dialog.addCheck(localized("Symbolischen Links folgen"), value: options.followSymlinks)
+        dialog.addButton(title, isDefault: true)
+        dialog.addButton(localized("Abbrechen"), isCancel: true)
+        guard dialog.run() == 0 else { return nil }
+        let text = field.stringValue.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return nil }
+        let chosen = TransferOptions(overwriteRule: OverwriteRule(rawValue: dialog.choice(rule)) ?? .ask, preserveAttributes: dialog.isChecked(preserve), followSymlinks: dialog.isChecked(follow))
+        return (text, chosen)
+    }
+
     static func conflict(_ info: ConflictInfo) -> ConflictChoice {
         let dialog = ClassicDialog(title: localized("Datei existiert bereits"), message: info.path + "\n\n" + localized("Neu: %@", describe(info.source) as NSString) + "\n" + localized("Alt: %@", describe(info.existing) as NSString), warning: true)
+        let rule = dialog.addChoice(label: localized("Für alle weiteren:"), options: [localized("Jedes Mal fragen"), localized("Nur wenn neuer"), localized("Nur wenn Größe abweicht")], selected: 0)
         dialog.addButton(localized("Überschreiben"), isDefault: true)
         dialog.addButton(localized("Alle überschreiben"))
         dialog.addButton(localized("Überspringen"))
         dialog.addButton(localized("Alle überspringen"))
         dialog.addButton(localized("Abbrechen"), isCancel: true)
-        switch dialog.run() {
-        case 0: return .overwrite
+        let button = dialog.run()
+        let further: OverwriteRule? = [nil, .ifNewer, .ifSizeDiffers][dialog.choice(rule)]
+        switch button {
+        case 0: return further.map(ConflictChoice.overwriteThenRule) ?? .overwrite
         case 1: return .overwriteAll
-        case 2: return .skip
+        case 2: return further.map(ConflictChoice.skipThenRule) ?? .skip
         case 3: return .skipAll
         default: return .cancel
         }

@@ -35,6 +35,21 @@ enum Settings {
         set { defaults.set(newValue, forKey: "confirmOverwrite") }
     }
 
+    static var overwriteRule: OverwriteRule {
+        get { OverwriteRule(rawValue: defaults.integer(forKey: "overwriteRule")) ?? .ask }
+        set { defaults.set(newValue.rawValue, forKey: "overwriteRule") }
+    }
+
+    static var preserveAttributes: Bool {
+        get { defaults.object(forKey: "preserveAttributes") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "preserveAttributes") }
+    }
+
+    static var followSymlinks: Bool {
+        get { defaults.bool(forKey: "followSymlinks") }
+        set { defaults.set(newValue, forKey: "followSymlinks") }
+    }
+
     static var confirmExit: Bool {
         get { defaults.bool(forKey: "confirmExit") }
         set { defaults.set(newValue, forKey: "confirmExit") }

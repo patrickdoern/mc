@@ -504,3 +504,10 @@
 "Zugriffszeit" = "Access Time";
 "Erstellungszeit" = "Creation Time";
 "Zu viele verschachtelte Symlinks: %@" = "Too many nested symlinks: %@";
+"Bei vorhandener Datei:" = "If file exists:";
+"Für alle weiteren:" = "For all further:";
+"Jedes Mal fragen" = "Ask each time";
+"Nur wenn neuer" = "Only if newer";
+"Nur wenn Größe abweicht" = "Only if size differs";
+"Attribute erhalten" = "Preserve attributes";
+"Symbolischen Links folgen" = "Follow symbolic links";

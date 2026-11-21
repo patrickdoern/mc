@@ -284,14 +284,27 @@ final class MainWindowController: NSWindowController {
             message = single ? localized("Kopieren „%@“ nach (Maske möglich, z. B. *.bak):", names[0] as NSString) : localized("Kopieren %ld Objekte nach (Maske möglich, z. B. *.bak):", names.count)
         }
         let proposal = inPlace ? names[0] : PosixPath.join(target.path, "")
-        guard let text = Dialogs.prompt(title: verb, message: message, value: proposal, confirm: verb) else { return }
+        var options = TransferOptions()
+        let text: String
+        if inPlace {
+            guard let entered = Dialogs.prompt(title: verb, message: message, value: proposal, confirm: verb) else { return }
+            text = entered
+        } else {
+            let saved = TransferOptions(overwriteRule: Settings.overwriteRule, preserveAttributes: Settings.preserveAttributes, followSymlinks: Settings.followSymlinks)
+            guard let entered = Dialogs.transfer(title: verb, message: message, value: proposal, options: saved) else { return }
+            text = entered.text
+            options = entered.options
+            Settings.overwriteRule = options.overwriteRule
+            Settings.preserveAttributes = options.preserveAttributes
+            Settings.followSymlinks = options.followSymlinks
+        }
         let resolved = PosixPath.resolve(text, relativeTo: target.path, home: target.fileSystem.homePath)
         let mask = NameMask.isMask(PosixPath.name(resolved)) ? PosixPath.name(resolved) : nil
         let destination = mask == nil ? resolved : PosixPath.parent(resolved)
         let sourceSystem = source.fileSystem
         let targetSystem = target.fileSystem
         let sourceDirectory = source.path
-        runner.run(title: progress, { operation in
+        runner.run(title: progress, options: options, { operation in
             let existing = try? targetSystem.stat(destination)
             let intoDirectory = mask != nil || existing?.isDirectory == true || text.hasSuffix("/") || names.count > 1
             if intoDirectory { try targetSystem.makeDirectories(destination) }

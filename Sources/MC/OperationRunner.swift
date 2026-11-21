@@ -26,7 +26,7 @@ final class OperationRunner {
 
     var backgroundJobs: [Job] { jobs.filter(\.isBackground) }
 
-    func run(title: String, _ work: @escaping (FileOperation) throws -> Void, completion: @escaping () -> Void) {
+    func run(title: String, options: TransferOptions = TransferOptions(), _ work: @escaping (FileOperation) throws -> Void, completion: @escaping () -> Void) {
         let sheet = ProgressSheet(title: title)
         var job: Job?
         let operation = FileOperation(handlers: OperationHandlers(
@@ -39,7 +39,7 @@ final class OperationRunner {
             },
             resolveConflict: { info in Settings.confirmOverwrite ? DispatchQueue.main.sync { Dialogs.conflict(info) } : .overwrite },
             resolveFailure: { path, error in DispatchQueue.main.sync { Dialogs.failure(path: path, error: error) } }
-        ))
+        ), options: options)
         let created = Job(title: title, operation: operation, sheet: sheet)
         job = created
         jobs.append(created)
