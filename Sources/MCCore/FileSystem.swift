@@ -42,6 +42,8 @@ public protocol FileSystem: AnyObject {
     var homePath: String { get }
     func list(_ path: String) throws -> [FileEntry]
     func stat(_ path: String) throws -> FileEntry
+    func statFollowingLinks(_ path: String) throws -> FileEntry
+    func canonicalPath(_ path: String) -> String?
     func makeDirectory(_ path: String) throws
     func removeFile(_ path: String) throws
     func removeDirectory(_ path: String) throws
@@ -58,6 +60,10 @@ public extension FileSystem {
     var displayName: String { identity.replacingOccurrences(of: "sftp://", with: "") }
 
     var exitLocation: ExitLocation? { nil }
+
+    func statFollowingLinks(_ path: String) throws -> FileEntry { try stat(path) }
+
+    func canonicalPath(_ path: String) -> String? { nil }
 
     func exists(_ path: String) -> Bool { (try? stat(path)) != nil }
 

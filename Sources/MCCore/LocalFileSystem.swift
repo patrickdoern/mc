@@ -27,6 +27,18 @@ public final class LocalFileSystem: FileSystem {
         return Self.entry(named: PosixPath.name(path), info: info, followingLinkAt: path)
     }
 
+    public func statFollowingLinks(_ path: String) throws -> FileEntry {
+        var info = Darwin.stat()
+        guard fstatat(AT_FDCWD, path, &info, 0) == 0 else { throw FileError(path: path, errno: errno) }
+        return Self.entry(named: PosixPath.name(path), info: info, isSymlink: false, isDirectory: (info.st_mode & S_IFMT) == S_IFDIR)
+    }
+
+    public func canonicalPath(_ path: String) -> String? {
+        guard let resolved = realpath(path, nil) else { return nil }
+        defer { free(resolved) }
+        return String(cString: resolved)
+    }
+
     public func makeDirectory(_ path: String) throws {
         guard mkdir(path, 0o755) == 0 else { throw FileError(path: path, errno: errno) }
     }

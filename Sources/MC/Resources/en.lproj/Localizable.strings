@@ -503,3 +503,4 @@
 "Ungültiger regulärer Ausdruck: %@" = "Invalid regular expression: %@";
 "Zugriffszeit" = "Access Time";
 "Erstellungszeit" = "Creation Time";
+"Zu viele verschachtelte Symlinks: %@" = "Too many nested symlinks: %@";

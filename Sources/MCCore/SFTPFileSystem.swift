@@ -59,6 +59,15 @@ public final class SFTPFileSystem: FileSystem {
         return resolvingLink(Self.entry(named: PosixPath.name(path), attributes: attributes), at: path)
     }
 
+    public func statFollowingLinks(_ path: String) throws -> FileEntry {
+        lock.lock()
+        defer { lock.unlock() }
+        var attributes = LIBSSH2_SFTP_ATTRIBUTES()
+        let code = libssh2_sftp_stat_ex(sftp, path, UInt32(path.utf8.count), LIBSSH2_SFTP_STAT, &attributes)
+        guard code == 0 else { throw failure(path, code: code) }
+        return Self.entry(named: PosixPath.name(path), attributes: attributes)
+    }
+
     public func makeDirectory(_ path: String) throws {
         lock.lock()
         defer { lock.unlock() }

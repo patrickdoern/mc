@@ -2,6 +2,7 @@ import Foundation
 
 public final class FileOperation {
     private static let newerTolerance: TimeInterval = 2
+    private static let maxLinkDepth = 40
 
     private let handlers: OperationHandlers
     private let options: TransferOptions
@@ -116,14 +117,25 @@ public final class FileOperation {
         report(force: true)
     }
 
-    private func scanItem(_ path: String, on fileSystem: FileSystem) throws {
+    private func scanItem(_ path: String, on fileSystem: FileSystem, links: Int = 0, ancestors: [String] = []) throws {
+        var links = links
+        var ancestors = ancestors
         try checkCancelled()
-        guard let entry = try? fileSystem.stat(path) else { return }
+        guard var entry = try? fileSystem.stat(path) else { return }
+        if entry.isSymlink && options.followSymlinks {
+            guard links < Self.maxLinkDepth, let target = try? followed(entry, at: path, on: fileSystem) else { return }
+            entry = target
+            links += 1
+        }
         if entry.isDirectory && !entry.isSymlink {
+            if options.followSymlinks, let canonical = fileSystem.canonicalPath(path) {
+                if ancestors.contains(canonical) { return }
+                ancestors.append(canonical)
+            }
             progress.currentPath = path
             report()
             for child in (try? fileSystem.list(path)) ?? [] {
-                try scanItem(PosixPath.join(path, child.name), on: fileSystem)
+                try scanItem(PosixPath.join(path, child.name), on: fileSystem, links: links, ancestors: ancestors)
             }
         } else {
             progress.filesTotal += 1
@@ -207,8 +219,20 @@ public final class FileOperation {
         return condition
     }
 
-    private func copyItem(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry) throws {
+    private func followed(_ entry: FileEntry, at path: String, on fileSystem: FileSystem) throws -> FileEntry {
+        let target = try fileSystem.statFollowingLinks(path)
+        return FileEntry(name: entry.name, isDirectory: target.isDirectory, size: target.size, modified: target.modified, permissions: target.permissions, accessed: target.accessed, changed: target.changed, created: target.created)
+    }
+
+    private func copyItem(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry, links: Int = 0, ancestors: [String] = []) throws {
         try checkCancelled()
+        var entry = entry
+        var links = links
+        if entry.isSymlink && options.followSymlinks {
+            guard links < Self.maxLinkDepth else { throw FileError(localized("Zu viele verschachtelte Symlinks: %@", source as NSString)) }
+            entry = try followed(entry, at: source, on: sourceSystem)
+            links += 1
+        }
         if Self.isSameFileSystem(sourceSystem, destinationSystem) {
             if source == destination { throw FileError(localized("Quelle und Ziel sind identisch: %@", source as NSString)) }
             if entry.isDirectory, destination.hasPrefix(source + "/") { throw FileError(localized("Ein Ordner kann nicht in sich selbst kopiert werden: %@", source as NSString)) }
@@ -217,7 +241,7 @@ public final class FileOperation {
         report()
         let existing = try? destinationSystem.stat(destination)
         if entry.isDirectory && !entry.isSymlink {
-            try copyDirectory(source, to: destination, from: sourceSystem, into: destinationSystem, entry: entry, existing: existing)
+            try copyDirectory(source, to: destination, from: sourceSystem, into: destinationSystem, entry: entry, existing: existing, links: links, ancestors: ancestors)
             return
         }
         if let existing {
@@ -234,7 +258,12 @@ public final class FileOperation {
         report()
     }
 
-    private func copyDirectory(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry, existing: FileEntry?) throws {
+    private func copyDirectory(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry, existing: FileEntry?, links: Int, ancestors: [String]) throws {
+        var ancestors = ancestors
+        if options.followSymlinks, let canonical = sourceSystem.canonicalPath(source) {
+            guard !ancestors.contains(canonical) else { throw FileError(localized("Zu viele verschachtelte Symlinks: %@", source as NSString)) }
+            ancestors.append(canonical)
+        }
         if let existing {
             guard existing.isDirectory else { throw FileError(localized("Ziel ist kein Ordner: %@", destination as NSString)) }
         } else {
@@ -243,10 +272,10 @@ public final class FileOperation {
         for child in try sourceSystem.list(source) {
             let childSource = PosixPath.join(source, child.name)
             try attempt(childSource) {
-                try copyItem(childSource, to: PosixPath.join(destination, child.name), from: sourceSystem, into: destinationSystem, entry: child)
+                try copyItem(childSource, to: PosixPath.join(destination, child.name), from: sourceSystem, into: destinationSystem, entry: child, links: links, ancestors: ancestors)
             }
         }
-        if let modified = entry.modified { try? destinationSystem.setModified(destination, modified) }
+        if options.preserveAttributes, let modified = entry.modified { try? destinationSystem.setModified(destination, modified) }
     }
 
     private func copyFile(_ source: String, to destination: String, from sourceSystem: FileSystem, into destinationSystem: FileSystem, entry: FileEntry) throws {
@@ -285,7 +314,7 @@ public final class FileOperation {
             throw error
         }
         try writer.finish()
-        if let modified = entry.modified { try? destinationSystem.setModified(destination, modified) }
+        if options.preserveAttributes, let modified = entry.modified { try? destinationSystem.setModified(destination, modified) }
     }
 
     private func copyLocalFile(_ source: String, to destination: String, baseBytes: Int64) throws {
@@ -308,7 +337,8 @@ public final class FileOperation {
         }
         copyfile_state_set(state, UInt32(COPYFILE_STATE_STATUS_CB), unsafeBitCast(callback, to: UnsafeRawPointer.self))
         copyfile_state_set(state, UInt32(COPYFILE_STATE_STATUS_CTX), context.toOpaque())
-        let result = copyfile(source, destination, state, copyfile_flags_t(COPYFILE_ALL | COPYFILE_CLONE))
+        let flags = options.preserveAttributes ? COPYFILE_ALL | (options.followSymlinks ? 0 : COPYFILE_CLONE) : COPYFILE_DATA
+        let result = copyfile(source, destination, state, copyfile_flags_t(flags))
         try checkCancelled()
         guard result == 0 else { throw FileError(path: source, errno: errno) }
     }
