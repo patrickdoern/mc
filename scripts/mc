@@ -1,14 +1,25 @@
 #!/bin/zsh
 app="/Applications/Moonlight Commander.app"
-if [[ ! -d "$app" ]]; then
-    echo "mc: Moonlight Commander ist nicht installiert ($app)" >&2
+language() {
+    local line code
+    for line in "${(@f)$(defaults read -g AppleLanguages 2>/dev/null)}"; do
+        line="${line//[][(),\" ]/}"
+        code="${(L)line%%[-_]*}"
+        [[ "$code" == (de|en) ]] && { echo "$code"; return; }
+    done
+    echo en
+}
+fail() {
+    if [[ "$(language)" == de ]]; then echo "$1" >&2; else echo "$2" >&2; fi
     exit 1
+}
+if [[ ! -d "$app" ]]; then
+    fail "mc: Moonlight Commander ist nicht installiert ($app)" "mc: Moonlight Commander is not installed ($app)"
 fi
 query=""
 for argument in "${@:-.}"; do
     if [[ ! -e "$argument" ]]; then
-        echo "mc: $argument existiert nicht" >&2
-        exit 1
+        fail "mc: $argument existiert nicht" "mc: $argument does not exist"
     fi
     encoded="$(/usr/bin/python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "${argument:A}")"
     query+="${query:+&}path=$encoded"

@@ -1,18 +1,28 @@
 #!/bin/zsh
 app="/Applications/Moonlight Commander.app"
-if [[ ! -d "$app" ]]; then
-    echo "mcedit: Moonlight Commander ist nicht installiert ($app)" >&2
+language() {
+    local line code
+    for line in "${(@f)$(defaults read -g AppleLanguages 2>/dev/null)}"; do
+        line="${line//[][(),\" ]/}"
+        code="${(L)line%%[-_]*}"
+        [[ "$code" == (de|en) ]] && { echo "$code"; return; }
+    done
+    echo en
+}
+fail() {
+    if [[ "$(language)" == de ]]; then echo "$1" >&2; else echo "$2" >&2; fi
     exit 1
+}
+if [[ ! -d "$app" ]]; then
+    fail "mcedit: Moonlight Commander ist nicht installiert ($app)" "mcedit: Moonlight Commander is not installed ($app)"
 fi
 if (( $# == 0 )); then
-    echo "Aufruf: mcedit <Datei>..." >&2
-    exit 1
+    fail "Aufruf: mcedit <Datei>..." "Usage: mcedit <file>..."
 fi
 query=""
 for argument in "$@"; do
     if [[ -d "$argument" ]]; then
-        echo "mcedit: $argument ist ein Ordner" >&2
-        exit 1
+        fail "mcedit: $argument ist ein Ordner" "mcedit: $argument is a directory"
     fi
     encoded="$(/usr/bin/python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "${argument:A}")"
     query+="${query:+&}path=$encoded"
