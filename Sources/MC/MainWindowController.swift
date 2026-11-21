@@ -55,8 +55,8 @@ final class MainWindowController: NSWindowController {
         panelStack.distribution = .fillEqually
         panelStack.spacing = 0
         let keyBar = KeyBar(
-            labels: ["Hilfe", "Menü", "Ansicht", "Bearbeiten", "Kopieren", "Verschieben", "Mkdir", "Löschen", "Menüs", "Beenden"],
-            shortLabels: ["Hilfe", "Menü", "Zeige", "Edit", "Kopie", "Versch", "MkDir", "Lösch", "Menüs", "Ende"]
+            labels: [localized("Hilfe"), localized("Menü"), localized("Ansicht"), localized("Bearbeiten"), localized("Kopieren"), localized("Verschieben"), localized("Mkdir"), localized("Löschen"), localized("Menüs"), localized("Beenden")],
+            shortLabels: [localized("Hilfe"), localized("Menü"), localized("Zeige"), localized("Edit"), localized("Kopie"), localized("Versch"), localized("MkDir"), localized("Lösch"), localized("Menüs"), localized("Ende")]
         ) { [weak self] number in
             self?.performFunctionKey(number, shifted: false)
         }

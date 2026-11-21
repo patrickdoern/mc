@@ -19,26 +19,26 @@ enum FileInfo {
             path = model.path
         }
         var lines = [
-            row("Datei", entry.name),
-            row("Pfad", path),
-            row("Typ", entry.isSymlink ? "Symbolischer Link" : entry.isDirectory ? "Ordner" : "Datei"),
-            row("Größe", size(of: entry, in: model)),
+            row(localized("Datei"), entry.name),
+            row(localized("Pfad"), path),
+            row(localized("Typ"), entry.isSymlink ? localized("Symbolischer Link") : entry.isDirectory ? localized("Ordner") : localized("Datei")),
+            row(localized("Größe"), size(of: entry, in: model)),
         ]
         guard model.isLocal else {
-            lines += [row("Rechte", permissions(entry.permissions)), row("Geändert", entry.modified.map(dateFormatter.string(from:)) ?? ""), row("Server", model.fileSystem.identity)]
+            lines += [row(localized("Rechte"), permissions(entry.permissions)), row(localized("Geändert"), entry.modified.map(dateFormatter.string(from:)) ?? ""), row(localized("Server"), model.fileSystem.identity)]
             return lines
         }
         var info = Darwin.stat()
         guard lstat(path, &info) == 0 else { return lines }
-        if entry.isSymlink, let target = try? LocalFileSystem.shared.readLink(path) { lines.append(row("Ziel", target)) }
+        if entry.isSymlink, let target = try? LocalFileSystem.shared.readLink(path) { lines.append(row(localized("Ziel"), target)) }
         lines += [
-            row("Besitzer", getpwuid(info.st_uid).map { String(cString: $0.pointee.pw_name) } ?? String(info.st_uid)),
-            row("Gruppe", getgrgid(info.st_gid).map { String(cString: $0.pointee.gr_name) } ?? String(info.st_gid)),
-            row("Rechte", permissions(UInt16(info.st_mode & 0o7777))),
-            row("Geändert", format(info.st_mtimespec)),
-            row("Zugriff", format(info.st_atimespec)),
-            row("Statusänderung", format(info.st_ctimespec)),
-            row("Inode", String(info.st_ino)),
+            row(localized("Besitzer"), getpwuid(info.st_uid).map { String(cString: $0.pointee.pw_name) } ?? String(info.st_uid)),
+            row(localized("Gruppe"), getgrgid(info.st_gid).map { String(cString: $0.pointee.gr_name) } ?? String(info.st_gid)),
+            row(localized("Rechte"), permissions(UInt16(info.st_mode & 0o7777))),
+            row(localized("Geändert"), format(info.st_mtimespec)),
+            row(localized("Zugriff"), format(info.st_atimespec)),
+            row(localized("Statusänderung"), format(info.st_ctimespec)),
+            row(localized("Inode"), String(info.st_ino)),
             row("Links", String(info.st_nlink)),
         ]
         return lines + filesystem(at: path)
@@ -46,7 +46,7 @@ enum FileInfo {
 
     private static func size(of entry: FileEntry, in model: PanelModel) -> String {
         if entry.isDirectory {
-            return model.directorySizes[entry.name].map { "\(Formatting.exactSize($0)) (\($0) Bytes)" } ?? "Ordner (Größe mit „Verzeichnisgrößen anzeigen“)"
+            return model.directorySizes[entry.name].map { "\(Formatting.exactSize($0)) (\($0) Bytes)" } ?? localized("Ordner (Größe mit „Verzeichnisgrößen anzeigen“)")
         }
         return "\(Formatting.exactSize(entry.size)) (\(entry.size) Bytes)"
     }
@@ -59,14 +59,14 @@ enum FileInfo {
         let free = Int64(stats.f_bavail) * block
         var lines = [
             "",
-            "Dateisystem",
-            row("Gerät", string(from: stats.f_mntfromname)),
-            row("Mount-Punkt", string(from: stats.f_mntonname)),
-            row("Typ", string(from: stats.f_fstypename)),
-            row("Größe", Formatting.exactSize(total)),
-            row("Frei", "\(Formatting.exactSize(free))" + (total > 0 ? " (\(Int((Double(free) / Double(total) * 100).rounded())) %)" : "")),
+            localized("Dateisystem"),
+            row(localized("Gerät"), string(from: stats.f_mntfromname)),
+            row(localized("Mount-Punkt"), string(from: stats.f_mntonname)),
+            row(localized("Typ"), string(from: stats.f_fstypename)),
+            row(localized("Größe"), Formatting.exactSize(total)),
+            row(localized("Frei"), "\(Formatting.exactSize(free))" + (total > 0 ? " (\(Int((Double(free) / Double(total) * 100).rounded())) %)" : "")),
         ]
-        if stats.f_files > 0 { lines.append(row("Inodes frei", "\(stats.f_ffree) von \(stats.f_files)")) }
+        if stats.f_files > 0 { lines.append(row(localized("Inodes frei"), localized("%lld von %lld", Int64(stats.f_ffree), Int64(stats.f_files)))) }
         return lines
     }
 

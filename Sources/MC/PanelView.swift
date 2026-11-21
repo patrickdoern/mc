@@ -78,7 +78,7 @@ final class PanelView: NSView {
         previewKey = key
         topIndex = 0
         guard !entry.isDirectory else {
-            previewLines = ["<Ordner>"]
+            previewLines = [localized("<Ordner>")]
             return
         }
         previewLines = ["…"]
@@ -93,12 +93,12 @@ final class PanelView: NSView {
     }
 
     private static func previewLines(of path: String, on system: FileSystem, size: Int64) -> [String] {
-        guard let reader = try? system.openReader(path) else { return ["<Datei nicht lesbar>"] }
+        guard let reader = try? system.openReader(path) else { return [localized("<Datei nicht lesbar>")] }
         defer { reader.close() }
         var buffer = [UInt8](repeating: 0, count: 64 * 1024)
-        guard let count = try? buffer.withUnsafeMutableBytes({ try reader.read(into: $0) }) else { return ["<Datei nicht lesbar>"] }
+        guard let count = try? buffer.withUnsafeMutableBytes({ try reader.read(into: $0) }) else { return [localized("<Datei nicht lesbar>")] }
         let data = Data(buffer[0..<count])
-        guard !data.contains(0) else { return ["<Binärdatei, \(Formatting.exactSize(size))>"] }
+        guard !data.contains(0) else { return [localized("<Binärdatei, %@>", Formatting.exactSize(size) as NSString)] }
         return EditorWindowController.decode(data).0
             .replacingOccurrences(of: "\r", with: "")
             .replacingOccurrences(of: "\t", with: "    ")
@@ -143,9 +143,9 @@ final class PanelView: NSView {
     private var title: String {
         switch mode {
         case .list: return model.title + (model.isLoading ? " …" : "")
-        case .quickView: return "Schnellansicht"
-        case .info: return "Info"
-        case .tree: return "Baum"
+        case .quickView: return localized("Schnellansicht")
+        case .info: return localized("Info")
+        case .tree: return localized("Baum")
         }
     }
 
@@ -253,15 +253,15 @@ final class PanelView: NSView {
             text = peer?().path ?? ""
         case .list:
             if let search = model.searchText {
-                text = "Suche: " + search
+                text = localized("Suche: ") + search
             } else if !model.marked.isEmpty {
-                text = "\(model.marked.count) markiert (\(Formatting.exactSize(model.markedBytes)))"
+                text = localized("%d markiert (%@)", model.marked.count, Formatting.exactSize(model.markedBytes) as NSString)
                 color = Theme.marked
             } else if let entry = model.currentEntry, !model.isParentRow(model.cursor) {
                 let size = entry.isDirectory ? "<DIR>" : Formatting.exactSize(entry.size)
                 text = "\(entry.name)  \(size)  \(Formatting.permissions(entry.permissions))"
             } else {
-                text = "\(max(model.rows.count - (model.hasParentRow ? 1 : 0), 0)) Einträge"
+                text = localized("%d Einträge", max(model.rows.count - (model.hasParentRow ? 1 : 0), 0))
             }
         }
         draw(abbreviated(text, columns: columns), at: NSPoint(x: margin + 6, y: y), color: color)
