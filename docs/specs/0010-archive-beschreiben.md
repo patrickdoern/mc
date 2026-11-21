@@ -1,6 +1,6 @@
 # 0010: Archive beschreiben
 
-Status: Ready
+Status: Done
 Slice: 4/4 (siehe [Roadmap](0006-mc-luecken-roadmap.md)), Ziel-Release 1.6.4
 
 ## Ziel
