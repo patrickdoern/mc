@@ -360,7 +360,16 @@ final class MainWindowController: NSWindowController {
         guard let text = Dialogs.prompt(title: localized("Neuer Ordner"), message: localized("Name des Ordners:"), confirm: localized("Anlegen")) else { return }
         let path = PosixPath.resolve(text, relativeTo: model.path, home: model.fileSystem.homePath)
         let system = model.fileSystem
-        runner.run(title: localized("Lege Ordner an …"), { _ in try system.makeDirectories(path) }, completion: { [weak self] in
+        runner.run(title: localized("Lege Ordner an …"), { _ in
+            system.beginTransaction()
+            do {
+                try system.makeDirectories(path)
+                try system.commitTransaction()
+            } catch {
+                system.rollbackTransaction()
+                throw error
+            }
+        }, completion: { [weak self] in
             model.reload(selecting: text.split(separator: "/").first.map(String.init))
             self?.reloadOtherPanel()
         })
