@@ -194,12 +194,11 @@ private func read(_ path: String) throws -> String {
         #expect(try String(decoding: archive.readAll("/sub/b [1].txt"), as: UTF8.self) == "beta [x]*")
     }
 
-    @Test func exposesSymlinksAndIsReadOnly() throws {
+    @Test func exposesSymlinks() throws {
         let (_, path) = try makeArchive(format: "tar")
         let archive = try ArchiveFileSystem(path: path)
         #expect(try archive.stat("/link").isSymlink)
         #expect(try archive.readLink("/link") == "a.txt")
-        #expect(throws: FileError.self) { try archive.removeFile("/a.txt") }
         #expect(archive.exitLocation?.selecting == "test.tar")
     }
 

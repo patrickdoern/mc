@@ -3,17 +3,19 @@ import Foundation
 public struct ArchiveChanges {
     public var additions: [(staged: String, archive: String)]
     public var deletions: [String]
+    public var exactDeletions: [String]
     public var renames: [(from: String, to: String)]
     public var newDirectories: [String]
 
-    public init(additions: [(staged: String, archive: String)] = [], deletions: [String] = [], renames: [(from: String, to: String)] = [], newDirectories: [String] = []) {
+    public init(additions: [(staged: String, archive: String)] = [], deletions: [String] = [], exactDeletions: [String] = [], renames: [(from: String, to: String)] = [], newDirectories: [String] = []) {
         self.additions = additions
         self.deletions = deletions
+        self.exactDeletions = exactDeletions
         self.renames = renames
         self.newDirectories = newDirectories
     }
 
-    var isEmpty: Bool { additions.isEmpty && deletions.isEmpty && renames.isEmpty && newDirectories.isEmpty }
+    var isEmpty: Bool { additions.isEmpty && deletions.isEmpty && exactDeletions.isEmpty && renames.isEmpty && newDirectories.isEmpty }
 }
 
 public enum ArchiveRewriter {
@@ -53,10 +55,10 @@ public enum ArchiveRewriter {
                 additions.append((empty, directory))
             }
             let base = [format, ["--no-mac-metadata"]].flatMap { $0 }
-            if !changes.deletions.isEmpty || !changes.renames.isEmpty {
+            if !changes.deletions.isEmpty || !changes.exactDeletions.isEmpty || !changes.renames.isEmpty {
                 let output = folder + "/." + name + ".mc-tmp-" + id + "-1"
                 temporaries.append(output)
-                let patterns = changes.deletions.flatMap { prefixPatterns(for: $0) }
+                let patterns = changes.deletions.flatMap { prefixPatterns(for: $0) } + changes.exactDeletions.flatMap { exactPatterns(for: $0) }
                 let list = work + "/delete.txt"
                 try write(patterns, to: list)
                 var arguments = base + ["-cf", output, "-X", list]

@@ -98,6 +98,13 @@ private func leftovers(_ root: String) throws -> [String] {
         #expect(try names(archive) == ["a b", "a b/[x].txt", "keep.txt"])
     }
 
+    @Test(arguments: extensions) func exactDeletionKeepsMovedChildren(ext: String) throws {
+        let root = try makeSandbox()
+        let archive = try makeArchive(ext, in: root)
+        try ArchiveRewriter.apply(ArchiveChanges(exactDeletions: ["/sub"], renames: [("/sub/b.txt", "/b.txt")]), to: archive)
+        #expect(try names(archive) == ["a b", "a b/[x].txt", "a.txt", "b.txt", "keep.txt", "sub/deep", "sub/deep/c.txt"])
+    }
+
     @Test(arguments: extensions) func renamesFileAndDirectoryWithContents(ext: String) throws {
         let root = try makeSandbox()
         let archive = try makeArchive(ext, in: root)
