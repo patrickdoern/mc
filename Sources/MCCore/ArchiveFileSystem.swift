@@ -23,6 +23,10 @@ public final class ArchiveFileSystem: FileSystem {
         return suffixes.contains { lower.hasSuffix($0) }
     }
 
+    public static func isWritable(_ name: String) -> Bool {
+        ArchiveRewriter.formatArguments(for: name) != nil
+    }
+
     public init(path: String) throws {
         archivePath = path
         identity = "archive://" + path

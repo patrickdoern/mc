@@ -511,3 +511,4 @@
 "Nur wenn Größe abweicht" = "Only if size differs";
 "Attribute erhalten" = "Preserve attributes";
 "Symbolischen Links folgen" = "Follow symbolic links";
+"Archiv lässt sich nicht schreiben: %@" = "Cannot write archive: %@";
