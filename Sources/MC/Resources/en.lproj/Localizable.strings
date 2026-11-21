@@ -500,3 +500,4 @@
 "Verzeichnisverlauf" = "Directory History";
 "Noch kein Verlauf" = "No history yet";
 "⌘← und ⌘→ springen im Verzeichnisverlauf zurück und vorwärts." = "⌘← and ⌘→ go back and forward in the directory history.";
+"Ungültiger regulärer Ausdruck: %@" = "Invalid regular expression: %@";
