@@ -1,6 +1,6 @@
 # 0009: Überschreib-Regeln und Kopieroptionen
 
-Status: Ready
+Status: Done
 Slice: 3/4 (siehe [Roadmap](0006-mc-luecken-roadmap.md)), Ziel-Release 1.6.3
 
 ## Ziel
