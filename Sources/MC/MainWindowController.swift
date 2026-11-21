@@ -222,7 +222,7 @@ final class MainWindowController: NSWindowController {
 
     @objc func connect(_ sender: Any?) {
         let history = UserDefaults.standard.stringArray(forKey: Self.connectionHistoryKey) ?? []
-        guard let text = Dialogs.prompt(title: "Verbindung", message: "user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:", value: history.first ?? "", confirm: "Verbinden", history: history) else { return }
+        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:"), value: history.first ?? "", confirm: localized("Verbinden"), history: history) else { return }
         let panel = activePanel
         let model = panel.model
         let interaction = interaction
@@ -230,9 +230,9 @@ final class MainWindowController: NSWindowController {
         let showList = { for shown in [panel, other] where shown.mode == .info || shown.mode == .quickView { shown.setMode(.list) } }
         let remember = { UserDefaults.standard.set(([text] + history.filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
         if FTPTarget.isFTP(text) {
-            guard let target = FTPTarget.parse(text) else { return Dialogs.show(error: FileError("Ungültige FTP-Adresse: \(text)")) }
+            guard let target = FTPTarget.parse(text) else { return Dialogs.show(error: FileError(localized("Ungültige FTP-Adresse: %@", text as NSString))) }
             let connection = Box<FTPFileSystem>()
-            runner.run(title: "Verbinde mit \(target.displayName) …", { _ in
+            runner.run(title: localized("Verbinde mit %@ …", target.displayName as NSString), { _ in
                 connection.value = try FTPFileSystem(target: target, interaction: interaction)
             }, completion: {
                 guard let system = connection.value else { return }
@@ -244,7 +244,7 @@ final class MainWindowController: NSWindowController {
         }
         guard let target = SSHTarget.parse(text) else { return }
         let connection = Box<SFTPFileSystem>()
-        runner.run(title: "Verbinde mit \(target.displayName) …", { _ in
+        runner.run(title: localized("Verbinde mit %@ …", target.displayName as NSString), { _ in
             connection.value = try SFTPFileSystem(settings: try SSHSettings.resolve(target), interaction: interaction)
         }, completion: {
             guard let system = connection.value else { return }
@@ -263,17 +263,32 @@ final class MainWindowController: NSWindowController {
         let target = inPlace ? source : inactivePanel.model
         let names = source.selectedNames
         guard !names.isEmpty else { return }
-        let verb = inPlace ? "Umbenennen" : move ? "Verschieben" : "Kopieren"
-        let subject = names.count == 1 ? "„\(names[0])“" : "\(names.count) Objekte"
+        let single = names.count == 1
+        let verb: String
+        let progress: String
+        let message: String
+        if inPlace {
+            verb = localized("Umbenennen")
+            progress = localized("Umbenennen …")
+            message = single ? localized("Umbenennen „%@“ nach (Maske möglich, z. B. *.bak):", names[0] as NSString) : localized("Umbenennen %ld Objekte nach (Maske möglich, z. B. *.bak):", names.count)
+        } else if move {
+            verb = localized("Verschieben")
+            progress = localized("Verschieben …")
+            message = single ? localized("Verschieben „%@“ nach (Maske möglich, z. B. *.bak):", names[0] as NSString) : localized("Verschieben %ld Objekte nach (Maske möglich, z. B. *.bak):", names.count)
+        } else {
+            verb = localized("Kopieren")
+            progress = localized("Kopieren …")
+            message = single ? localized("Kopieren „%@“ nach (Maske möglich, z. B. *.bak):", names[0] as NSString) : localized("Kopieren %ld Objekte nach (Maske möglich, z. B. *.bak):", names.count)
+        }
         let proposal = inPlace ? names[0] : PosixPath.join(target.path, "")
-        guard let text = Dialogs.prompt(title: verb, message: "\(verb) \(subject) nach (Maske möglich, z. B. *.bak):", value: proposal, confirm: verb) else { return }
+        guard let text = Dialogs.prompt(title: verb, message: message, value: proposal, confirm: verb) else { return }
         let resolved = PosixPath.resolve(text, relativeTo: target.path, home: target.fileSystem.homePath)
         let mask = NameMask.isMask(PosixPath.name(resolved)) ? PosixPath.name(resolved) : nil
         let destination = mask == nil ? resolved : PosixPath.parent(resolved)
         let sourceSystem = source.fileSystem
         let targetSystem = target.fileSystem
         let sourceDirectory = source.path
-        runner.run(title: verb + " …", { operation in
+        runner.run(title: progress, { operation in
             let existing = try? targetSystem.stat(destination)
             let intoDirectory = mask != nil || existing?.isDirectory == true || text.hasSuffix("/") || names.count > 1
             if intoDirectory { try targetSystem.makeDirectories(destination) }
@@ -300,17 +315,23 @@ final class MainWindowController: NSWindowController {
         let names = model.selectedNames
         guard !names.isEmpty else { return }
         let trash = model.isLocal && !permanently && Settings.useTrash
-        let subject = names.count == 1 ? "„\(names[0])“" : "\(names.count) Objekte"
+        let single = names.count == 1
+        let message: String
+        if trash {
+            message = single ? localized("„%@“", names[0] as NSString) : localized("%ld Objekte", names.count)
+        } else {
+            message = single ? localized("„%@“ wird unwiderruflich gelöscht.", names[0] as NSString) : localized("%ld Objekte wird unwiderruflich gelöscht.", names.count)
+        }
         let confirmed = (trash && !Settings.confirmDelete) || Dialogs.confirm(
-            title: trash ? "In den Papierkorb legen?" : "Endgültig löschen?",
-            message: trash ? subject : "\(subject) wird unwiderruflich gelöscht.",
-            confirm: trash ? "In den Papierkorb" : "Löschen",
+            title: trash ? localized("In den Papierkorb legen?") : localized("Endgültig löschen?"),
+            message: message,
+            confirm: trash ? localized("In den Papierkorb") : localized("Löschen"),
             destructive: !trash
         )
         guard confirmed else { return }
         let system = model.fileSystem
         let paths = names.map(model.fullPath(of:))
-        runner.run(title: "Lösche …", { operation in
+        runner.run(title: localized("Lösche …"), { operation in
             try operation.delete(paths, on: system, trash: trash)
         }, completion: { [weak self] in
             model.clearMarks()
@@ -320,10 +341,10 @@ final class MainWindowController: NSWindowController {
 
     @objc func makeDirectory(_ sender: Any?) {
         let model = activePanel.model
-        guard let text = Dialogs.prompt(title: "Neuer Ordner", message: "Name des Ordners:", confirm: "Anlegen") else { return }
+        guard let text = Dialogs.prompt(title: localized("Neuer Ordner"), message: localized("Name des Ordners:"), confirm: localized("Anlegen")) else { return }
         let path = PosixPath.resolve(text, relativeTo: model.path, home: model.fileSystem.homePath)
         let system = model.fileSystem
-        runner.run(title: "Lege Ordner an …", { _ in try system.makeDirectories(path) }, completion: { [weak self] in
+        runner.run(title: localized("Lege Ordner an …"), { _ in try system.makeDirectories(path) }, completion: { [weak self] in
             model.reload(selecting: text.split(separator: "/").first.map(String.init))
             self?.reloadOtherPanel()
         })
@@ -334,7 +355,7 @@ final class MainWindowController: NSWindowController {
 
     @objc func newFile(_ sender: Any?) {
         let model = activePanel.model
-        guard let name = Dialogs.prompt(title: "Neue Datei", message: "Dateiname:", confirm: "Bearbeiten") else { return }
+        guard let name = Dialogs.prompt(title: localized("Neue Datei"), message: localized("Dateiname:"), confirm: localized("Bearbeiten")) else { return }
         openEditor(model: model, name: name, readOnly: false)
     }
 
@@ -357,9 +378,9 @@ final class MainWindowController: NSWindowController {
     func openEditor(system: FileSystem, path: String, readOnly: Bool) {
         let name = PosixPath.name(path)
         let loaded = Box<EditorWindowController>()
-        runner.run(title: "Lade \(name) …", { _ in
+        runner.run(title: localized("Lade %@ …", name as NSString), { _ in
             let entry = try? system.stat(path)
-            if let entry, entry.size > 50_000_000 { throw FileError("\(name) ist zu groß für den Editor (über 50 MB)") }
+            if let entry, entry.size > 50_000_000 { throw FileError(localized("%@ ist zu groß für den Editor (über 50 MB)", name as NSString)) }
             let data = entry == nil ? Data() : try system.readAll(path)
             DispatchQueue.main.sync {
                 loaded.value = EditorWindowController(fileSystem: system, path: path, data: data, permissions: entry?.permissions ?? 0o644, readOnly: readOnly)
@@ -399,7 +420,7 @@ final class MainWindowController: NSWindowController {
 
     @objc func goToPath(_ sender: Any?) {
         let model = activePanel.model
-        guard let text = Dialogs.prompt(title: "Gehe zu", message: "Pfad:", value: model.path, confirm: "Gehen") else { return }
+        guard let text = Dialogs.prompt(title: localized("Gehe zu"), message: localized("Pfad:"), value: model.path, confirm: localized("Gehen")) else { return }
         showFileList(activePanel)
         model.navigate(to: PosixPath.resolve(text, relativeTo: model.path, home: model.fileSystem.homePath))
     }
@@ -414,7 +435,7 @@ final class MainWindowController: NSWindowController {
     }
 
     func markPattern(select: Bool) {
-        guard let pattern = Dialogs.prompt(title: select ? "Auswählen" : "Abwählen", message: "Muster (z. B. *.txt):", value: "*", confirm: "OK") else { return }
+        guard let pattern = Dialogs.prompt(title: select ? localized("Auswählen") : localized("Abwählen"), message: localized("Muster (z. B. *.txt):"), value: "*", confirm: localized("OK")) else { return }
         activePanel.model.mark(matching: pattern, select: select)
     }
 
@@ -451,7 +472,7 @@ final class MainWindowController: NSWindowController {
                 self?.commandLine.replaceWord(completion.commonPrefix, with: candidate + (candidate.hasSuffix("/") ? "" : " "))
             })
         }
-        popUp(menu, title: "Vervollständigen")
+        popUp(menu, title: localized("Vervollständigen"))
     }
 
     private func insertCurrentName() {
@@ -461,7 +482,7 @@ final class MainWindowController: NSWindowController {
 
     func enterArchive(_ path: String, in model: PanelModel) {
         let archive = Box<ArchiveFileSystem>()
-        runner.run(title: "Öffne \(PosixPath.name(path)) …", { _ in
+        runner.run(title: localized("Öffne %@ …", PosixPath.name(path) as NSString), { _ in
             archive.value = try ArchiveFileSystem(path: path)
         }, completion: {
             guard let system = archive.value else { return }
@@ -500,7 +521,7 @@ final class MainWindowController: NSWindowController {
         let system = model.fileSystem
         let path = model.fullPath(of: entry.name)
         let target = FileManager.default.temporaryDirectory.appendingPathComponent("moonlight-quicklook").appendingPathComponent(entry.name)
-        runner.run(title: "Lade \(entry.name) …", { _ in
+        runner.run(title: localized("Lade %@ …", entry.name as NSString), { _ in
             try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
             try system.readAll(path).write(to: target)
         }, completion: { [weak self] in
@@ -579,7 +600,7 @@ final class MainWindowController: NSWindowController {
             return
         }
         guard model.isLocal else {
-            return Dialogs.show(error: FileError(model.fileSystem is SFTPFileSystem ? "Befehle laufen nur in lokalen Ordnern. Ctrl-O öffnet ein Terminal auf dem Server." : "Befehle laufen nur in lokalen Ordnern"))
+            return Dialogs.show(error: FileError(model.fileSystem is SFTPFileSystem ? localized("Befehle laufen nur in lokalen Ordnern. Ctrl-O öffnet ein Terminal auf dem Server.") : localized("Befehle laufen nur in lokalen Ordnern")))
         }
         runInTerminal(command)
     }
