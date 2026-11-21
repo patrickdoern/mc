@@ -1,4 +1,5 @@
 import Foundation
+import MCCore
 
 struct FileAction {
     let pattern: String
@@ -9,13 +10,13 @@ struct FileAction {
 enum FileActions {
     static var fileURL: URL { URL(fileURLWithPath: NSHomeDirectory() + "/.config/moonlight-commander/ext") }
 
-    static let defaultText = """
-    # Muster   Aktion (open, view oder edit)   Befehl
-    # Makros: %f Datei, %d Ordner, %s Auswahl. Beispiele:
-    # *.pdf    open   open -a Preview %f
-    # *.png    view   open -a Preview %f
-    # *.md     edit   open -a TextEdit %f
-    """
+    static let defaultText: String = [
+        localized("# Muster   Aktion (open, view oder edit)   Befehl"),
+        localized("# Makros: %f Datei, %d Ordner, %s Auswahl. Beispiele:"),
+        "# *.pdf    open   open -a Preview %f",
+        "# *.png    view   open -a Preview %f",
+        "# *.md     edit   open -a TextEdit %f"
+    ].joined(separator: "\n")
 
     static func load() -> [FileAction] {
         guard let text = try? String(contentsOf: fileURL, encoding: .utf8) else { return [] }

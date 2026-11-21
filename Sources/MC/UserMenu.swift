@@ -1,4 +1,5 @@
 import Foundation
+import MCCore
 
 struct UserMenuEntry {
     let key: String
@@ -18,22 +19,22 @@ enum UserMenu {
     static var fileURL: URL { URL(fileURLWithPath: NSHomeDirectory() + "/.config/moonlight-commander/menu") }
 
     static let defaultText = """
-    o   Mit Standardprogramm öffnen
+    o   \(localized("Mit Standardprogramm öffnen"))
             open %f
 
-    r   Im Finder zeigen
+    r   \(localized("Im Finder zeigen"))
             open -R %f
 
-    t   Terminal hier öffnen
+    t   \(localized("Terminal hier öffnen"))
             open -a Terminal %d
 
-    z   Auswahl als tar.gz packen
+    z   \(localized("Auswahl als tar.gz packen"))
             tar czf archiv.tar.gz %s
 
-    u   Archiv entpacken
+    u   \(localized("Archiv entpacken"))
             tar xf %f
 
-    s   Größe der Auswahl (du -sh)
+    s   \(localized("Größe der Auswahl (du -sh)"))
             du -sh %s
     """
 

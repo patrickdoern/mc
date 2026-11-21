@@ -480,3 +480,11 @@
 "Lokale Panels laden sich bei Änderungen von außen selbst neu · ⌘R liest SFTP, FTP und Archive neu ein" = "Local panels reload by themselves on outside changes · ⌘R rereads SFTP, FTP and archives";
 "Hinweis: Die F-Tasten brauchen „F1, F2 usw. als Standardfunktionstasten“ oder die Fn-Taste." = "Note: The F keys need “F1, F2 etc. as standard function keys” or the Fn key.";
 "%ld %%" = "%ld%%";
+"# Muster   Aktion (open, view oder edit)   Befehl" = "# Pattern   Action (open, view or edit)   Command";
+"# Makros: %f Datei, %d Ordner, %s Auswahl. Beispiele:" = "# Macros: %f file, %d folder, %s selection. Examples:";
+"Mit Standardprogramm öffnen" = "Open with default app";
+"Im Finder zeigen" = "Reveal in Finder";
+"Terminal hier öffnen" = "Open Terminal here";
+"Auswahl als tar.gz packen" = "Pack selection as tar.gz";
+"Archiv entpacken" = "Extract archive";
+"Größe der Auswahl (du -sh)" = "Size of selection (du -sh)";
