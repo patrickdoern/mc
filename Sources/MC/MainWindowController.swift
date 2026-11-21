@@ -60,7 +60,7 @@ final class MainWindowController: NSWindowController {
         ) { [weak self] number in
             self?.performFunctionKey(number, shifted: false)
         }
-        let menuLine = MenuLineView(titles: ["Links", "Datei", "Befehl", "Optionen", "Rechts"]) { [unowned self] index in menu(at: index) }
+        let menuLine = MenuLineView(titles: [localized("Links"), localized("Datei"), localized("Befehl"), localized("Optionen"), localized("Rechts")]) { [unowned self] index in menu(at: index) }
         self.menuLine = menuLine
         self.keyBar = keyBar
         let promptLine = ShellInputView(commandLine: commandLine) { [unowned self] in prompt }

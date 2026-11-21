@@ -16,7 +16,7 @@ extension MainWindowController {
         let panel = panelViews[side]
         let model = panel.model
         let menu = NSMenu()
-        let modes: [(String, PanelMode)] = [("Dateiliste", .list), ("Schnellansicht", .quickView), ("Info", .info), ("Baum", .tree)]
+        let modes: [(String, PanelMode)] = [(localized("Dateiliste"), .list), (localized("Schnellansicht"), .quickView), (localized("Info"), .info), (localized("Baum"), .tree)]
         for (title, mode) in modes {
             menu.addItem(ClosureMenuItem(title, checked: panel.mode == mode) { [unowned self] in
                 focus(mode == .quickView || mode == .info ? panelViews[1 - side] : panel)
@@ -24,33 +24,33 @@ extension MainWindowController {
             })
         }
         menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem("Listenformat …") { [unowned self] in focus(panel); chooseListFormat(nil) })
-        menu.addItem(ClosureMenuItem("Sortierreihenfolge …") { [unowned self] in focus(panel); chooseSortOrder(nil) })
-        menu.addItem(ClosureMenuItem("Filter …", checked: !model.filter.isEmpty) { [unowned self] in focus(panel); chooseFilter(nil) })
+        menu.addItem(ClosureMenuItem(localized("Listenformat …")) { [unowned self] in focus(panel); chooseListFormat(nil) })
+        menu.addItem(ClosureMenuItem(localized("Sortierreihenfolge …")) { [unowned self] in focus(panel); chooseSortOrder(nil) })
+        menu.addItem(ClosureMenuItem(localized("Filter …"), checked: !model.filter.isEmpty) { [unowned self] in focus(panel); chooseFilter(nil) })
         menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem("SFTP-/FTP-Verbindung …") { [unowned self] in focus(panel); connect(nil) })
-        menu.addItem(ClosureMenuItem("Gehe zu Pfad …") { [unowned self] in focus(panel); goToPath(nil) })
-        menu.addItem(ClosureMenuItem("Home-Ordner") { [unowned self] in focus(panel); goHome(nil) })
+        menu.addItem(ClosureMenuItem(localized("SFTP-/FTP-Verbindung …")) { [unowned self] in focus(panel); connect(nil) })
+        menu.addItem(ClosureMenuItem(localized("Gehe zu Pfad …")) { [unowned self] in focus(panel); goToPath(nil) })
+        menu.addItem(ClosureMenuItem(localized("Home-Ordner")) { [unowned self] in focus(panel); goHome(nil) })
         menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem("Anordnen") { [unowned self] in arrangePanels(nil) })
+        menu.addItem(ClosureMenuItem(localized("Anordnen")) { [unowned self] in arrangePanels(nil) })
         menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem("Neu einlesen   ⌘R") { model.reload() })
+        menu.addItem(ClosureMenuItem(localized("Neu einlesen   ⌘R")) { model.reload() })
         return menu
     }
 
     private func fileMenu() -> NSMenu {
         let menu = NSMenu()
         add([
-            ("Ansicht   F3", viewFile), ("Quick Look   ⌘Y", quickLookFile), ("Datei anzeigen …", viewFileByName), ("Bearbeiten   F4", editFile), ("Neue Datei …   ⇧F4", newFile), ("Kopieren   F5", copyFiles), nil,
-            ("Chmod …", changePermissions), ("Link …", makeHardLink), ("Symbolischer Link …", makeSymbolicLink), ("Relativer symbolischer Link …", makeRelativeSymbolicLink),
-            ("Symbolischen Link bearbeiten …", editSymbolicLink), ("Chown …", changeOwner), nil,
-            ("Umbenennen/Verschieben   F6", moveFiles), ("Umbenennen   ⇧F6", renameFile), ("Neues Verzeichnis erstellen   F7", makeDirectory),
-            ("Löschen   F8", deleteFiles), ("Endgültig löschen   ⇧F8", deleteFilesPermanently), ("Schnelles cd …", goToPath), nil,
+            (localized("Ansicht   F3"), viewFile), (localized("Quick Look   ⌘Y"), quickLookFile), (localized("Datei anzeigen …"), viewFileByName), (localized("Bearbeiten   F4"), editFile), (localized("Neue Datei …   ⇧F4"), newFile), (localized("Kopieren   F5"), copyFiles), nil,
+            (localized("Chmod …"), changePermissions), (localized("Link …"), makeHardLink), (localized("Symbolischer Link …"), makeSymbolicLink), (localized("Relativer symbolischer Link …"), makeRelativeSymbolicLink),
+            (localized("Symbolischen Link bearbeiten …"), editSymbolicLink), (localized("Chown …"), changeOwner), nil,
+            (localized("Umbenennen/Verschieben   F6"), moveFiles), (localized("Umbenennen   ⇧F6"), renameFile), (localized("Neues Verzeichnis erstellen   F7"), makeDirectory),
+            (localized("Löschen   F8"), deleteFiles), (localized("Endgültig löschen   ⇧F8"), deleteFilesPermanently), (localized("Schnelles cd …"), goToPath), nil,
         ], to: menu)
         add([
-            ("Gruppe auswählen …   +", { _ in self.markPattern(select: true) }), ("Gruppe abwählen …   −", { _ in self.markPattern(select: false) }),
-            ("Auswahl umkehren   *", { _ in self.activePanel.model.invertMarks() }), ("Alle auswählen", { _ in self.activePanel.model.markAll() }), nil,
-            ("Verlassen   F10", { _ in NSApp.terminate(nil) }),
+            (localized("Gruppe auswählen …   +"), { _ in self.markPattern(select: true) }), (localized("Gruppe abwählen …   −"), { _ in self.markPattern(select: false) }),
+            (localized("Auswahl umkehren   *"), { _ in self.activePanel.model.invertMarks() }), (localized("Alle auswählen"), { _ in self.activePanel.model.markAll() }), nil,
+            (localized("Verlassen   F10"), { _ in NSApp.terminate(nil) }),
         ], to: menu)
         return menu
     }
@@ -58,10 +58,10 @@ extension MainWindowController {
     private func commandMenu() -> NSMenu {
         let menu = NSMenu()
         add([
-            ("Benutzermenü   F2", userMenu), ("Terminal ein/aus   Ctrl-O", toggleTerminal), ("Verzeichnisbaum", { _ in self.activePanel.setMode(.tree) }), ("Datei suchen …", findFiles), ("Externes Panelisieren …", panelizeCommand), ("Panels vertauschen   ⌘U", swapPanels),
-            ("Verzeichnisse vergleichen", compareDirectories), ("Dateien vergleichen", compareFiles), ("Dateien in FileMerge vergleichen", compareFilesInFileMerge), ("Verzeichnisgrößen anzeigen", showDirectorySizes), nil,
-            ("Befehlschronik …", showCommandHistory), ("Chronik angesehener Dateien …", showViewedFiles), ("Verzeichnis-Hotlist …   ⌘D", showHotlist), ("Aktive Verbindungen …", showConnections), ("Hintergrundaufgaben …", showBackgroundJobs), ("Gespeicherte Passwörter …", showSavedPasswords), nil,
-            ("Benutzermenü bearbeiten", editUserMenu), ("Dateizuordnung bearbeiten", editFileActions),
+            (localized("Benutzermenü   F2"), userMenu), (localized("Terminal ein/aus   Ctrl-O"), toggleTerminal), (localized("Verzeichnisbaum"), { _ in self.activePanel.setMode(.tree) }), (localized("Datei suchen …"), findFiles), (localized("Externes Panelisieren …"), panelizeCommand), (localized("Panels vertauschen   ⌘U"), swapPanels),
+            (localized("Verzeichnisse vergleichen"), compareDirectories), (localized("Dateien vergleichen"), compareFiles), (localized("Dateien in FileMerge vergleichen"), compareFilesInFileMerge), (localized("Verzeichnisgrößen anzeigen"), showDirectorySizes), nil,
+            (localized("Befehlschronik …"), showCommandHistory), (localized("Chronik angesehener Dateien …"), showViewedFiles), (localized("Verzeichnis-Hotlist …   ⌘D"), showHotlist), (localized("Aktive Verbindungen …"), showConnections), (localized("Hintergrundaufgaben …"), showBackgroundJobs), (localized("Gespeicherte Passwörter …"), showSavedPasswords), nil,
+            (localized("Benutzermenü bearbeiten"), editUserMenu), (localized("Dateizuordnung bearbeiten"), editFileActions),
         ], to: menu)
         return menu
     }
@@ -69,8 +69,8 @@ extension MainWindowController {
     private func optionsMenu() -> NSMenu {
         let menu = NSMenu()
         add([
-            ("Konfiguration …", showConfiguration), ("Layout …", showLayout), ("Paneloptionen …", showPanelOptions), ("Nachfragen …", showConfirmations), ("Aussehen …", showAppearance), nil,
-            ("Einstellungen speichern", saveSettings),
+            (localized("Konfiguration …"), showConfiguration), (localized("Layout …"), showLayout), (localized("Paneloptionen …"), showPanelOptions), (localized("Nachfragen …"), showConfirmations), (localized("Aussehen …"), showAppearance), nil,
+            (localized("Einstellungen speichern"), saveSettings),
         ], to: menu)
         return menu
     }
