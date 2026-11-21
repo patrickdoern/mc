@@ -15,7 +15,7 @@ let package = Package(
     name: "MC",
     platforms: [.macOS(.v14)],
     dependencies: [
-        .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", exact: "1.5.1"),
+        .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", exact: "1.99.3"),
     ],
     targets: [
         .systemLibrary(name: "CLibSSH2"),
