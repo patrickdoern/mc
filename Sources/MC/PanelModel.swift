@@ -254,10 +254,10 @@ final class PanelModel {
         onChange?()
     }
 
-    func toggleMarkAndAdvance() {
-        guard let entry = currentEntry, !isParentRow(cursor) else { return moveCursor(by: 1) }
+    func toggleMarkAndAdvance(by delta: Int = 1) {
+        guard let entry = currentEntry, !isParentRow(cursor) else { return moveCursor(by: delta) }
         if !marked.insert(entry.name).inserted { marked.remove(entry.name) }
-        moveCursor(by: 1)
+        moveCursor(by: delta)
     }
 
     func mark(matching pattern: String, select: Bool) {

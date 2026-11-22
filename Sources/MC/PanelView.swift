@@ -468,7 +468,7 @@ final class PanelView: NSView {
     }
 
     private func extendOrMove(_ delta: Int, shifted: Bool) {
-        if shifted { model.toggleMarkAndAdvance() } else { model.moveCursor(by: delta) }
+        if shifted { model.toggleMarkAndAdvance(by: delta) } else { model.moveCursor(by: delta) }
     }
 
     private func handleSearch(_ event: NSEvent) -> Bool {
