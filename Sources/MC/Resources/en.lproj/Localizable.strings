@@ -180,6 +180,7 @@
 "OK" = "OK";
 "Abbrechen" = "Cancel";
 "Verlauf" = "History";
+"Aus Verlauf entfernen" = "Remove from History";
 "Eingabe" = "Input";
 "Passwort" = "Password";
 "Im Schlüsselbund sichern" = "Save in Keychain";

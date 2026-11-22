@@ -225,14 +225,15 @@ final class MainWindowController: NSWindowController {
     }
 
     @objc func connect(_ sender: Any?) {
-        let history = UserDefaults.standard.stringArray(forKey: Self.connectionHistoryKey) ?? []
-        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:"), value: history.first ?? "", confirm: localized("Verbinden"), history: history) else { return }
+        let history = { UserDefaults.standard.stringArray(forKey: Self.connectionHistoryKey) ?? [] }
+        let forget = { (entry: String) in UserDefaults.standard.set(history().filter { $0 != entry }, forKey: Self.connectionHistoryKey) }
+        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:"), value: history().first ?? "", confirm: localized("Verbinden"), history: history(), onRemove: forget) else { return }
         let panel = activePanel
         let model = panel.model
         let interaction = interaction
         let other = inactivePanel
         let showList = { for shown in [panel, other] where shown.mode == .info || shown.mode == .quickView { shown.setMode(.list) } }
-        let remember = { UserDefaults.standard.set(([text] + history.filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
+        let remember = { UserDefaults.standard.set(([text] + history().filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
         if FTPTarget.isFTP(text) {
             guard let target = FTPTarget.parse(text) else { return Dialogs.show(error: FileError(localized("Ungültige FTP-Adresse: %@", text as NSString))) }
             let connection = Box<FTPFileSystem>()

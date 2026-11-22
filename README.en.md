@@ -55,7 +55,7 @@ On quit, the app remembers folder, sort order, listing format and view (listing,
 
 All actions are also available in the menu (⌥3 to ⌥8). Editor: F2 save, F3 mark block, F4 replace, F5/F6/F8 copy/move/delete block, F7 find, Ctrl-Y delete line, F10/Esc quit.
 
-SFTP: ⌘K (or menu Left/Right → SFTP/FTP Connection), then `user@host[:port][/path]` or an SSH alias. Back to the local file system with ⇧⌘H.
+SFTP: ⌘K (or menu Left/Right → SFTP/FTP Connection), then `user@host[:port][/path]` or an SSH alias. The last ten targets are in the dialog's history; "Remove from History" deletes the selected entry. Back to the local file system with ⇧⌘H.
 
 FTP: also ⌘K, with `ftp://[user@]host[:port][/path]` (logins always use TLS; if the server does not offer TLS, the app asks before sending user name and password unencrypted; anonymous logins use TLS if the server offers it; self-signed certificates are confirmed by their fingerprint on the first connection and are then kept in `~/.config/moonlight-commander/ftp-certificates/`) or `ftps://…` (implicit TLS, port 990). Without a user, the login is anonymous; as with SFTP, passwords can optionally be stored in the Keychain. Files go through temporary files; symlinks and setting timestamps do not work. The FTP test only runs with `MC_TEST_FTP_PORT` (anonymous, writable server on 127.0.0.1).
 

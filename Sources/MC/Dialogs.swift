@@ -2,15 +2,27 @@ import AppKit
 import MCCore
 
 enum Dialogs {
-    static func prompt(title: String, message: String, value: String = "", confirm: String = localized("OK"), history: [String] = []) -> String? {
-        let dialog = ClassicDialog(title: title, message: message)
-        let field = dialog.addText(value: value)
-        if !history.isEmpty { dialog.addChoice(label: localized("Verlauf"), options: history, selected: 0) { field.stringValue = $0 } }
-        dialog.addButton(confirm, isDefault: true)
-        dialog.addButton(localized("Abbrechen"), isCancel: true)
-        guard dialog.run() == 0 else { return nil }
-        let result = field.stringValue.trimmingCharacters(in: .whitespaces)
-        return result.isEmpty ? nil : result
+    static func prompt(title: String, message: String, value: String = "", confirm: String = localized("OK"), history: [String] = [], onRemove: ((String) -> Void)? = nil) -> String? {
+        var history = history
+        var value = value
+        while true {
+            let dialog = ClassicDialog(title: title, message: message)
+            let field = dialog.addText(value: value)
+            let choice = history.isEmpty ? nil : dialog.addChoice(label: localized("Verlauf"), options: history, selected: history.firstIndex(of: value) ?? 0) { field.stringValue = $0 }
+            dialog.addButton(confirm, isDefault: true)
+            dialog.addButton(localized("Abbrechen"), isCancel: true)
+            if onRemove != nil, choice != nil { dialog.addButton(localized("Aus Verlauf entfernen")) }
+            let pressed = dialog.run()
+            if pressed == 2, let onRemove, let choice {
+                let removed = history.remove(at: dialog.choice(choice))
+                onRemove(removed)
+                value = field.stringValue == removed ? history.first ?? "" : field.stringValue
+                continue
+            }
+            guard pressed == 0 else { return nil }
+            let result = field.stringValue.trimmingCharacters(in: .whitespaces)
+            return result.isEmpty ? nil : result
+        }
     }
 
     struct FormResult {
