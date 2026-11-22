@@ -8,6 +8,10 @@ Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateiop
 
 ![Moonlight Commander mit zwei Dateipanels im Norton-Stil](website/screenshot.png)
 
+Installation: DMG öffnen und „Moonlight Commander“ auf „Applications“ ziehen, das ist der Ordner „Programme“.
+
+<img src="website/install.png" alt="Installationsfenster der DMG im Norton-Stil" width="520">
+
 ```bash
 ./scripts/bundle.sh
 open "build/Moonlight Commander.app" --args ~/Downloads ~/projects
@@ -91,7 +95,7 @@ Gegenüber dem Midnight Commander nicht enthalten: Shell-Verbindungen, Darstellu
 MC_SIGN_IDENTITY="Developer ID Application: …" MC_NOTARY_PROFILE=<profil> ./scripts/dist.sh
 ```
 
-Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Programme“ zum Hineinziehen. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
+Erzeugt ein signiertes, notarisiertes `build/mc.dmg` mit Verknüpfung auf „Programme“ zum Hineinziehen. Das Fenster der DMG (Hintergrund, Icon-Positionen) richtet `scripts/make-dmg.sh` per Finder-Skript ein; das Hintergrundbild `scripts/dmg-background.tiff` erzeugt `scripts/make-dmg-background.sh`. Das Notary-Profil legst du einmal mit `xcrun notarytool store-credentials` an. Der Mac App Store ist wegen der Sandbox nicht möglich, siehe ADR-0003.
 
 ### Auf einen anderen Mac kopieren
 
