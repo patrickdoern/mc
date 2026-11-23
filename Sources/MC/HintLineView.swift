@@ -8,7 +8,7 @@ final class HintLineView: NSView {
         localized("Einfg oder Leertaste markiert eine Datei, + und − markieren per Muster."),
         localized("Ctrl-S startet die Schnellsuche im Panel."),
         localized("⌘L springt zu einem beliebigen Pfad."),
-        localized("⌘K verbindet per SFTP oder FTP (ftp://…) mit einem Server."),
+        localized("⌘K verbindet per SFTP, FTP (ftp://…) oder SMB (smb://…) mit einem Server."),
         localized("⌘D öffnet die Verzeichnis-Hotlist, die Ziffern 1–9 springen direkt."),
         localized("Ctrl-O blendet das Terminal ein und aus, auf einem SFTP-Panel öffnet es eine ssh-Sitzung."),
         localized("⌘Y zeigt die Datei in der Übersicht (Quick Look)."),

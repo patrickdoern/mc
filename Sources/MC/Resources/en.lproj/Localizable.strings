@@ -10,7 +10,7 @@
 "Moonlight Commander ausblenden" = "Hide Moonlight Commander";
 "Andere ausblenden" = "Hide Others";
 "Moonlight Commander beenden" = "Quit Moonlight Commander";
-"Verbinden (SFTP/FTP) …" = "Connect (SFTP/FTP) …";
+"Verbinden (SFTP/FTP/SMB) …" = "Connect (SFTP/FTP/SMB) …";
 "Gehe zu Pfad …" = "Go to Path …";
 "Home-Ordner" = "Home Folder";
 "Quick Look" = "Quick Look";
@@ -63,7 +63,7 @@
 "Listenformat …" = "Listing Format …";
 "Sortierreihenfolge …" = "Sort Order …";
 "Filter …" = "Filter …";
-"SFTP-/FTP-Verbindung …" = "SFTP/FTP Connection …";
+"Netzwerkverbindung …" = "Network Connection …";
 "Anordnen" = "Arrange";
 "Neu einlesen   ⌘R" = "Rescan   ⌘R";
 "Ansicht   F3" = "View   F3";
@@ -132,7 +132,7 @@
 "Einfg oder Leertaste markiert eine Datei, + und − markieren per Muster." = "Ins or Space marks a file, + and − mark by pattern.";
 "Ctrl-S startet die Schnellsuche im Panel." = "Ctrl-S starts quick search in the panel.";
 "⌘L springt zu einem beliebigen Pfad." = "⌘L jumps to any path.";
-"⌘K verbindet per SFTP oder FTP (ftp://…) mit einem Server." = "⌘K connects to a server via SFTP or FTP (ftp://…).";
+"⌘K verbindet per SFTP, FTP (ftp://…) oder SMB (smb://…) mit einem Server." = "⌘K connects to a server via SFTP, FTP (ftp://…) or SMB (smb://…).";
 "⌘D öffnet die Verzeichnis-Hotlist, die Ziffern 1–9 springen direkt." = "⌘D opens the directory hotlist, the digits 1–9 jump directly.";
 "Ctrl-O blendet das Terminal ein und aus, auf einem SFTP-Panel öffnet es eine ssh-Sitzung." = "Ctrl-O shows and hides the terminal, on an SFTP panel it opens an ssh session.";
 "⌘Y zeigt die Datei in der Übersicht (Quick Look)." = "⌘Y shows the file in a preview (Quick Look).";
@@ -281,12 +281,18 @@
 "Unbekannte Gruppe: %@" = "Unknown group: %@";
 "%@: Existiert bereits und ist kein Ordner" = "%@: Already exists and is not a folder";
 "Verbindung" = "Connection";
-"user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:" = "user@host[:port][/path], SSH alias, or ftp://… / ftps://… for FTP:";
+"user@host[:port][/pfad], SSH-Alias, ftp://… / ftps://… für FTP oder smb://server/freigabe für SMB:" = "user@host[:port][/path], SSH alias, ftp://… / ftps://… for FTP, or smb://server/share for SMB:";
 "Verbinden" = "Connect";
 "Ungültige FTP-Adresse: %@" = "Invalid FTP address: %@";
 "Ungültige SMB-Adresse: %@" = "Invalid SMB address: %@";
 "Passwörter gehören nicht in die Adresse" = "Passwords do not belong in the address";
 "Verbinde mit %@ …" = "Connecting to %@ …";
+"Benutzer für %@:" = "User for %@:";
+"Anmeldung an %@ abgebrochen" = "Login to %@ cancelled";
+"Anmeldung abgelehnt. Passwort für %@:" = "Login refused. Password for %@:";
+"Die Freigabe %@ wurde nicht gefunden" = "The share %@ was not found";
+"%@ ist nicht erreichbar" = "%@ is not reachable";
+"%@ konnte nicht eingehängt werden (Fehler %ld)" = "%@ could not be mounted (error %ld)";
 "Umbenennen" = "Rename";
 "Umbenennen …" = "Renaming …";
 "Verschieben …" = "Moving …";
@@ -475,7 +481,7 @@
 "Tastenbelegung" = "Key Bindings";
 "Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch" = "Tab switch panel · Enter open · Backspace/⌘↑ up one level";
 "Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren" = "Space/Ins/⇧↑↓ mark · + − mark by pattern · * invert marks";
-"Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)" = "Ctrl-S quick search · ⌘L go to path · ⇧⌘H Home · ⌘K connect SFTP/FTP (ftp://, ftps://)";
+"Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K Netzwerkverbindung (SFTP, ftp://, ftps://, smb://)" = "Ctrl-S quick search · ⌘L go to path · ⇧⌘H Home · ⌘K network connection (SFTP, ftp://, ftps://, smb://)";
 "F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren (⇧F5 in Archiv packen) · F6 Verschieben (⇧F6 Umbenennen)" = "F3 View · F4 Edit (⇧F4 new file) · F5 Copy (⇧F5 pack into archive) · F6 Move (⇧F6 Rename)";
 "F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden" = "F2 User menu · F7 Make folder · F8 Delete (⇧F8 permanently) · F9 Menus · F10 Quit";
 "Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf" = "Typing writes to the command line · Tab completes · Enter runs in terminal · ⌘Enter inserts file name · Ctrl-P/N history";

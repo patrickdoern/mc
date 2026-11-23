@@ -33,7 +33,7 @@ enum MainMenu {
 
     private static func fileMenu() -> NSMenu {
         let menu = NSMenu(title: localized("Datei"))
-        menu.addItem(item(localized("Verbinden (SFTP/FTP) …"), #selector(MainWindowController.connect(_:)), "k"))
+        menu.addItem(item(localized("Verbinden (SFTP/FTP/SMB) …"), #selector(MainWindowController.connect(_:)), "k"))
         menu.addItem(item(localized("Gehe zu Pfad …"), #selector(MainWindowController.goToPath(_:)), "l"))
         menu.addItem(item(localized("Home-Ordner"), #selector(MainWindowController.goHome(_:)), "h", [.command, .shift]))
         menu.addItem(.separator())

@@ -60,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         mainWindow?.saveState()
+        SMBMounts.shared.releaseAll(waiting: 2)
         guard relaunchRequested else { return }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")

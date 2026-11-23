@@ -84,6 +84,7 @@ final class MainWindowController: NSWindowController {
                 self.handle(command, from: panel)
             }
             panel.model.onFailure = { error in RunLoop.main.perform(inModes: [.common]) { Dialogs.show(error: error) } }
+            panel.model.onNavigate = { [weak self] in self?.releaseMounts() }
             panel.peer = { [unowned self, unowned panel] in panels.first { $0 !== panel }!.model }
             let redraw = panel.model.onChange
             panel.model.onChange = { [weak self] in
@@ -227,7 +228,7 @@ final class MainWindowController: NSWindowController {
     @objc func connect(_ sender: Any?) {
         let history = { UserDefaults.standard.stringArray(forKey: Self.connectionHistoryKey) ?? [] }
         let forget = { (entry: String) in UserDefaults.standard.set(history().filter { $0 != entry }, forKey: Self.connectionHistoryKey) }
-        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:"), value: history().first ?? "", confirm: localized("Verbinden"), history: history(), onRemove: forget) else { return }
+        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias, ftp://… / ftps://… für FTP oder smb://server/freigabe für SMB:"), value: history().first ?? "", confirm: localized("Verbinden"), history: history(), onRemove: forget) else { return }
         let panel = activePanel
         let model = panel.model
         let interaction = interaction
@@ -247,6 +248,27 @@ final class MainWindowController: NSWindowController {
             })
             return
         }
+        if SMBTarget.isSMB(text) {
+            let target: SMBTarget
+            do { target = try SMBTarget.parse(text) } catch { return Dialogs.show(error: error) }
+            let volume = Box<SMBVolume>()
+            runner.run(title: localized("Verbinde mit %@ …", target.displayName as NSString), { operation in
+                let mounted = try Self.mount(target, interaction: interaction)
+                do {
+                    try operation.checkCancelled()
+                } catch {
+                    SMBMounts.shared.abandon(mounted.mountpoint)
+                    throw error
+                }
+                volume.value = mounted
+            }, completion: { [weak self] in
+                guard let mounted = volume.value else { self?.releaseMounts(); return }
+                remember()
+                showList()
+                model.navigate(to: PosixPath.join(mounted.mountpoint, target.path ?? "/"), on: LocalFileSystem.shared)
+            })
+            return
+        }
         guard let target = SSHTarget.parse(text) else { return }
         let connection = Box<SFTPFileSystem>()
         runner.run(title: localized("Verbinde mit %@ …", target.displayName as NSString), { _ in
@@ -257,6 +279,52 @@ final class MainWindowController: NSWindowController {
             showList()
             model.navigate(to: target.path ?? system.homePath, on: system)
         })
+    }
+
+    private static func mount(_ target: SMBTarget, interaction: DialogInteraction) throws -> SMBVolume {
+        var target = target
+        let anonymous = target.user == nil
+        if anonymous {
+            if let volume = try attempt(target, password: nil) { return volume }
+            guard let user = interaction.requestUser(localized("Benutzer für %@:", target.displayName as NSString), value: NSUserName()) else { throw FileError(localized("Anmeldung an %@ abgebrochen", target.displayName as NSString)) }
+            target.user = user
+        }
+        let account = target.displayName
+        var refused = false
+        if let stored = interaction.storedPassword(for: account) {
+            if let volume = try attempt(target, password: stored) { return volume }
+            interaction.deletePassword(for: account)
+            refused = true
+        }
+        if !anonymous, let volume = try attempt(target, password: nil) { return volume }
+        while true {
+            let prompt = refused ? localized("Anmeldung abgelehnt. Passwort für %@:", account as NSString) : localized("Passwort für %@:", account as NSString)
+            guard let entry = interaction.requestPassword(prompt, account: account) else { throw FileError(localized("Anmeldung an %@ abgebrochen", account as NSString)) }
+            if let volume = try attempt(target, password: entry.password) {
+                if entry.remember { interaction.savePassword(entry.password, for: account) }
+                return volume
+            }
+            refused = true
+        }
+    }
+
+    private static func attempt(_ target: SMBTarget, password: String?) throws -> SMBVolume? {
+        do {
+            return try SMBMounts.shared.mount(target, password: password)
+        } catch SMBMountError.authentication {
+            return nil
+        } catch SMBMountError.failed(let code) {
+            let name = target.displayName as NSString
+            switch code {
+            case ENOENT: throw FileError(localized("Die Freigabe %@ wurde nicht gefunden", name))
+            case EHOSTUNREACH, ENETUNREACH, EHOSTDOWN, ETIMEDOUT, ECONNREFUSED: throw FileError(localized("%@ ist nicht erreichbar", name))
+            default: throw FileError(localized("%@ konnte nicht eingehängt werden (Fehler %ld)", name, Int(code)))
+            }
+        }
+    }
+
+    private func releaseMounts() {
+        SMBMounts.shared.release(keeping: panels.map(\.model).filter(\.isLocal).map(\.path))
     }
 
     @objc func copyFiles(_ sender: Any?) { transfer(move: false, inPlace: false) }
@@ -671,7 +739,7 @@ final class MainWindowController: NSWindowController {
         Dialogs.info(title: localized("Tastenbelegung"), message: [
             localized("Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch"),
             localized("Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren"),
-            localized("Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K SFTP/FTP verbinden (ftp://, ftps://)"),
+            localized("Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K Netzwerkverbindung (SFTP, ftp://, ftps://, smb://)"),
             localized("F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren (⇧F5 in Archiv packen) · F6 Verschieben (⇧F6 Umbenennen)"),
             localized("F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden"),
             localized("Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf"),

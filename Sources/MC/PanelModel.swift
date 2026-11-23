@@ -61,6 +61,7 @@ final class PanelModel {
     var cursor = 0
     var onChange: (() -> Void)?
     var onFailure: ((Error) -> Void)?
+    var onNavigate: (() -> Void)?
 
     private var entries: [FileEntry] = []
     private var generation = 0
@@ -190,6 +191,7 @@ final class PanelModel {
                     if !quiet { onFailure?(error) }
                 }
                 onChange?()
+                if !quiet { onNavigate?() }
                 if refreshPending {
                     refreshPending = false
                     refreshQuietly()

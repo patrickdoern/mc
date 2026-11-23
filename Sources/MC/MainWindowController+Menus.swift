@@ -28,7 +28,7 @@ extension MainWindowController {
         menu.addItem(ClosureMenuItem(localized("Sortierreihenfolge …")) { [unowned self] in focus(panel); chooseSortOrder(nil) })
         menu.addItem(ClosureMenuItem(localized("Filter …"), checked: !model.filter.isEmpty) { [unowned self] in focus(panel); chooseFilter(nil) })
         menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem(localized("SFTP-/FTP-Verbindung …")) { [unowned self] in focus(panel); connect(nil) })
+        menu.addItem(ClosureMenuItem(localized("Netzwerkverbindung …")) { [unowned self] in focus(panel); connect(nil) })
         menu.addItem(ClosureMenuItem(localized("Gehe zu Pfad …")) { [unowned self] in focus(panel); goToPath(nil) })
         menu.addItem(ClosureMenuItem(localized("Home-Ordner")) { [unowned self] in focus(panel); goHome(nil) })
         let back = localized("Zurück   ⌘←")

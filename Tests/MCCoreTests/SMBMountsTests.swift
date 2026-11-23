@@ -49,16 +49,71 @@ private final class FakeUnmounter: @unchecked Sendable {
         #expect(SMBMounts.existingMountpoint(for: target, in: mounts) == nil)
     }
 
+    @Test func namesShareContainingPath() {
+        let mounts = [
+            SMBMount(source: "//anna@server/Daten", mountpoint: "/Volumes/Daten"),
+            SMBMount(source: "//GUEST:@nas:1445/Gemeinsame%20Dateien", mountpoint: "/Volumes/Gemeinsame Dateien"),
+        ]
+        #expect(SMBMounts.displayName(containing: "/Volumes/Daten", in: mounts) == "smb://server/Daten")
+        #expect(SMBMounts.displayName(containing: "/Volumes/Daten/a/b", in: mounts) == "smb://server/Daten")
+        #expect(SMBMounts.displayName(containing: "/Volumes/Gemeinsame Dateien/x", in: mounts) == "smb://nas/Gemeinsame Dateien")
+        #expect(SMBMounts.displayName(containing: "/Volumes/Daten2", in: mounts) == nil)
+        #expect(SMBMounts.displayName(containing: "/Users/anna", in: mounts) == nil)
+    }
+
     @Test func readsOnlySMBMountsFromSystem() {
         #expect(SMBMounts.currentMounts().allSatisfy { $0.source.hasPrefix("//") && $0.mountpoint.hasPrefix("/") })
     }
 
     @Test func decidesUnusedMountpointsAlongPathBoundaries() {
         let owned: Set<String> = ["/Volumes/a", "/Volumes/ab", "/Volumes/c"]
-        #expect(SMBMounts.unused(owned: owned, panelPaths: ["/Volumes/ab/x", "/Users/anna"]) == ["/Volumes/a", "/Volumes/c"])
-        #expect(SMBMounts.unused(owned: owned, panelPaths: ["/Volumes/a", "/Volumes/c/d/e"]) == ["/Volumes/ab"])
-        #expect(SMBMounts.unused(owned: owned, panelPaths: ["/Volumes"]) == ["/Volumes/a", "/Volumes/ab", "/Volumes/c"])
-        #expect(SMBMounts.unused(owned: [], panelPaths: ["/Volumes/a"]) == [])
+        #expect(SMBMounts.unused(owned: owned, held: [], panelPaths: ["/Volumes/ab/x", "/Users/anna"]) == ["/Volumes/a", "/Volumes/c"])
+        #expect(SMBMounts.unused(owned: owned, held: [], panelPaths: ["/Volumes/a", "/Volumes/c/d/e"]) == ["/Volumes/ab"])
+        #expect(SMBMounts.unused(owned: owned, held: [], panelPaths: ["/Volumes"]) == ["/Volumes/a", "/Volumes/ab", "/Volumes/c"])
+        #expect(SMBMounts.unused(owned: [], held: [], panelPaths: ["/Volumes/a"]) == [])
+    }
+
+    @Test func keepsHeldMountpoints() {
+        let owned: Set<String> = ["/Volumes/a", "/Volumes/b"]
+        #expect(SMBMounts.unused(owned: owned, held: ["/Volumes/a"], panelPaths: ["/Users/anna"]) == ["/Volumes/b"])
+        #expect(SMBMounts.unused(owned: owned, held: ["/Volumes/a", "/Volumes/b"], panelPaths: []) == [])
+    }
+
+    @Test func keepsHeldMountUntilPanelArrives() {
+        let fake = FakeUnmounter()
+        let mounts = SMBMounts(unmount: fake.unmount)
+        mounts.register("/Volumes/neu")
+        mounts.hold("/Volumes/neu")
+        mounts.release(keeping: ["/Users/anna", "/Users/anna/x"])
+        #expect(fake.unmounted.isEmpty)
+        #expect(mounts.heldMountpoints == ["/Volumes/neu"])
+        mounts.release(keeping: ["/Volumes/neu/sub", "/Users/anna"])
+        #expect(fake.unmounted.isEmpty)
+        #expect(mounts.heldMountpoints.isEmpty)
+        mounts.release(keeping: ["/Users/anna"])
+        #expect(fake.unmounted == ["/Volumes/neu"])
+        #expect(mounts.ownedMountpoints.isEmpty)
+    }
+
+    @Test func releasesAbandonedMount() {
+        let fake = FakeUnmounter()
+        let mounts = SMBMounts(unmount: fake.unmount)
+        mounts.register("/Volumes/neu")
+        mounts.hold("/Volumes/neu")
+        mounts.abandon("/Volumes/neu")
+        mounts.release(keeping: ["/Users/anna"])
+        #expect(fake.unmounted == ["/Volumes/neu"])
+    }
+
+    @Test func releaseAllIgnoresHolds() {
+        let fake = FakeUnmounter()
+        let mounts = SMBMounts(unmount: fake.unmount)
+        mounts.register("/Volumes/neu")
+        mounts.hold("/Volumes/neu")
+        mounts.releaseAll(waiting: 2)
+        #expect(fake.unmounted == ["/Volumes/neu"])
+        #expect(mounts.ownedMountpoints.isEmpty)
+        #expect(mounts.heldMountpoints.isEmpty)
     }
 
     @Test func neverReleasesForeignMounts() {

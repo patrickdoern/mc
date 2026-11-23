@@ -114,7 +114,7 @@ public final class FileOperation {
         first === second || first.identity == second.identity
     }
 
-    private func checkCancelled() throws {
+    public func checkCancelled() throws {
         cancelLock.lock()
         defer { cancelLock.unlock() }
         if cancelled { throw OperationAborted() }

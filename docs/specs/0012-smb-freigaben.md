@@ -61,7 +61,7 @@ Der Nutzer gibt im Verbindungsdialog (⌘K) `smb://server/freigabe` ein und land
 
 ## Plan
 - [x] T1: Kern (R1, R6, R8, R13): `SMBTarget`, `SMBMounts` mit Einhängen über NetFS (ohne UI, Anmeldedaten als Parameter, Anmeldefehler als eigener Fehlerfall), Abgleich mit `getmntinfo`, Register und Freigabe-Entscheidung, Aushängen; NetFS in `Package.swift`; Tests. Dateien: `Sources/MCCore/SMBTarget.swift`, `Sources/MCCore/SMBMounts.swift`, `Package.swift`, `Tests/MCCoreTests/SMBTargetTests.swift`, `Tests/MCCoreTests/SMBMountsTests.swift`.
-- [ ] T2: Oberfläche (R2–R5, R7, R9, R11): ⌘K-Zweig für SMB mit Anmeldefolge und Schlüsselbund, Aushängen nach Pfadwechsel und beim Beenden, „Aktive Verbindungen“, Menü- und Hinweistexte, Fehlermeldungen. Dateien: `Sources/MC/MainWindowController*.swift`, `Sources/MC/PanelModel.swift`, `Sources/MC/AppDelegate.swift`, `Sources/MC/HintLineView.swift`, `Sources/MC/Dialogs.swift`.
+- [x] T2: Oberfläche (R2–R5, R7, R9, R11): ⌘K-Zweig für SMB mit Anmeldefolge und Schlüsselbund, Aushängen nach Pfadwechsel und beim Beenden, „Aktive Verbindungen“, Menü- und Hinweistexte, Fehlermeldungen. Dateien: `Sources/MC/MainWindowController*.swift`, `Sources/MC/PanelModel.swift`, `Sources/MC/AppDelegate.swift`, `Sources/MC/HintLineView.swift`, `Sources/MC/Dialogs.swift`.
 - [ ] T3: Texte, Doku, ADR (R10, R12): englische Tabelle, README DE/EN, Website DE/EN, ADR-0017 und ADR-Index.
 
 Danach: Abnahme (manuell in der App gegen eine Testfreigabe).

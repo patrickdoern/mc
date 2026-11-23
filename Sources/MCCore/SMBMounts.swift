@@ -36,6 +36,7 @@ public final class SMBMounts: @unchecked Sendable {
     private let lock = NSLock()
     private var owned: Set<String> = []
     private var pending: Set<String> = []
+    private var held: Set<String> = []
 
     init(unmount: @escaping (String, @escaping @Sendable (Bool) -> Void) -> Void) {
         self.unmount = unmount
@@ -43,13 +44,28 @@ public final class SMBMounts: @unchecked Sendable {
 
     var ownedMountpoints: Set<String> { lock.withLock { owned } }
 
+    var heldMountpoints: Set<String> { lock.withLock { held } }
+
     func register(_ mountpoint: String) {
         lock.withLock { _ = owned.insert(mountpoint) }
     }
 
+    func hold(_ mountpoint: String) {
+        lock.withLock { _ = held.insert(mountpoint) }
+    }
+
+    public func abandon(_ mountpoint: String) {
+        lock.withLock { _ = held.remove(mountpoint) }
+    }
+
     public func mount(_ target: SMBTarget, password: String?) throws -> SMBVolume {
         if let mountpoint = Self.existingMountpoint(for: target, in: Self.currentMounts()) {
-            return SMBVolume(mountpoint: mountpoint, owned: lock.withLock { owned.contains(mountpoint) })
+            let isOwned = lock.withLock {
+                guard owned.contains(mountpoint) else { return false }
+                held.insert(mountpoint)
+                return true
+            }
+            return SMBVolume(mountpoint: mountpoint, owned: isOwned)
         }
         guard let url = target.mountURL else { throw SMBAddressError.invalid(target.displayName) }
         let user = target.user.map { name in target.domain.map { $0 + ";" + name } ?? name }
@@ -59,12 +75,16 @@ public final class SMBMounts: @unchecked Sendable {
         guard status == 0 else { throw SMBMountError(code: status) }
         guard let mountpoint = (mountpoints?.takeRetainedValue() as? [String])?.first else { throw SMBMountError.failed(EIO) }
         register(mountpoint)
+        hold(mountpoint)
         return SMBVolume(mountpoint: mountpoint, owned: true)
     }
 
     public func release(keeping panelPaths: [String]) {
         let paths = panelPaths.flatMap { [$0] + (LocalFileSystem.shared.canonicalPath($0).map { [$0] } ?? []) }
-        let candidates = lock.withLock { Self.unused(owned: owned.subtracting(pending), panelPaths: paths) }
+        let candidates = lock.withLock {
+            held = held.filter { !Self.isUsed($0, by: paths) }
+            return Self.unused(owned: owned.subtracting(pending), held: held, panelPaths: paths)
+        }
         for mountpoint in candidates { start(mountpoint, done: {}) }
     }
 
@@ -82,14 +102,21 @@ public final class SMBMounts: @unchecked Sendable {
         unmount(mountpoint) { [self] success in
             lock.withLock {
                 pending.remove(mountpoint)
-                if success { owned.remove(mountpoint) }
+                if success {
+                    owned.remove(mountpoint)
+                    held.remove(mountpoint)
+                }
             }
             done()
         }
     }
 
-    public static func unused(owned: Set<String>, panelPaths: [String]) -> [String] {
-        owned.filter { mountpoint in !panelPaths.contains { isPath($0, within: mountpoint) } }.sorted()
+    public static func unused(owned: Set<String>, held: Set<String>, panelPaths: [String]) -> [String] {
+        owned.subtracting(held).filter { !isUsed($0, by: panelPaths) }.sorted()
+    }
+
+    static func isUsed(_ mountpoint: String, by panelPaths: [String]) -> Bool {
+        panelPaths.contains { isPath($0, within: mountpoint) }
     }
 
     static func isPath(_ path: String, within directory: String) -> Bool {
@@ -102,6 +129,15 @@ public final class SMBMounts: @unchecked Sendable {
             guard let (host, share) = hostAndShare(of: mount.source) else { return false }
             return host.caseInsensitiveCompare(target.host) == .orderedSame && share.caseInsensitiveCompare(target.share) == .orderedSame
         }?.mountpoint
+    }
+
+    public static func displayName(containing path: String) -> String? {
+        displayName(containing: path, in: currentMounts())
+    }
+
+    static func displayName(containing path: String, in mounts: [SMBMount]) -> String? {
+        guard let mount = mounts.first(where: { isPath(path, within: $0.mountpoint) }), let (host, share) = hostAndShare(of: mount.source) else { return nil }
+        return SMBTarget(host: host, share: share).displayName
     }
 
     static func hostAndShare(of source: String) -> (host: String, share: String)? {

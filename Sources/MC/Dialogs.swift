@@ -205,6 +205,10 @@ final class DialogInteraction: SSHInteraction {
         onMain { Dialogs.password(prompt) }
     }
 
+    func requestUser(_ prompt: String, value: String) -> String? {
+        onMain { Dialogs.prompt(title: localized("Anmeldung"), message: prompt, value: value) }
+    }
+
     func storedPassword(for account: String) -> String? {
         Keychain.password(for: account)
     }
