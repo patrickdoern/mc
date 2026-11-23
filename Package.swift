@@ -24,7 +24,7 @@ let package = Package(
             name: "MCCore",
             dependencies: ["CLibSSH2", "CCurl"],
             swiftSettings: headerSearch,
-            linkerSettings: [.unsafeFlags(["-L" + libraryPath])] + sshLibraries
+            linkerSettings: [.unsafeFlags(["-L" + libraryPath]), .linkedFramework("NetFS")] + sshLibraries
         ),
         .executableTarget(name: "MC", dependencies: ["MCCore", .product(name: "SwiftTerm", package: "SwiftTerm")], exclude: ["Resources/en.lproj"], resources: [.copy("Resources/AppIcon.icns")], swiftSettings: headerSearch),
         .testTarget(name: "MCCoreTests", dependencies: ["MCCore"], swiftSettings: headerSearch),

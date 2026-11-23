@@ -284,6 +284,8 @@
 "user@host[:port][/pfad], SSH-Alias oder ftp://… / ftps://… für FTP:" = "user@host[:port][/path], SSH alias, or ftp://… / ftps://… for FTP:";
 "Verbinden" = "Connect";
 "Ungültige FTP-Adresse: %@" = "Invalid FTP address: %@";
+"Ungültige SMB-Adresse: %@" = "Invalid SMB address: %@";
+"Passwörter gehören nicht in die Adresse" = "Passwords do not belong in the address";
 "Verbinde mit %@ …" = "Connecting to %@ …";
 "Umbenennen" = "Rename";
 "Umbenennen …" = "Renaming …";
