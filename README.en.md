@@ -2,7 +2,7 @@
 
 [Deutsche Fassung](README.md)
 
-Native Norton Commander clone for macOS (AppKit). Two panels, fast file operations, SFTP, FTP/FTPS and an mcedit-style editor.
+Native Norton Commander clone for macOS (AppKit). Two panels, fast file operations, SFTP, FTP/FTPS, SMB shares and an mcedit-style editor.
 
 [Download 1.6.12 (DMG, signed and notarized)](https://github.com/patrickdoern/mc/releases/latest) · [Website](https://moonlight-commander.org/en/)
 
@@ -41,7 +41,7 @@ Both also work while the app is running. Folders can also be dragged onto the Do
 | Enter / Backspace | open / go up one level |
 | Space, Ins, ⇧↑↓ | mark; `+` `-` pattern, `*` invert |
 | Ctrl-S | quick search |
-| ⌘L / ⇧⌘H / ⌘K | path / home / connect via SFTP or FTP |
+| ⌘L / ⇧⌘H / ⌘K | path / home / connect via SFTP, FTP or SMB |
 | ⌘← / ⌘→ | directory history back / forward (per panel, the history list is under "History …" in the Left/Right menu) |
 | F2 | user menu (entries from `~/.config/moonlight-commander/menu`, mc format, macros `%f %d %s %D %F`) |
 | F3 / F4 | view / edit (⇧F4 new file), both with syntax highlighting |
@@ -59,9 +59,11 @@ On quit, the app remembers folder, sort order, listing format and view (listing,
 
 All actions are also available in the menu (⌥3 to ⌥8). Editor: F2 save, F3 mark block, F4 replace, F5/F6/F8 copy/move/delete block, F7 find, Ctrl-Y delete line, F10/Esc quit.
 
-SFTP: ⌘K (or menu Left/Right → SFTP/FTP Connection), then `user@host[:port][/path]` or an SSH alias. The last ten targets are in the dialog's history; "Remove from History" deletes the selected entry. Back to the local file system with ⇧⌘H.
+SFTP: ⌘K (or menu Left/Right → Network Connection), then `user@host[:port][/path]` or an SSH alias. The last ten targets are in the dialog's history; "Remove from History" deletes the selected entry. Back to the local file system with ⇧⌘H.
 
 FTP: also ⌘K, with `ftp://[user@]host[:port][/path]` (logins always use TLS; if the server does not offer TLS, the app asks before sending user name and password unencrypted; anonymous logins use TLS if the server offers it; self-signed certificates are confirmed by their fingerprint on the first connection and are then kept in `~/.config/moonlight-commander/ftp-certificates/`) or `ftps://…` (implicit TLS, port 990). Without a user, the login is anonymous; as with SFTP, passwords can optionally be stored in the Keychain. Files go through temporary files; symlinks and setting timestamps do not work. The FTP test only runs with `MC_TEST_FTP_PORT` (anonymous, writable server on 127.0.0.1).
+
+SMB: also ⌘K, with `smb://[user[;domain]@]host[:port]/share[/path]`, e.g. `smb://nas.example/Daten` or `smb://anna@192.0.2.10/Projekte`. This is not a built-in SMB client: the app mounts the share through macOS (like the Finder, under `/Volumes/…`) and then shows it as a local folder. The login uses a saved password, otherwise no password (Kerberos or guest, if the server offers it), otherwise the password dialog; as with SFTP, passwords can optionally be stored in the Keychain and do not belong in the address. A share that is already mounted (e.g. by the Finder) is reused and never unmounted. Shares the app mounted itself are unmounted as soon as no panel shows them anymore, and at quit; if the volume is busy (open file, terminal in it), it stays mounted. Your own changes show up immediately, changes made by other computers only after ⌘R.
 
 Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's folder (one per server, the local terminal stays alongside). In the password dialog, the password can be saved in the Keychain (Command → Saved Passwords to forget it). Signed with `MC_SIGN_IDENTITY="Apple Development: …" ./scripts/bundle.sh`, the Keychain does not ask again after a rebuild.
 
@@ -73,7 +75,7 @@ Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's fol
 - **Pack into archive (⇧F5):** Packs the selection (or the cursor entry) of the active panel into an archive in the other panel's folder. The name defaults to the entry or the current folder plus `.zip`; the format follows the suffix (zip, tar, tar.gz/.tgz, tar.bz2/.tbz, tar.xz/.txz, 7z). An existing archive is added to (conflicts as with F5, using the saved rule), the archive is written once and packing can be cancelled. The archive must be local; an archive in the source folder is not packed into itself. Also in the Command menu (⌥⇧5).
 - **Panelize:** Search results ("As Panel") or the output of a command (Command → External Panelize) appear as a panel in which you can copy, view and delete.
 - **Multi-column:** Listing format "Brief" shows 2 to 3 columns.
-- **Live refresh:** Local panels reload themselves as soon as their directory changes from outside; cursor and marks are kept. For SFTP, FTP and archives, ⌘R remains.
+- **Live refresh:** Local panels reload themselves as soon as their directory changes from outside; cursor and marks are kept. For SFTP, FTP and archives, ⌘R remains, and on SMB shares for changes made by other computers too.
 - **Background:** Long operations can be sent to the background from the progress dialog; status on the right of the command line, cancel under Command → Background Jobs.
 - **File associations:** `~/.config/moonlight-commander/ext` defines per pattern what Enter (`open`), F3 (`view`) and F4 (`edit`) do; examples are in the file, after "Command → Edit File Associations".
 - **Viewer (F3):** F2 line wrap, F4 hex view, F5 go to line, F7 search (regex possible), F8 choose encoding, F9 preview/source.
@@ -82,7 +84,7 @@ Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's fol
 
 ## Menu bar (F9, arrow keys switch between menus, Enter selects, Esc closes)
 
-- **Left/Right:** listing, quick view, info, tree, listing format, sort order (by name, extension, size, date, access time, status change or creation time; the time column shows the time of the chosen key; on SFTP only the access time is available in addition, on FTP and in archives only the modification time, otherwise the modification time is used), filter, SFTP/FTP, path, home folder, back, forward, history, arrange.
+- **Left/Right:** listing, quick view, info, tree, listing format, sort order (by name, extension, size, date, access time, status change or creation time; the time column shows the time of the chosen key; on SFTP only the access time is available in addition, on FTP and in archives only the modification time, otherwise the modification time is used), filter, network connection (SFTP, FTP, SMB), path, home folder, back, forward, history, arrange.
 - **File:** view, edit, copy, chmod, link, symbolic link (also relative, editable), chown, rename, delete, group selection.
 - **Command:** user menu, directory tree, find file (name and content, optionally case-sensitive and with regular expressions; the default is a case-insensitive search, and the content search only works locally), compare directories (marks differences and reports the count), compare files (built-in diff in the viewer, works without Xcode; the cursor in the other panel may also be just the same file name) and optionally in FileMerge, directory sizes, command history, viewed files history (the last 30 local files from viewer and editor, reopen the first nine with digits 1 to 9), hotlist (⌘D, jump directly to the first nine entries with digits 1 to 9), active connections.
 - **Options:** configuration, layout, panel options, confirmation, appearance (Norton Blue, Dark, Light), update check: At the first start the app asks whether it may check for new versions at startup (at most once every 24 hours, at GitHub, without personal data, only a notice with a link, no download); the option "Check for updates at startup" changes this, "Check for Updates …" checks immediately.

@@ -2,7 +2,7 @@
 
 [English version](README.en.md)
 
-Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateioperationen, SFTP, FTP/FTPS und ein mcedit-artiger Editor.
+Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateioperationen, SFTP, FTP/FTPS, SMB-Freigaben und ein mcedit-artiger Editor.
 
 [Download 1.6.12 (DMG, signiert und notarisiert)](https://github.com/patrickdoern/mc/releases/latest) · [Webseite](https://moonlight-commander.org)
 
@@ -41,7 +41,7 @@ Beides funktioniert auch bei laufender App. Ordner lassen sich außerdem aufs Do
 | Enter / Backspace | öffnen / eine Ebene hoch |
 | Leertaste, Einfg, ⇧↑↓ | markieren; `+` `-` Muster, `*` umkehren |
 | Ctrl-S | Schnellsuche |
-| ⌘L / ⇧⌘H / ⌘K | Pfad / Home / SFTP oder FTP verbinden |
+| ⌘L / ⇧⌘H / ⌘K | Pfad / Home / SFTP, FTP oder SMB verbinden |
 | ⌘← / ⌘→ | Verzeichnisverlauf zurück / vorwärts (pro Panel, die Verlaufsliste steht im Menü Links/Rechts unter „Verlauf …“) |
 | F2 | Benutzermenü (Einträge aus `~/.config/moonlight-commander/menu`, Format wie mc, Makros `%f %d %s %D %F`) |
 | F3 / F4 | Anzeigen / Bearbeiten (⇧F4 neue Datei), beides mit Syntax-Highlighting |
@@ -59,9 +59,11 @@ Beim Beenden merkt sich die App pro Panel Ordner, Sortierung, Listenformat und A
 
 Alle Aktionen stehen auch im Menü (⌥3 bis ⌥8). Editor: F2 Sichern, F3 Block markieren, F4 Ersetzen, F5/F6/F8 Block kopieren/verschieben/löschen, F7 Suchen, Ctrl-Y Zeile löschen, F10/Esc Ende.
 
-SFTP: ⌘K (oder Menü Links/Rechts → SFTP-Verbindung), dann `user@host[:port][/pfad]` oder ein SSH-Alias. Die letzten zehn Ziele stehen im Verlauf des Dialogs, „Aus Verlauf entfernen“ löscht den gewählten Eintrag. Zurück zum lokalen Dateisystem mit ⇧⌘H.
+SFTP: ⌘K (oder Menü Links/Rechts → Netzwerkverbindung), dann `user@host[:port][/pfad]` oder ein SSH-Alias. Die letzten zehn Ziele stehen im Verlauf des Dialogs, „Aus Verlauf entfernen“ löscht den gewählten Eintrag. Zurück zum lokalen Dateisystem mit ⇧⌘H.
 
 FTP: ebenfalls ⌘K, mit `ftp://[user@]host[:port][/pfad]` (mit Anmeldung immer über TLS; bietet der Server kein TLS an, fragt die App, bevor Nutzer und Passwort unverschlüsselt übertragen werden; anonym wird TLS genutzt, wenn der Server es anbietet; selbstsignierte Zertifikate bestätigt man beim ersten Verbinden anhand des Fingerabdrucks, sie liegen dann in `~/.config/moonlight-commander/ftp-certificates/`) oder `ftps://…` (implizites TLS, Port 990). Ohne Nutzer wird anonym angemeldet, Passwörter landen wie bei SFTP optional im Schlüsselbund. Dateien laufen über temporäre Dateien, Symlinks und Zeitstempel setzen gehen nicht. Der FTP-Test läuft nur mit `MC_TEST_FTP_PORT` (anonymer, schreibbarer Server auf 127.0.0.1).
+
+SMB: ebenfalls ⌘K, mit `smb://[user[;domäne]@]host[:port]/freigabe[/pfad]`, z. B. `smb://nas.example/Daten` oder `smb://anna@192.0.2.10/Projekte`. Das ist kein eigener SMB-Client: Die App hängt die Freigabe über macOS ein (wie der Finder, unter `/Volumes/…`) und zeigt sie dann als lokalen Ordner. Angemeldet wird mit einem gespeicherten Passwort, sonst ohne Passwort (Kerberos oder Gast, falls der Server das anbietet), sonst mit dem Passwortdialog; Passwörter landen wie bei SFTP optional im Schlüsselbund und gehören nicht in die Adresse. Eine schon eingehängte Freigabe (etwa aus dem Finder) wird mitbenutzt und nie ausgehängt. Selbst eingehängte Freigaben hängt die App wieder aus, sobald kein Panel mehr darauf steht, und beim Beenden; ist das Volume belegt (offene Datei, Terminal steht dort), bleibt es eingehängt. Eigene Änderungen erscheinen sofort, Änderungen anderer Rechner erst nach ⌘R.
 
 Remote-Terminal: Ctrl-O auf einem SFTP-Panel öffnet eine ssh-Sitzung im Ordner des Panels (je Server eine eigene, das lokale Terminal bleibt daneben bestehen). Beim Passwort-Dialog lässt sich das Passwort im Schlüsselbund sichern (Befehl → Gespeicherte Passwörter zum Vergessen). Mit `MC_SIGN_IDENTITY="Apple Development: …" ./scripts/bundle.sh` signiert, fragt der Schlüsselbund nach einem Neubau nicht erneut.
 
@@ -73,7 +75,7 @@ Remote-Terminal: Ctrl-O auf einem SFTP-Panel öffnet eine ssh-Sitzung im Ordner 
 - **In Archiv packen (⇧F5):** Packt die Markierung (bzw. den Cursoreintrag) des aktiven Panels in ein Archiv im Ordner des anderen Panels. Der Name ergibt sich aus dem Eintrag bzw. dem aktuellen Ordner mit `.zip`; das Format folgt der Endung (zip, tar, tar.gz/.tgz, tar.bz2/.tbz, tar.xz/.txz, 7z). Ein vorhandenes Archiv wird ergänzt (Konflikte wie bei F5, mit der gespeicherten Regel), das Archiv wird einmal geschrieben und lässt sich beim Packen abbrechen. Das Archiv muss lokal liegen; ein Archiv im Quellordner wird nicht in sich gepackt. Auch im Menü Befehl (⌥⇧5).
 - **Panelisieren:** Suchergebnisse („Als Panel anzeigen“) oder die Ausgabe eines Befehls (Befehl → Externes Panelisieren) erscheinen als Panel, in dem man kopieren, ansehen und löschen kann.
 - **Mehrspaltig:** Listenformat „Kurz“ zeigt 2 bis 3 Spalten.
-- **Live-Aktualisierung:** Lokale Panels laden sich selbst neu, sobald sich ihr Verzeichnis von außen ändert; Cursor und Markierungen bleiben erhalten. Bei SFTP, FTP und Archiven bleibt ⌘R.
+- **Live-Aktualisierung:** Lokale Panels laden sich selbst neu, sobald sich ihr Verzeichnis von außen ändert; Cursor und Markierungen bleiben erhalten. Bei SFTP, FTP und Archiven bleibt ⌘R, auf SMB-Freigaben für Änderungen anderer Rechner ebenfalls.
 - **Hintergrund:** Lange Operationen lassen sich im Fortschrittsdialog in den Hintergrund schicken; Status rechts in der Kommandozeile, Abbrechen unter Befehl → Hintergrundaufgaben.
 - **Dateizuordnung:** `~/.config/moonlight-commander/ext` legt pro Muster fest, was Enter (`open`), F3 (`view`) und F4 (`edit`) tun; Beispiele stehen in der Datei, nach „Befehl → Dateizuordnung bearbeiten“.
 - **Viewer (F3):** F2 Zeilenumbruch, F4 Hex-Ansicht, F5 Gehe zu Zeile, F7 Suche (Regex möglich), F8 Codierung wählen, F9 Vorschau/Quelltext.
@@ -82,7 +84,7 @@ Remote-Terminal: Ctrl-O auf einem SFTP-Panel öffnet eine ssh-Sitzung im Ordner 
 
 ## Menüzeile (F9, Pfeiltasten wechseln zwischen den Menüs, Enter wählt, Esc schließt)
 
-- **Links/Rechts:** Dateiliste, Schnellansicht, Info, Baum, Listenformat, Sortierreihenfolge (nach Name, Endung, Größe, Datum, Zugriffszeit, Statusänderung oder Erstellungszeit; die Zeitspalte zeigt die Zeit des gewählten Schlüssels, bei SFTP gibt es zusätzlich nur die Zugriffszeit, bei FTP und Archiven nur die Änderungszeit, sonst gilt die Änderungszeit), Filter, SFTP/FTP, Pfad, Home-Ordner, Zurück, Vorwärts, Verlauf, Anordnen.
+- **Links/Rechts:** Dateiliste, Schnellansicht, Info, Baum, Listenformat, Sortierreihenfolge (nach Name, Endung, Größe, Datum, Zugriffszeit, Statusänderung oder Erstellungszeit; die Zeitspalte zeigt die Zeit des gewählten Schlüssels, bei SFTP gibt es zusätzlich nur die Zugriffszeit, bei FTP und Archiven nur die Änderungszeit, sonst gilt die Änderungszeit), Filter, Netzwerkverbindung (SFTP, FTP, SMB), Pfad, Home-Ordner, Zurück, Vorwärts, Verlauf, Anordnen.
 - **Datei:** Anzeigen, Bearbeiten, Kopieren, Chmod, Link, symbolischer Link (auch relativ, bearbeitbar), Chown, Umbenennen, Löschen, Gruppenauswahl.
 - **Befehl:** Benutzermenü, Verzeichnisbaum, Datei suchen (Name und Inhalt, wahlweise mit Beachtung der Groß-/Kleinschreibung und mit regulären Ausdrücken; Standard ist die Suche ohne Beachtung der Groß-/Kleinschreibung, die Inhaltssuche läuft nur lokal), Verzeichnisse vergleichen (markiert Unterschiede und meldet die Anzahl), Dateien vergleichen (eingebauter Diff im Viewer, funktioniert ohne Xcode; der Cursor im anderen Panel darf auch nur der gleiche Dateiname sein) und optional in FileMerge, Verzeichnisgrößen, Befehlschronik, Chronik angesehener Dateien (die letzten 30 lokalen Dateien aus Viewer und Editor, die ersten neun mit Ziffern 1 bis 9 wieder öffnen), Hotlist (⌘D, die ersten neun Einträge springt man direkt mit den Ziffern 1 bis 9 an), aktive Verbindungen.
 - **Optionen:** Konfiguration, Layout, Paneloptionen, Nachfragen, Aussehen (Norton Blau, Dunkel, Hell), Update-Prüfung: Die App fragt beim ersten Start, ob sie beim Start nach neuen Versionen suchen darf (höchstens einmal je 24 Stunden, bei GitHub, ohne persönliche Daten, nur ein Hinweis mit Link, kein Download); die Option „Beim Start nach Updates suchen“ ändert das, „Nach Updates suchen …“ prüft sofort.

@@ -51,6 +51,7 @@
 <ul class="features">
   <li><strong>Zwei Panels, volle Tastatursteuerung</strong>Kopieren, Verschieben, Löschen, Umbenennen mit F5 bis F8, Masken wie <kbd>*.bak</kbd>, Markieren per Muster, Schnellsuche.</li>
   <li><strong>SFTP und FTP/FTPS</strong>Server wie lokale Ordner öffnen, Dateien zwischen Mac und Server kopieren. SSH-Aliase und Schlüssel aus <kbd>~/.ssh</kbd> funktionieren, Passwörter lassen sich im Schlüsselbund sichern.</li>
+  <li><strong>SMB-Freigaben</strong>Mit <kbd>smb://server/freigabe</kbd> hängt die App die Freigabe über macOS ein, wie der Finder, und zeigt sie dann als lokalen Ordner. Ein eigener SMB-Client ist sie nicht. Änderungen anderer Rechner erscheinen erst nach <kbd>⌘R</kbd>. Passwörter lassen sich wie bei SFTP und FTP im Schlüsselbund sichern.</li>
   <li><strong>Echtes Terminal</strong>Mit Ctrl-O öffnet sich eine Shell im Ordner des aktiven Panels, auf SFTP-Panels eine ssh-Sitzung auf dem Server.</li>
   <li><strong>Viewer und Editor</strong>Syntax-Highlighting, Hex-Ansicht, Regex-Suche, Diff, Markdown- und HTML-Vorschau.</li>
   <li><strong>Archive als Ordner</strong>zip, tar, 7z, rar, iso und weitere öffnen sich mit Enter wie ein Verzeichnis.</li>
@@ -65,7 +66,7 @@
   <tr><td><kbd>F3</kbd> / <kbd>F4</kbd></td><td>Anzeigen / Bearbeiten</td></tr>
   <tr><td><kbd>F5</kbd> / <kbd>F6</kbd></td><td>Kopieren / Verschieben</td></tr>
   <tr><td><kbd>F7</kbd> / <kbd>F8</kbd></td><td>Ordner anlegen / Löschen</td></tr>
-  <tr><td><kbd>⌘K</kbd></td><td>Mit SFTP- oder FTP-Server verbinden</td></tr>
+  <tr><td><kbd>⌘K</kbd></td><td>Mit SFTP-, FTP- oder SMB-Server verbinden</td></tr>
   <tr><td><kbd>Ctrl-O</kbd></td><td>Terminal ein- und ausblenden</td></tr>
   <tr><td><kbd>⌘D</kbd></td><td>Verzeichnis-Hotlist</td></tr>
 </table>
