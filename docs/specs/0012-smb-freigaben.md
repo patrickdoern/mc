@@ -1,6 +1,6 @@
 # 0012: SMB-Freigaben verbinden
 
-Status: Ready
+Status: Done
 
 ## Ziel
 Der Nutzer gibt im Verbindungsdialog (⌘K) `smb://server/freigabe` ein und landet im Panel auf der Freigabe, ohne vorher im Finder einzuhängen. Die App hängt die Freigabe über macOS (NetFS) ein, arbeitet dort mit dem lokalen Dateisystem und hängt sie wieder aus, sobald sie nicht mehr gebraucht wird. Ziel-Release 1.6.13.
