@@ -592,4 +592,4 @@
 "%@ ändert %@" = "%@ is changing %@";
 "Die Freigabe konnte nicht gestartet werden: %@" = "Sharing could not be started: %@";
 "Erlaube Moonlight Commander den Zugriff unter Systemeinstellungen → Datenschutz & Sicherheit → Lokales Netzwerk." = "Allow Moonlight Commander access in System Settings → Privacy & Security → Local Network.";
-"Befehl → Freigeben … lässt einen anderen Mac mit Moonlight Commander Ordner lesen, er findet sie mit ⌘K als mc://Name." = "Command → Share … lets another Mac with Moonlight Commander read folders; it finds them with ⌘K as mc://Name.";
+"Befehl → Freigeben … lässt einen anderen Mac mit Moonlight Commander Ordner lesen, mit „Schreiben erlauben“ auch ändern; er findet sie mit ⌘K als mc://Name." = "Command → Share … lets another Mac with Moonlight Commander read folders, and with \"Allow writing\" also change them; it finds them with ⌘K as mc://Name.";
