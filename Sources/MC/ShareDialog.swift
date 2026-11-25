@@ -6,6 +6,7 @@ final class ShareDialog {
         let id: UUID
         let name: String
         let code: String?
+        let certificateChanged: Bool
     }
 
     private static weak var running: ShareDialog?
@@ -119,7 +120,7 @@ final class ShareDialog {
             self.dialog = nil
             if let shown {
                 guard let pressed else { continue }
-                server.decide(shown.id, allow: pressed == 0, always: false)
+                server.decide(shown.id, allow: pressed != 2, always: pressed == 1)
                 if request?.id == shown.id { request = nil }
             } else if pressed != nil {
                 break
@@ -136,9 +137,11 @@ final class ShareDialog {
             dialog.addButton(localized("Freigabe beenden"), isDefault: true, isCancel: true)
             return dialog
         }
-        let text = request.code.map { localized("%@ möchte sich verbinden. Code: %@", request.name as NSString, $0 as NSString) + "\n\n" + localized("Nur zulassen, wenn der andere Mac denselben Code zeigt.") } ?? localized("%@ möchte sich verbinden.", request.name as NSString)
-        let dialog = ClassicDialog(title: localized("Freigabe"), message: text)
+        let warning = request.certificateChanged ? [localized("Das Zertifikat von %@ hat sich geändert. Nur zulassen, wenn du weißt, warum (z. B. Neuinstallation), und der Code auf beiden Macs gleich ist.", request.name as NSString)] : []
+        let question = request.code.map { [localized("%@ möchte sich verbinden. Code: %@", request.name as NSString, $0 as NSString), localized("Nur zulassen, wenn der andere Mac denselben Code zeigt.")] } ?? [localized("%@ möchte sich verbinden.", request.name as NSString)]
+        let dialog = ClassicDialog(title: localized("Freigabe"), message: (warning + question).joined(separator: "\n\n"))
         dialog.addButton(localized("Zulassen"), isDefault: true)
+        dialog.addButton(localized("Immer zulassen"))
         dialog.addButton(localized("Ablehnen"), isCancel: true)
         return dialog
     }
@@ -151,15 +154,15 @@ final class ShareDialog {
         switch event {
         case .waiting:
             show(localized("Wartet auf Verbindung"))
-        case .request(let id, let name, let code, _):
-            request = Request(id: id, name: name, code: code)
+        case .request(let id, let name, let code, let certificateChanged):
+            request = Request(id: id, name: name, code: code, certificateChanged: certificateChanged)
             dialog?.interrupt()
         case .requestExpired:
             guard request != nil else { return }
             request = nil
             dialog?.interrupt()
-        case .connected(let peer, _):
-            show(localized("Verbunden mit %@", peer as NSString))
+        case .connected(let peer, let automatic):
+            show(automatic ? localized("Verbunden mit %@ (automatisch zugelassen)", peer as NSString) : localized("Verbunden mit %@", peer as NSString))
         case .reading(let peer, let path):
             show(localized("%@ liest %@", peer as NSString, PosixPath.name(path) as NSString))
         case .writing(let peer, let path):

@@ -66,7 +66,7 @@ Zwei Macs, die einmal per Code gekoppelt wurden, erkennen sich danach am Zertifi
 ## Plan
 - [x] T1: Kopplungen speichern (R1, R2, Teil von R14): `LinkPairings` mit injizierbarem `UserDefaults`, reine Abfragen, Tests. Dateien: `Sources/MCCore/LinkPairings.swift`, `Tests/MCCoreTests/LinkPairingsTests.swift`.
 - [x] T2: Ablauf der Kopplung (R3–R7, Teil von R14): Protokoll 3 mit `knowsPeer`, Entscheidung Code/ohne Code auf beiden Seiten, „Immer zulassen“, geändertes Zertifikat, beidseitiges Merken, Durchlauftests. Dateien: `Sources/MCCore/LinkProtocol.swift`, `LinkServer.swift`, `LinkFileSystem.swift`, `Tests/MCCoreTests/LinkProtocolTests.swift`, `LinkLoopbackTests.swift`; nur Kompilier-Anpassungen in `Sources/MC/`.
-- [ ] T3: Oberfläche (R8–R11): Anfragen mit und ohne Code, „Immer zulassen“, Warnungen, Hinweis „Warte auf Bestätigung“, Befehl → „Gekoppelte Macs …“, Verlauf ohne Doppelte. Dateien: `Sources/MC/ShareDialog.swift`, `Sources/MC/MainWindowController*.swift`, ggf. `MainMenu.swift`, `HintLineView.swift`, `Localizable.strings`.
+- [x] T3: Oberfläche (R8–R11): Anfragen mit und ohne Code, „Immer zulassen“, Warnungen, Hinweis „Warte auf Bestätigung“, Befehl → „Gekoppelte Macs …“, Verlauf ohne Doppelte. Dateien: `Sources/MC/ShareDialog.swift`, `Sources/MC/MainWindowController*.swift`, ggf. `MainMenu.swift`, `HintLineView.swift`, `Localizable.strings`.
 - [ ] T4: Doku und ADR (R12, R13): neues ADR und Index, README DE/EN, Website DE/EN (Startseite, Datenschutz), F1-Hilfe.
 
 Checks nach jedem Task: `swift build` ohne Warnungen, `swift test` grün.

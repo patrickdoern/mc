@@ -7,15 +7,16 @@ enum Dialogs {
         var value = value
         var found: [String] = []
         var shown: (dialog: ClassicDialog, choice: Int)?
+        let options = { history + found.filter { !history.contains($0) } }
         let stopDiscovery = discover? { names in
             found = names
-            shown.map { $0.dialog.setOptions($0.choice, history + found) }
+            shown.map { $0.dialog.setOptions($0.choice, options()) }
         }
         defer { stopDiscovery?() }
         while true {
             let dialog = ClassicDialog(title: title, message: message)
             let field = dialog.addText(value: value)
-            let options = history + found
+            let options = options()
             let choice = options.isEmpty && discover == nil ? nil : dialog.addChoice(label: localized("Verlauf"), options: options, selected: options.firstIndex(of: value) ?? 0) { field.stringValue = $0 }
             dialog.addButton(confirm, isDefault: true)
             dialog.addButton(localized("Abbrechen"), isCancel: true)

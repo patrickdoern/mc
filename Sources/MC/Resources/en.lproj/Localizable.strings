@@ -594,3 +594,14 @@
 "Die Freigabe konnte nicht gestartet werden: %@" = "Sharing could not be started: %@";
 "Erlaube Moonlight Commander den Zugriff unter Systemeinstellungen → Datenschutz & Sicherheit → Lokales Netzwerk." = "Allow Moonlight Commander access in System Settings → Privacy & Security → Local Network.";
 "Befehl → Freigeben … lässt einen anderen Mac mit Moonlight Commander Ordner lesen, mit „Schreiben erlauben“ auch ändern; er findet sie mit ⌘K als mc://Name." = "Command → Share … lets another Mac with Moonlight Commander read folders, and with \"Allow writing\" also change them; it finds them with ⌘K as mc://Name.";
+"Immer zulassen" = "Always Allow";
+"Das Zertifikat von %@ hat sich geändert. Nur zulassen, wenn du weißt, warum (z. B. Neuinstallation), und der Code auf beiden Macs gleich ist." = "The certificate of %@ has changed. Only allow if you know why (e.g. a reinstallation) and the code is the same on both Macs.";
+"Verbunden mit %@ (automatisch zugelassen)" = "Connected to %@ (allowed automatically)";
+"Das Zertifikat von %@ hat sich geändert. Nur fortfahren, wenn du weißt, warum." = "The certificate of %@ has changed. Only continue if you know why.";
+"Warte auf Bestätigung durch %@ …" = "Waiting for confirmation by %@ …";
+"Gekoppelte Macs …" = "Paired Macs …";
+"Gekoppelte Macs" = "Paired Macs";
+"Vergessen: %@" = "Forget: %@";
+"Nicht mehr automatisch zulassen: %@" = "Stop Allowing Automatically: %@";
+"Keine gekoppelten Macs" = "No paired Macs";
+"Befehl → Gekoppelte Macs … vergisst Kopplungen und nimmt „Immer zulassen“ zurück." = "Command → Paired Macs … forgets pairings and revokes \"Always Allow\".";

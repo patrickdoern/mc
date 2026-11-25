@@ -65,7 +65,7 @@ extension MainWindowController {
         add([
             (localized("Benutzermenü   F2"), userMenu), (localized("Terminal ein/aus   Ctrl-O"), toggleTerminal), (localized("Verzeichnisbaum"), { _ in self.activePanel.setMode(.tree) }), (localized("Datei suchen …"), findFiles), (localized("Externes Panelisieren …"), panelizeCommand), (localized("Panels vertauschen   ⌘U"), swapPanels),
             (localized("Verzeichnisse vergleichen"), compareDirectories), (localized("Dateien vergleichen"), compareFiles), (localized("Dateien in FileMerge vergleichen"), compareFilesInFileMerge), (localized("Verzeichnisgrößen anzeigen"), showDirectorySizes), nil,
-            (localized("Befehlschronik …"), showCommandHistory), (localized("Chronik angesehener Dateien …"), showViewedFiles), (localized("Verzeichnis-Hotlist …   ⌘D"), showHotlist), (localized("Aktive Verbindungen …"), showConnections), (localized("Freigeben …"), shareFolders), (localized("Hintergrundaufgaben …"), showBackgroundJobs), (localized("Gespeicherte Passwörter …"), showSavedPasswords), nil,
+            (localized("Befehlschronik …"), showCommandHistory), (localized("Chronik angesehener Dateien …"), showViewedFiles), (localized("Verzeichnis-Hotlist …   ⌘D"), showHotlist), (localized("Aktive Verbindungen …"), showConnections), (localized("Freigeben …"), shareFolders), (localized("Hintergrundaufgaben …"), showBackgroundJobs), (localized("Gespeicherte Passwörter …"), showSavedPasswords), (localized("Gekoppelte Macs …"), showPairedMacs), nil,
             (localized("Benutzermenü bearbeiten"), editUserMenu), (localized("Dateizuordnung bearbeiten"), editFileActions),
         ], to: menu)
         return menu

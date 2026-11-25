@@ -240,7 +240,7 @@ final class MainWindowController: NSWindowController {
         let interaction = interaction
         let other = inactivePanel
         let showList = { for shown in [panel, other] where shown.mode == .info || shown.mode == .quickView { shown.setMode(.list) } }
-        let remember = { UserDefaults.standard.set(([text] + history().filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
+        let remember = { (entry: String) in UserDefaults.standard.set(([entry] + history().filter { $0 != entry }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
         if LinkTarget.isLink(text) {
             guard let target = LinkTarget.parse(text) else { return Dialogs.show(error: FileError(localized("Ungültige Adresse: %@", text as NSString))) }
             let connection = Box<LinkFileSystem>()
@@ -249,12 +249,14 @@ final class MainWindowController: NSWindowController {
                 connection.value = try LinkFileSystem(target: target, name: ownName, identity: LinkIdentity.load(), operation: operation) { prompt in
                     DispatchQueue.main.async {
                         guard let running = job.value else { return }
-                        let confirm = localized("Bitte auf dem anderen Mac bestätigen")
-                        runner.showNotice(prompt.code.map { localized("Code: %@", $0 as NSString) + "\n\n" + confirm } ?? confirm, for: running)
+                        let warning = prompt.certificateChanged ? [localized("Das Zertifikat von %@ hat sich geändert. Nur fortfahren, wenn du weißt, warum.", target.name as NSString)] : []
+                        let request = prompt.code.map { [localized("Code: %@", $0 as NSString), localized("Bitte auf dem anderen Mac bestätigen")] } ?? [localized("Warte auf Bestätigung durch %@ …", target.name as NSString)]
+                        runner.showNotice((warning + request).joined(separator: "\n\n"), for: running)
                     }
                 }
             }, completion: {
                 guard let system = connection.value else { return }
+                remember(target.displayName)
                 showList()
                 model.navigate(to: system.homePath, on: system)
             })
@@ -267,7 +269,7 @@ final class MainWindowController: NSWindowController {
                 connection.value = try FTPFileSystem(target: target, interaction: interaction)
             }, completion: {
                 guard let system = connection.value else { return }
-                remember()
+                remember(text)
                 showList()
                 model.navigate(to: target.path ?? system.homePath, on: system)
             })
@@ -288,7 +290,7 @@ final class MainWindowController: NSWindowController {
                 volume.value = mounted
             }, completion: { [weak self] in
                 guard let mounted = volume.value else { self?.releaseMounts(); return }
-                remember()
+                remember(text)
                 showList()
                 model.navigate(to: PosixPath.join(mounted.mountpoint, target.path ?? "/"), on: LocalFileSystem.shared)
             })
@@ -300,7 +302,7 @@ final class MainWindowController: NSWindowController {
             connection.value = try SFTPFileSystem(settings: try SSHSettings.resolve(target), interaction: interaction)
         }, completion: {
             guard let system = connection.value else { return }
-            remember()
+            remember(text)
             showList()
             model.navigate(to: target.path ?? system.homePath, on: system)
         })

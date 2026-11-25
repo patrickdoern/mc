@@ -299,6 +299,18 @@ extension MainWindowController {
         popUp(menu, title: localized("Gespeicherte Passwörter"))
     }
 
+    @objc func showPairedMacs(_ sender: Any?) {
+        let menu = NSMenu()
+        for pairing in LinkPairings.standard.all {
+            menu.addItem(ClosureMenuItem(localized("Vergessen: %@", pairing.name as NSString)) { LinkPairings.standard.forget(pairing.fingerprint) })
+            if pairing.alwaysAllow {
+                menu.addItem(ClosureMenuItem(localized("Nicht mehr automatisch zulassen: %@", pairing.name as NSString)) { LinkPairings.standard.setAlwaysAllow(false, for: pairing.fingerprint) })
+            }
+        }
+        if menu.items.isEmpty { menu.addItem(NSMenuItem(title: localized("Keine gekoppelten Macs"), action: nil, keyEquivalent: "")) }
+        popUp(menu, title: localized("Gekoppelte Macs"))
+    }
+
     @objc func userMenu(_ sender: Any?) {
         let model = activePanel.model
         guard requireLocal(model, localized("Das Benutzermenü ist nur im lokalen Dateisystem möglich")) else { return }
