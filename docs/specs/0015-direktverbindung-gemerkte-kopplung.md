@@ -1,6 +1,6 @@
 # 0015: Direktverbindung – Gemerkte Kopplung
 
-Status: Ready
+Status: Done
 Slice: 3/3 (Roadmap: [0013-direktverbindung-roadmap.md](0013-direktverbindung-roadmap.md))
 
 ## Ziel
