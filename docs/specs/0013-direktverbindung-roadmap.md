@@ -12,7 +12,7 @@ Rahmen für alle Slices:
 ## Slices
 
 - [x] Slice 1 (1.6.14): [Freigeben, finden, koppeln, lesen](0013-direktverbindung-lesen.md) – Freigabe-Dialog mit gewählten Ordnern, Bonjour, Kopplung per Codevergleich bei jeder Verbindung, Panel auf der Freigabe nur lesend (Blättern, F3, Schnellansicht, F5 von der Freigabe weg)
-- [x] Slice 2 (1.6.15): [Schreiben](0014-direktverbindung-schreiben.md) – Häkchen „Schreiben erlauben“ im Freigabe-Dialog (Vorgabe aus), dann F5/F6 auf die Freigabe, F7, F8, Umbenennen, F4 über temporäre Datei, Zeitstempel und Rechte setzen; ohne Häkchen klare Fehlermeldung
-- [x] Slice 3 (1.6.16): [Gemerkte Kopplung](0015-direktverbindung-gemerkte-kopplung.md) – nach der ersten Kopplung erkennen sich beide Seiten am Zertifikat wieder und verbinden ohne Code (die freigebende Seite fragt trotzdem nach „Zulassen“, solange nicht anders gewählt); Liste „Gekoppelte Macs“ zum Vergessen; Ziel im Verbindungsverlauf
+- [x] Slice 2 (1.6.14): [Schreiben](0014-direktverbindung-schreiben.md) – Häkchen „Schreiben erlauben“ im Freigabe-Dialog (Vorgabe aus), dann F5/F6 auf die Freigabe, F7, F8, Umbenennen, F4 über temporäre Datei, Zeitstempel und Rechte setzen; ohne Häkchen klare Fehlermeldung
+- [x] Slice 3 (1.6.14): [Gemerkte Kopplung](0015-direktverbindung-gemerkte-kopplung.md) – nach der ersten Kopplung erkennen sich beide Seiten am Zertifikat wieder und verbinden ohne Code (die freigebende Seite fragt trotzdem nach „Zulassen“, solange nicht anders gewählt); Liste „Gekoppelte Macs“ zum Vergessen; Ziel im Verbindungsverlauf
 
-Slice 2 und 3 sind nur grob beschrieben und bekommen eine eigene Spec, wenn sie an der Reihe sind.
+Alle drei Slices sind gemeinsam in 1.6.14 erschienen; die in den Specs genannten Ziel-Releases 1.6.15 und 1.6.16 entfielen.
