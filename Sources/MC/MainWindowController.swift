@@ -238,7 +238,7 @@ final class MainWindowController: NSWindowController {
             browser.start()
             return browser.stop
         }
-        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias, ftp://… / ftps://… für FTP, smb://server/freigabe für SMB oder mc://Name für einen Mac mit Freigabe:"), value: history().first ?? "", confirm: localized("Verbinden"), history: history(), onRemove: forget, discover: discover) else { return }
+        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias, ftp://… / ftps://… für FTP, smb://server/freigabe für SMB oder mc://Name für einen Mac mit Freigabe:"), value: history().first ?? "", confirm: localized("Verbinden"), history: history(), onRemove: forget, discover: discover, onlyWhenFound: { $0.hasPrefix("mc://") }) else { return }
         let panel = activePanel
         let model = panel.model
         let interaction = interaction

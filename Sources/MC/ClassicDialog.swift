@@ -103,6 +103,12 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         relayout()
     }
 
+    func select(_ itemIndex: Int, option: String) {
+        guard let index = items[itemIndex].options.firstIndex(of: option) else { return }
+        items[itemIndex].index = index
+        relayout()
+    }
+
     func interrupt() {
         guard let panel = window as? ClassicPanel, NSApp.modalWindow === panel else { return }
         result = nil

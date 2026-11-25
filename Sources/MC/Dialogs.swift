@@ -2,38 +2,48 @@ import AppKit
 import MCCore
 
 enum Dialogs {
-    static func prompt(title: String, message: String, value: String = "", confirm: String = localized("OK"), history: [String] = [], onRemove: ((String) -> Void)? = nil, discover: ((@escaping ([String]) -> Void) -> () -> Void)? = nil) -> String? {
+    /// `onlyWhenFound` markiert Verlaufseinträge, die nur erscheinen, solange `discover` sie gerade findet (z. B. mc:// für einen Mac, der lauscht).
+    static func prompt(title: String, message: String, value: String = "", confirm: String = localized("OK"), history: [String] = [], onRemove: ((String) -> Void)? = nil, discover: ((@escaping ([String]) -> Void) -> () -> Void)? = nil, onlyWhenFound: @escaping (String) -> Bool = { _ in false }) -> String? {
         var history = history
-        var value = value
         var found: [String] = []
-        var shown: (dialog: ClassicDialog, choice: Int)?
-        let options = { history + found.filter { !history.contains($0) } }
+        var shown: (dialog: ClassicDialog, choice: Int, field: NSTextField)?
+        let options = { history.filter { !onlyWhenFound($0) } + found.filter { !history.contains($0) || onlyWhenFound($0) } }
+        var waiting = onlyWhenFound(value) ? value : nil
+        var value = waiting == nil ? value : options().first ?? ""
         let stopDiscovery = discover? { names in
             found = names
-            shown.map { $0.dialog.setOptions($0.choice, options()) }
+            guard let shown else { return }
+            shown.dialog.setOptions(shown.choice, options())
+            if let wanted = waiting, found.contains(wanted), shown.field.stringValue == value {
+                waiting = nil
+                value = wanted
+                shown.field.stringValue = wanted
+                shown.dialog.select(shown.choice, option: wanted)
+            }
         }
         defer { stopDiscovery?() }
         while true {
             let dialog = ClassicDialog(title: title, message: message)
             let field = dialog.addText(value: value)
-            let options = options()
-            let choice = options.isEmpty && discover == nil ? nil : dialog.addChoice(label: localized("Verlauf"), options: options, selected: options.firstIndex(of: value) ?? 0) { field.stringValue = $0 }
+            let current = options()
+            let choice = current.isEmpty && discover == nil ? nil : dialog.addChoice(label: localized("Verlauf"), options: current, selected: current.firstIndex(of: value) ?? 0) { field.stringValue = $0 }
             dialog.addButton(confirm, isDefault: true)
             dialog.addButton(localized("Abbrechen"), isCancel: true)
             if onRemove != nil, !history.isEmpty { dialog.addButton(localized("Aus Verlauf entfernen")) }
-            shown = choice.map { (dialog, $0) }
+            shown = choice.map { (dialog, $0, field) }
             let pressed = dialog.run()
             shown = nil
             if pressed == 2, let onRemove, let choice {
+                let listed = options()
                 let index = dialog.choice(choice)
                 value = field.stringValue
-                guard index < history.count else {
+                guard listed.indices.contains(index), let position = history.firstIndex(of: listed[index]) else {
                     NSSound.beep()
                     continue
                 }
-                let removed = history.remove(at: index)
+                let removed = history.remove(at: position)
                 onRemove(removed)
-                if value == removed { value = history.first ?? "" }
+                if value == removed { value = options().first ?? "" }
                 continue
             }
             guard pressed == 0 else { return nil }
