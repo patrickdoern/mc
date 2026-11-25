@@ -40,7 +40,7 @@
 <p class="lead">Stand: November 2026</p>
 
 <h2>Kurz gesagt</h2>
-<p>Die App Moonlight Commander erfasst keine personenbezogenen Daten. Sie sucht nur dann nach neuen Versionen, wenn du es erlaubst, und sendet dabei nichts über dich. Diese Website wird bei GitHub Pages gehostet, setzt keine Cookies und misst ihre Reichweite anonym mit Matomo auf meinem eigenen Server.</p>
+<p>Die App Moonlight Commander erfasst keine personenbezogenen Daten. Sie sucht nur dann nach neuen Versionen, wenn du es erlaubst, und sendet dabei nichts über dich. Verbindungen zu anderen Rechnern entstehen nur, wenn du selbst eine öffnest oder Ordner freigibst. Diese Website wird bei GitHub Pages gehostet, setzt keine Cookies und misst ihre Reichweite anonym mit Matomo auf meinem eigenen Server.</p>
 
 <h2>Verantwortlicher</h2>
 <p>
@@ -54,9 +54,10 @@
 <h2>Die App</h2>
 <ul>
   <li>Die App läuft vollständig lokal auf deinem Mac. Es gibt kein Konto, keine Cloud, keine Analyse, keine Absturzberichte und keine Werbung.</li>
-  <li>Netzwerkverbindungen entstehen sonst nur, wenn du selbst über „Verbinden“ einen SFTP- oder FTP-Server öffnest. Sie gehen direkt an den Server, den du angegeben hast, nicht über mich.</li>
+  <li>Netzwerkverbindungen entstehen sonst nur, wenn du selbst über „Netzwerkverbindung“ einen SFTP- oder FTP-Server oder eine SMB-Freigabe öffnest. Sie gehen direkt an den Server, den du angegeben hast, nicht über mich. SMB-Freigaben hängt macOS selbst ein, wie im Finder.</li>
+  <li>Direktverbindung zwischen zwei Macs: Solange du unter „Befehl → Freigeben …“ Ordner freigibst, macht die App deinen Mac im lokalen Netz per Bonjour unter dem Anzeigenamen sichtbar, den du dort festlegst (Vorgabe ist der Computername), und nimmt Verbindungen an. Solange der Dialog „Netzwerkverbindung“ offen ist, sucht die App im lokalen Netz nach solchen Freigaben. Beim Verbinden tauschen beide Macs ihre Anzeigenamen und ein von der App erzeugtes Zertifikat aus. Erst wenn beide Seiten denselben Code zeigen und du auf dem freigebenden Mac „Zulassen“ wählst, kann der andere Mac die freigegebenen Ordner lesen, sonst nichts. Die Daten gehen verschlüsselt direkt zwischen den beiden Macs im lokalen Netz, nicht über mich oder einen anderen Server. Schließt du den Freigabe-Dialog, endet das Lauschen sofort. Anzeigename und freigegebene Ordner liegen lokal in den Einstellungen.</li>
   <li>Beim ersten Start fragt die App, ob sie beim Start nach neuen Versionen suchen darf. Nur wenn du zustimmst, ruft sie dabei höchstens einmal je 24 Stunden https://api.github.com/repos/patrickdoern/mc/releases/latest ab. Dasselbe passiert, wenn du im Menü „Nach Updates suchen …“ wählst. Es werden keine persönlichen Daten gesendet. GitHub sieht technisch zwangsläufig deine IP-Adresse und den User-Agent „Moonlight-Commander/&lt;Version&gt;“ mit der Versionsnummer der App; dafür gilt die Datenschutzerklärung von GitHub. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die du jederzeit in den Einstellungen mit „Beim Start nach Updates suchen“ widerrufen kannst. Die App lädt nichts herunter und installiert nichts selbst; gibt es eine neuere Version, zeigt sie nur einen Hinweis mit Link zur Download-Seite.</li>
-  <li>Auf Wunsch speichert die App ein Server-Passwort im Schlüsselbund deines Macs. Es verlässt den Mac nur zur Anmeldung beim jeweiligen Server und lässt sich unter „Befehl → Gespeicherte Passwörter“ wieder löschen.</li>
+  <li>Auf Wunsch speichert die App ein Server-Passwort (SFTP, FTP, SMB) im Schlüsselbund deines Macs. Es verlässt den Mac nur zur Anmeldung beim jeweiligen Server und lässt sich unter „Befehl → Gespeicherte Passwörter“ wieder löschen. Für die Direktverbindung legt die App beim ersten Gebrauch einen Schlüssel und ein Zertifikat „Moonlight Commander“ im Schlüsselbund an; der Schlüssel verlässt den Mac nie, das Zertifikat sieht nur der Mac, mit dem du dich verbindest.</li>
   <li>Einstellungen wie Ordner, Sortierung, Farbschema, Hotlist und die Chronik angesehener Dateien liegen lokal in den Einstellungen deines Benutzerkontos.</li>
 </ul>
 

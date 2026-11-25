@@ -41,7 +41,7 @@
 <p class="note">Courtesy translation. The German <a href="/datenschutz/">Datenschutzerklärung</a> is the legally binding version.</p>
 
 <h2>In short</h2>
-<p>The Moonlight Commander app does not collect any personal data. It only looks for new versions if you allow it, and sends nothing about you when it does. This website is hosted on GitHub Pages, sets no cookies and measures its reach anonymously with Matomo on my own server.</p>
+<p>The Moonlight Commander app does not collect any personal data. It only looks for new versions if you allow it, and sends nothing about you when it does. Connections to other computers only occur when you open one yourself or share folders. This website is hosted on GitHub Pages, sets no cookies and measures its reach anonymously with Matomo on my own server.</p>
 
 <h2>Controller</h2>
 <p>
@@ -55,9 +55,10 @@
 <h2>The app</h2>
 <ul>
   <li>The app runs entirely locally on your Mac. There is no account, no cloud, no analytics, no crash reports and no advertising.</li>
-  <li>Otherwise, network connections only occur when you open an SFTP or FTP server yourself via "Connect". They go directly to the server you specified, not through me.</li>
+  <li>Otherwise, network connections only occur when you open an SFTP or FTP server or an SMB share yourself via "Network Connection". They go directly to the server you specified, not through me. SMB shares are mounted by macOS itself, as in the Finder.</li>
+  <li>Direct connection between two Macs: While you share folders via "Command → Share …", the app makes your Mac visible on the local network via Bonjour under the display name you set there (by default the computer name) and accepts connections. While the "Network Connection" dialog is open, the app searches the local network for such shares. When connecting, both Macs exchange their display names and a certificate created by the app. Only when both sides show the same code and you choose "Allow" on the sharing Mac can the other Mac read the shared folders, and nothing else. The data travels encrypted directly between the two Macs on the local network, not through me or any other server. Closing the share dialog stops listening immediately. The display name and the shared folders are stored locally in the settings.</li>
   <li>On first launch, the app asks whether it may check for new versions at startup. Only if you agree does it fetch https://api.github.com/repos/patrickdoern/mc/releases/latest, at most once every 24 hours. The same happens when you choose "Check for Updates …" in the menu. No personal data is sent. Technically, GitHub inevitably sees your IP address and the user agent "Moonlight-Commander/&lt;version&gt;" with the app's version number; GitHub's privacy statement applies to this. The legal basis is your consent (Art. 6(1)(a) GDPR), which you can withdraw at any time in the settings under "Check for updates at startup". The app downloads and installs nothing by itself; if a newer version exists, it only shows a notice with a link to the download page.</li>
-  <li>On request, the app stores a server password in your Mac's keychain. It leaves the Mac only to sign in to the respective server and can be deleted again under "Command → Saved Passwords".</li>
+  <li>On request, the app stores a server password (SFTP, FTP, SMB) in your Mac's keychain. It leaves the Mac only to sign in to the respective server and can be deleted again under "Command → Saved Passwords". For the direct connection, the app creates a key and a certificate "Moonlight Commander" in the keychain on first use; the key never leaves the Mac, and the certificate is only seen by the Mac you connect to.</li>
   <li>Settings such as folders, sorting, color scheme, hotlist and the history of viewed files are stored locally in your user account's preferences.</li>
 </ul>
 
