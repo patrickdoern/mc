@@ -553,3 +553,9 @@
 "Die Freigabe ist nur lesbar" = "The share is read-only";
 "Außerhalb der Freigabe" = "Outside the share";
 "Die Identität für die Direktverbindung lässt sich nicht im Schlüsselbund anlegen (Fehler %ld)" = "The identity for the direct connection cannot be created in the keychain (error %ld)";
+"Die Verbindung wurde abgelehnt" = "The connection was refused";
+"Eine andere Verbindungsanfrage ist noch offen" = "Another connection request is still pending";
+"Bereits mit %@ verbunden" = "Already connected to %@";
+"Keine Bestätigung innerhalb von 60 Sekunden" = "No confirmation within 60 seconds";
+"Die Verbindung zu %@ ist abgebrochen" = "The connection to %@ was lost";
+"Keine Verbindung zu %@" = "No connection to %@";

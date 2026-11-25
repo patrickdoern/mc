@@ -4,7 +4,9 @@ public enum LinkProtocol {
     public static let version: UInt32 = 1
     public static let maximumPayload = 1024 * 1024
     public static let maximumBlock = 256 * 1024
+    public static let serviceType = "_mc-link._tcp"
     static let headerSize = 9
+    static let pairingTimeout: TimeInterval = 60
 
     public static func checkVersion(_ version: UInt32) throws {
         guard version == Self.version else { throw FileError(localized("Die Gegenstelle hat eine andere Version von Moonlight Commander")) }
