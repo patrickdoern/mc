@@ -1,10 +1,11 @@
 import Foundation
 import Network
 
-public final class LinkFileSystem: FileSystem {
+public final class LinkFileSystem: TrashingFileSystem {
     public let identity: String
     public let displayName: String
     public let homePath = "/"
+    public private(set) var isWritable = false
     private let channel: LinkChannel
     private let condition = NSCondition()
     private var inbox: [UInt32: [LinkMessage]] = [0: []]
@@ -53,12 +54,13 @@ public final class LinkFileSystem: FileSystem {
         guard try wait(until: Date() + Self.connectTimeout, cancelling: operation, for: { isReady ? true : nil }) != nil else { throw unreachable }
         channel.send([LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: name, writable: false))])
         guard let hello = try wait(until: Date() + Self.connectTimeout, cancelling: operation, for: { take(0) }) else { throw unreachable }
-        guard case .hello(let version, _, _) = hello else { throw violated() }
+        guard case .hello(let version, _, let writable) = hello else { throw violated() }
         do {
             try LinkProtocol.checkVersion(version)
         } catch {
             throw FileError("\(displayName): \(error.localizedDescription)")
         }
+        isWritable = writable
         pairing(LinkIdentity.pairingCode(identity.fingerprint, channel.peerFingerprint))
         let decision = try wait(until: Date() + LinkProtocol.pairingTimeout, cancelling: operation, for: { take(0) })
         switch decision {
@@ -107,13 +109,14 @@ public final class LinkFileSystem: FileSystem {
     public func makeSymlink(_ path: String, target: String) throws { try perform(.makeSymlink(path, target: target)) }
     public func setModified(_ path: String, _ date: Date) throws { try perform(.setModified(path, date)) }
     public func setPermissions(_ path: String, _ mode: UInt16) throws { try perform(.setPermissions(path, mode)) }
+    public func trash(_ path: String) throws { try perform(.trash(path)) }
 
     public func openWriter(_ path: String, permissions: UInt16) throws -> FileWriter {
-        _ = try request(.openWrite(path, permissions: permissions))
-        throw violated()
+        guard case .handle(let handle) = try request(.openWrite(path, permissions: permissions)) else { throw violated() }
+        return LinkWriter(owner: self, handle: handle)
     }
 
-    private func perform(_ message: LinkMessage) throws {
+    fileprivate func perform(_ message: LinkMessage) throws {
         guard case .done = try request(message) else { throw violated() }
     }
 
@@ -222,5 +225,57 @@ private final class LinkReader: FileReader {
         closed = true
         pending.forEach(owner.forget)
         _ = try? owner.request(.close(handle: handle))
+    }
+}
+
+private final class LinkWriter: FileWriter {
+    private static let depth = 4
+
+    private let owner: LinkFileSystem
+    private let handle: UInt32
+    private var pending: [UInt32] = []
+    private var closed = false
+
+    init(owner: LinkFileSystem, handle: UInt32) {
+        self.owner = owner
+        self.handle = handle
+    }
+
+    deinit { abort() }
+
+    func write(_ buffer: UnsafeRawBufferPointer) throws {
+        var offset = 0
+        while offset < buffer.count {
+            if pending.count == Self.depth { try confirm() }
+            let count = min(LinkProtocol.maximumBlock, buffer.count - offset)
+            pending.append(owner.post(.write(handle: handle, data: Data(UnsafeRawBufferPointer(rebasing: buffer[offset..<offset + count])))))
+            offset += count
+        }
+    }
+
+    func finish() throws {
+        guard !closed else { return }
+        do {
+            while !pending.isEmpty { try confirm() }
+        } catch {
+            abort()
+            throw error
+        }
+        closed = true
+        try owner.perform(.finish(handle: handle))
+    }
+
+    func abort() {
+        guard !closed else { return }
+        closed = true
+        pending.forEach(owner.forget)
+        pending = []
+        _ = try? owner.request(.abort(handle: handle))
+    }
+
+    private func confirm() throws {
+        let id = pending.removeFirst()
+        defer { owner.forget(id) }
+        guard case .done = try owner.answer(id) else { throw owner.violated() }
     }
 }

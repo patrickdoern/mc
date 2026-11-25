@@ -94,8 +94,8 @@ private final class Harness {
         try? FileManager.default.removeItem(at: root)
     }
 
-    static func operation() -> FileOperation {
-        FileOperation(handlers: OperationHandlers(progress: { _ in }, resolveConflict: { _ in .cancel }, resolveFailure: { _, _ in .abort }))
+    static func operation(_ options: TransferOptions = TransferOptions()) -> FileOperation {
+        FileOperation(handlers: OperationHandlers(progress: { _ in }, resolveConflict: { _ in .cancel }, resolveFailure: { _, _ in .abort }), options: options)
     }
 
     static func isWaiting(_ event: LinkServer.Event) -> Bool {
@@ -112,6 +112,13 @@ private final class Harness {
         if case .requestExpired = event { return true }
         return false
     }
+}
+
+private func isOpen(_ path: String) -> Bool {
+    guard let real = realpath(path, nil) else { return false }
+    defer { free(real) }
+    var buffer = [CChar](repeating: 0, count: Int(MAXPATHLEN))
+    return (0..<getdtablesize()).contains { fcntl($0, F_GETPATH, &buffer) == 0 && strcmp(buffer, real) == 0 }
 }
 
 private func failure(_ body: () throws -> Void) -> Error? {
@@ -153,11 +160,14 @@ private func failure(_ body: () throws -> Void) -> Error? {
         let system = try harness.connect()
         let folder = "/" + harness.shareName
         let readOnly = localized("Die Freigabe ist nur lesbar")
+        #expect(!system.isWritable)
         #expect(failure { try system.makeDirectory(folder + "/neu") }?.localizedDescription == readOnly)
         #expect(failure { try system.removeFile(folder + "/small.txt") }?.localizedDescription == readOnly)
         #expect(failure { try system.rename(folder + "/small.txt", folder + "/x.txt") }?.localizedDescription == readOnly)
         #expect(failure { try system.setModified(folder + "/small.txt", Date()) }?.localizedDescription == readOnly)
         #expect(failure { _ = try system.openWriter(folder + "/neu.txt", permissions: 0o644) }?.localizedDescription == readOnly)
+        #expect(failure { try system.trash(folder + "/small.txt") }?.localizedDescription == readOnly)
+        #expect(!FileManager.default.fileExists(atPath: harness.root.appendingPathComponent(harness.shareName + "/neu.txt").path))
         let outside = localized("Außerhalb der Freigabe")
         #expect(failure { _ = try system.list(folder + "/outside") }?.localizedDescription == outside)
         #expect(failure { _ = try system.readAll(folder + "/outside/secret.txt") }?.localizedDescription == outside)
@@ -180,6 +190,81 @@ private func failure(_ body: () throws -> Void) -> Error? {
         #expect(harness.events.wait { if case .deleting(name: "Client", path: folder + "/neu/small.txt") = $0 { return true }; return false })
         #expect(harness.events.count { if case .changing(_, folder + "/outside/neu") = $0 { return true }; return false } == 0)
         #expect(harness.events.count { if case .deleting(_, folder) = $0 { return true }; return false } == 0)
+    }
+
+    @Test func uploadsLargeFile() throws {
+        let harness = try Harness(allow: true, writable: true)
+        defer { harness.finish() }
+        let system = try harness.connect()
+        #expect(system.isWritable)
+        var generator = SystemRandomNumberGenerator()
+        let content = Data((0..<(3 * 1024 * 1024 + 4321)).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
+        let path = "/" + harness.shareName + "/upload.bin"
+        try system.writeAll(content, to: path, permissions: 0o644)
+        #expect(FileManager.default.contents(atPath: harness.root.appendingPathComponent(harness.shareName + "/upload.bin").path) == content)
+        #expect(try system.readAll(path) == content)
+        #expect(harness.events.wait { if case .writing(name: "Client", path: path) = $0 { return true }; return false })
+    }
+
+    @Test func savesExistingFileSafely() throws {
+        let harness = try Harness(allow: true, writable: true)
+        defer { harness.finish() }
+        let system = try harness.connect()
+        let folder = "/" + harness.shareName
+        try system.writeAllSafely(Data("Neuer Inhalt".utf8), to: folder + "/small.txt", permissions: 0o644)
+        let share = harness.root.appendingPathComponent(harness.shareName)
+        #expect(FileManager.default.contents(atPath: share.appendingPathComponent("small.txt").path) == Data("Neuer Inhalt".utf8))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: share.path).sorted() == ["big.bin", "outside", "small.txt", "sub"])
+    }
+
+    @Test func abortClosesFileOnServer() throws {
+        let harness = try Harness(allow: true, writable: true)
+        defer { harness.finish() }
+        let system = try harness.connect()
+        let local = harness.root.appendingPathComponent(harness.shareName + "/abgebrochen.bin").path
+        let writer = try system.openWriter("/" + harness.shareName + "/abgebrochen.bin", permissions: 0o644)
+        let block = Data(repeating: 7, count: LinkProtocol.maximumBlock * 3)
+        try block.withUnsafeBytes { try writer.write($0) }
+        #expect(isOpen(local))
+        writer.abort()
+        #expect(!isOpen(local))
+        #expect(try system.list("/" + harness.shareName).count == 5)
+    }
+
+    @Test func trashesOnServer() throws {
+        let harness = try Harness(allow: true, writable: true)
+        defer { harness.finish() }
+        let system = try harness.connect()
+        let name = "mc-link-trash-" + UUID().uuidString
+        let local = harness.root.appendingPathComponent(harness.shareName + "/" + name)
+        try Data("weg".utf8).write(to: local)
+        let trash = try FileManager.default.url(for: .trashDirectory, in: .userDomainMask, appropriateFor: harness.root, create: false)
+        let trashed = trash.appendingPathComponent(name)
+        try Harness.operation().delete(["/" + harness.shareName + "/" + name], on: system, trash: true)
+        #expect(!FileManager.default.fileExists(atPath: local.path))
+        #expect(FileManager.default.contents(atPath: trashed.path) == Data("weg".utf8))
+        try FileManager.default.removeItem(at: trashed)
+        #expect(harness.events.wait { if case .deleting(name: "Client", path: "/" + harness.shareName + "/" + name) = $0 { return true }; return false })
+    }
+
+    @Test func copiesTreeWithAttributes() throws {
+        let harness = try Harness(allow: true, writable: true)
+        defer { harness.finish() }
+        let system = try harness.connect()
+        let source = harness.root.appendingPathComponent("Quelle")
+        let stamp = Date(timeIntervalSince1970: 1_500_000_000)
+        try FileManager.default.createDirectory(at: source.appendingPathComponent("innen"), withIntermediateDirectories: true)
+        try Data("eins".utf8).write(to: source.appendingPathComponent("eins.txt"))
+        try Data("zwei".utf8).write(to: source.appendingPathComponent("innen/zwei.txt"))
+        try LocalFileSystem.shared.setPermissions(source.appendingPathComponent("innen/zwei.txt").path, 0o640)
+        for item in ["eins.txt", "innen/zwei.txt", "innen", ""] { try LocalFileSystem.shared.setModified(source.appendingPathComponent(item).path, stamp) }
+        let target = "/" + harness.shareName + "/Kopie"
+        try Harness.operation(TransferOptions(preserveAttributes: true)).copy([Transfer(source: source.path, destination: target)], from: LocalFileSystem.shared, to: system)
+        let copy = harness.root.appendingPathComponent(harness.shareName + "/Kopie")
+        #expect(FileManager.default.contents(atPath: copy.appendingPathComponent("eins.txt").path) == Data("eins".utf8))
+        #expect(FileManager.default.contents(atPath: copy.appendingPathComponent("innen/zwei.txt").path) == Data("zwei".utf8))
+        for item in ["eins.txt", "innen/zwei.txt", "innen", ""] { #expect(try LocalFileSystem.shared.stat(copy.appendingPathComponent(item).path).modified == stamp) }
+        #expect(try LocalFileSystem.shared.stat(copy.appendingPathComponent("innen/zwei.txt").path).permissions & 0o777 == 0o640)
     }
 
     @Test func reportsRefusalByServer() throws {

@@ -63,10 +63,10 @@ public final class FileOperation {
 
     public func delete(_ paths: [String], on fileSystem: FileSystem, trash: Bool) throws {
         try transaction([fileSystem]) {
-            if trash, let local = fileSystem as? LocalFileSystem {
+            if trash, let trashing = fileSystem as? TrashingFileSystem {
                 progress.filesTotal = paths.count
                 for path in paths {
-                    try attempt(path) { try local.trash(path) }
+                    try attempt(path) { try trashing.trash(path) }
                     progress.filesDone += 1
                     progress.currentPath = path
                     report(force: true)

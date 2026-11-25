@@ -62,6 +62,10 @@ public protocol FileSystem: AnyObject {
     func adoptMetadata(of original: String, to path: String)
 }
 
+public protocol TrashingFileSystem: FileSystem {
+    func trash(_ path: String) throws
+}
+
 public extension FileSystem {
     var displayName: String { identity.replacingOccurrences(of: "sftp://", with: "") }
 

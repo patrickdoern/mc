@@ -1,6 +1,6 @@
 import Foundation
 
-public final class LocalFileSystem: FileSystem {
+public final class LocalFileSystem: TrashingFileSystem {
     public static let shared = LocalFileSystem()
 
     public let identity = "local"
