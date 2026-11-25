@@ -41,6 +41,7 @@ public protocol FileSystem: AnyObject {
     var exitLocation: ExitLocation? { get }
     var homePath: String { get }
     var hasPendingChanges: Bool { get }
+    var isDisconnected: Bool { get }
     func beginTransaction()
     func commitTransaction() throws
     func rollbackTransaction()
@@ -67,6 +68,8 @@ public extension FileSystem {
     var exitLocation: ExitLocation? { nil }
 
     var hasPendingChanges: Bool { false }
+
+    var isDisconnected: Bool { false }
 
     func beginTransaction() {}
 

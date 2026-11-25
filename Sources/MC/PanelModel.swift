@@ -182,6 +182,11 @@ final class PanelModel {
                     rebuild(selecting: name)
                     watchDirectory()
                 case .failure(let error):
+                    if system.isDisconnected {
+                        if !quiet { onFailure?(error) }
+                        navigate(to: NSHomeDirectory(), on: LocalFileSystem.shared)
+                        return
+                    }
                     if let historyIndex {
                         history.remove(at: historyIndex)
                     } else if newSystem == nil, newPath == path, path != "/" {

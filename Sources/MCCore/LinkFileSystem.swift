@@ -39,6 +39,12 @@ public final class LinkFileSystem: FileSystem {
 
     deinit { channel.cancel() }
 
+    public var isDisconnected: Bool {
+        condition.lock()
+        defer { condition.unlock() }
+        return isEnded
+    }
+
     public func disconnect() {
         channel.cancel()
     }

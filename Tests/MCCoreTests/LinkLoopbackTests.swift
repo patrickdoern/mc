@@ -239,8 +239,10 @@ private func failure(_ body: () throws -> Void) -> Error? {
         let harness = try Harness(allow: true)
         defer { harness.finish() }
         let system = try harness.connect()
+        #expect(!system.isDisconnected)
         harness.stopServer()
         let error = failure { _ = try system.list("/") }
         #expect(error?.localizedDescription == localized("Die Verbindung zu %@ ist abgebrochen", "mc://Server" as NSString))
+        #expect(system.isDisconnected)
     }
 }
