@@ -5,7 +5,7 @@ final class ShareDialog {
     private struct Request {
         let id: UUID
         let name: String
-        let code: String
+        let code: String?
     }
 
     private static weak var running: ShareDialog?
@@ -119,7 +119,7 @@ final class ShareDialog {
             self.dialog = nil
             if let shown {
                 guard let pressed else { continue }
-                server.decide(shown.id, allow: pressed == 0)
+                server.decide(shown.id, allow: pressed == 0, always: false)
                 if request?.id == shown.id { request = nil }
             } else if pressed != nil {
                 break
@@ -136,7 +136,8 @@ final class ShareDialog {
             dialog.addButton(localized("Freigabe beenden"), isDefault: true, isCancel: true)
             return dialog
         }
-        let dialog = ClassicDialog(title: localized("Freigabe"), message: localized("%@ möchte sich verbinden. Code: %@", request.name as NSString, request.code as NSString) + "\n\n" + localized("Nur zulassen, wenn der andere Mac denselben Code zeigt."))
+        let text = request.code.map { localized("%@ möchte sich verbinden. Code: %@", request.name as NSString, $0 as NSString) + "\n\n" + localized("Nur zulassen, wenn der andere Mac denselben Code zeigt.") } ?? localized("%@ möchte sich verbinden.", request.name as NSString)
+        let dialog = ClassicDialog(title: localized("Freigabe"), message: text)
         dialog.addButton(localized("Zulassen"), isDefault: true)
         dialog.addButton(localized("Ablehnen"), isCancel: true)
         return dialog
@@ -150,14 +151,14 @@ final class ShareDialog {
         switch event {
         case .waiting:
             show(localized("Wartet auf Verbindung"))
-        case .request(let id, let name, let code):
+        case .request(let id, let name, let code, _):
             request = Request(id: id, name: name, code: code)
             dialog?.interrupt()
         case .requestExpired:
             guard request != nil else { return }
             request = nil
             dialog?.interrupt()
-        case .connected(let peer):
+        case .connected(let peer, _):
             show(localized("Verbunden mit %@", peer as NSString))
         case .reading(let peer, let path):
             show(localized("%@ liest %@", peer as NSString, PosixPath.name(path) as NSString))

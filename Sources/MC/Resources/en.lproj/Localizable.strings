@@ -577,6 +577,7 @@
 "Der ganze Mac (/) lässt sich nicht freigeben" = "The whole Mac (/) cannot be shared";
 "Freigabe beenden" = "Stop Sharing";
 "%@ möchte sich verbinden. Code: %@" = "%@ wants to connect. Code: %@";
+"%@ möchte sich verbinden." = "%@ wants to connect.";
 "Nur zulassen, wenn der andere Mac denselben Code zeigt." = "Only allow if the other Mac shows the same code.";
 "Schreiben erlauben" = "Allow writing";
 "Der andere Mac kann dann Dateien in diesen Ordnern ändern und löschen." = "The other Mac can then change and delete files in these folders.";

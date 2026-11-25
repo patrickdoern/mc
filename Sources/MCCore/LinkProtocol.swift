@@ -1,7 +1,7 @@
 import Foundation
 
 public enum LinkProtocol {
-    public static let version: UInt32 = 2
+    public static let version: UInt32 = 3
     public static let maximumPayload = 1024 * 1024
     public static let maximumBlock = 256 * 1024
     public static let serviceType = "_mc-link._tcp"
@@ -20,7 +20,7 @@ public enum LinkProtocolError: Error, Equatable {
 }
 
 public enum LinkMessage: Equatable {
-    case hello(version: UInt32, name: String, writable: Bool)
+    case hello(version: UInt32, name: String, writable: Bool, knowsPeer: Bool)
     case list(String)
     case stat(String)
     case statFollowingLinks(String)
@@ -115,11 +115,12 @@ public struct LinkFrame: Equatable {
         var payload = LinkPayloadWriter()
         let type: LinkMessageType
         switch message {
-        case .hello(let version, let name, let writable):
+        case .hello(let version, let name, let writable, let knowsPeer):
             type = .hello
             payload.uint32(version)
             payload.string(name)
-            if writable { payload.byte(1) }
+            let flags: UInt8 = (writable ? 1 : 0) | (knowsPeer ? 2 : 0)
+            if flags != 0 { payload.byte(flags) }
         case .list(let path):
             type = .list
             payload.string(path)
@@ -219,7 +220,11 @@ public struct LinkFrame: Equatable {
         var reader = LinkPayloadReader(payload)
         let message: LinkMessage
         switch type {
-        case .hello: message = .hello(version: try reader.uint32(), name: try reader.string(), writable: try reader.isAtEnd ? false : reader.byte() == 1)
+        case .hello:
+            let version = try reader.uint32()
+            let name = try reader.string()
+            let flags = try reader.isAtEnd ? 0 : reader.byte()
+            message = .hello(version: version, name: name, writable: flags & 1 != 0, knowsPeer: flags & 2 != 0)
         case .list: message = .list(try reader.string())
         case .stat: message = .stat(try reader.string())
         case .statFollowingLinks: message = .statFollowingLinks(try reader.string())

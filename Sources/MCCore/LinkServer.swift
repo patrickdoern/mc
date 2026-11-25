@@ -4,9 +4,9 @@ import Network
 public final class LinkServer {
     public enum Event {
         case waiting
-        case request(id: UUID, name: String, code: String)
+        case request(id: UUID, name: String, code: String?, certificateChanged: Bool)
         case requestExpired
-        case connected(String)
+        case connected(name: String, automatic: Bool)
         case reading(name: String, path: String)
         case writing(name: String, path: String)
         case deleting(name: String, path: String)
@@ -31,6 +31,7 @@ public final class LinkServer {
     private let folders: [String]
     private let writable: Bool
     private let identity: LinkIdentity
+    private let pairings: LinkPairings
     private let loopback: Bool
     private let onEvent: (Event) -> Void
     private let queue = DispatchQueue(label: "digital.doern.mc.link.server")
@@ -39,11 +40,12 @@ public final class LinkServer {
     private var partner: Peer?
     private var stopped = false
 
-    public init(name: String, folders: [String], writable: Bool, identity: LinkIdentity, loopback: Bool = false, onEvent: @escaping (Event) -> Void) {
+    public init(name: String, folders: [String], writable: Bool, identity: LinkIdentity, pairings: LinkPairings = .standard, loopback: Bool = false, onEvent: @escaping (Event) -> Void) {
         self.name = name
         self.folders = folders
         self.writable = writable
         self.identity = identity
+        self.pairings = pairings
         self.loopback = loopback
         self.onEvent = onEvent
     }
@@ -75,15 +77,15 @@ public final class LinkServer {
         listener.start(queue: queue)
     }
 
-    public func decide(_ id: UUID, allow: Bool) {
+    public func decide(_ id: UUID, allow: Bool, always: Bool) {
         queue.async { [self] in
             guard let peer = partner, peer.id == id, peer.share == nil else { return }
-            peer.timeout?.cancel()
             if allow {
-                peer.share = LinkShare(folders: folders, writable: writable)
-                peer.channel.send([LinkFrame(requestID: 0, message: .done)])
-                report(.connected(peer.name))
+                admit(peer)
+                if always { pairings.setAlwaysAllow(true, for: peer.channel.peerFingerprint) }
+                report(.connected(name: peer.name, automatic: false))
             } else {
+                peer.timeout?.cancel()
                 partner = nil
                 peer.channel.close(after: [LinkFrame(requestID: 0, message: .error(localized("Die Verbindung wurde abgelehnt")))])
                 report(.waiting)
@@ -134,23 +136,38 @@ public final class LinkServer {
             if let event = Self.event(for: frame.message, from: peer.name), !answer.contains(where: { $0.message.isError }) { report(event) }
             return peer.channel.send(answer)
         }
-        guard peer.name.isEmpty, case .hello(let version, let name, _) = frame.message else { return peer.channel.cancel() }
+        guard peer.name.isEmpty, case .hello(let version, let name, _, let peerKnowsUs) = frame.message else { return peer.channel.cancel() }
         peer.name = name
         do {
             try LinkProtocol.checkVersion(version)
         } catch {
             report(.incompatible(name))
-            let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name, writable: false))
+            let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name, writable: false, knowsPeer: false))
             return peer.channel.close(after: [hello, LinkFrame(requestID: 0, message: .error(error.localizedDescription))])
         }
-        let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name, writable: writable))
+        let fingerprint = peer.channel.peerFingerprint
+        let knowsPeer = pairings.isKnown(fingerprint)
+        let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name, writable: writable, knowsPeer: knowsPeer))
         if let partner {
             let reason = partner.share == nil ? localized("Eine andere Verbindungsanfrage ist noch offen") : localized("Bereits mit %@ verbunden", partner.name as NSString)
             return peer.channel.close(after: [hello, LinkFrame(requestID: 0, message: .error(reason))])
         }
         partner = peer
         peer.channel.send([hello])
-        report(.request(id: peer.id, name: name, code: LinkIdentity.pairingCode(identity.fingerprint, peer.channel.peerFingerprint)))
+        let paired = knowsPeer && peerKnowsUs
+        if paired && pairings.alwaysAllows(fingerprint) {
+            admit(peer)
+            return report(.connected(name: name, automatic: true))
+        }
+        let code = paired ? nil : LinkIdentity.pairingCode(identity.fingerprint, fingerprint)
+        report(.request(id: peer.id, name: name, code: code, certificateChanged: pairings.certificateChanged(fingerprint, name: name)))
+    }
+
+    private func admit(_ peer: Peer) {
+        peer.timeout?.cancel()
+        peer.share = LinkShare(folders: folders, writable: writable)
+        pairings.remember(peer.channel.peerFingerprint, name: peer.name)
+        peer.channel.send([LinkFrame(requestID: 0, message: .done)])
     }
 
     private static func event(for message: LinkMessage, from name: String) -> Event? {

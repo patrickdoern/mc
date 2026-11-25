@@ -1,6 +1,11 @@
 import Foundation
 import Network
 
+public struct LinkPairingPrompt: Equatable {
+    public let code: String?
+    public let certificateChanged: Bool
+}
+
 public final class LinkFileSystem: TrashingFileSystem {
     public let identity: String
     public let displayName: String
@@ -17,11 +22,11 @@ public final class LinkFileSystem: TrashingFileSystem {
     private static let connectTimeout: TimeInterval = 30
     private static let answerTimeout: TimeInterval = 30
 
-    public convenience init(target: LinkTarget, name: String, identity: LinkIdentity, operation: FileOperation, pairing: (String) -> Void) throws {
-        try self.init(target: target, endpoint: .service(name: target.name, type: LinkProtocol.serviceType, domain: "local.", interface: nil), name: name, identity: identity, operation: operation, pairing: pairing)
+    public convenience init(target: LinkTarget, name: String, identity: LinkIdentity, pairings: LinkPairings = .standard, operation: FileOperation, pairing: (LinkPairingPrompt) -> Void) throws {
+        try self.init(target: target, endpoint: .service(name: target.name, type: LinkProtocol.serviceType, domain: "local.", interface: nil), name: name, identity: identity, pairings: pairings, operation: operation, pairing: pairing)
     }
 
-    init(target: LinkTarget, endpoint: NWEndpoint, name: String, identity: LinkIdentity, operation: FileOperation, pairing: (String) -> Void) throws {
+    init(target: LinkTarget, endpoint: NWEndpoint, name: String, identity: LinkIdentity, pairings: LinkPairings, operation: FileOperation, pairing: (LinkPairingPrompt) -> Void) throws {
         self.identity = target.displayName
         displayName = target.displayName
         self.target = target
@@ -33,7 +38,7 @@ public final class LinkFileSystem: TrashingFileSystem {
             end: { [weak self] in self?.update { $0.isEnded = true } }
         )
         do {
-            try pair(name: name, identity: identity, operation: operation, pairing: pairing)
+            try pair(name: name, identity: identity, pairings: pairings, operation: operation, pairing: pairing)
         } catch {
             channel.cancel()
             throw error
@@ -52,21 +57,26 @@ public final class LinkFileSystem: TrashingFileSystem {
         channel.cancel()
     }
 
-    private func pair(name: String, identity: LinkIdentity, operation: FileOperation, pairing: (String) -> Void) throws {
+    private func pair(name: String, identity: LinkIdentity, pairings: LinkPairings, operation: FileOperation, pairing: (LinkPairingPrompt) -> Void) throws {
         guard try wait(until: Date() + Self.connectTimeout, cancelling: operation, for: { isReady ? true : nil }) != nil else { throw unreachable }
-        channel.send([LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: name, writable: false))])
+        let fingerprint = channel.peerFingerprint
+        let knowsPeer = pairings.isKnown(fingerprint)
+        channel.send([LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: name, writable: false, knowsPeer: knowsPeer))])
         guard let hello = try wait(until: Date() + Self.connectTimeout, cancelling: operation, for: { take(0) }) else { throw unreachable }
-        guard case .hello(let version, _, let writable) = hello else { throw violated() }
+        guard case .hello(let version, _, let writable, let peerKnowsUs) = hello else { throw violated() }
         do {
             try LinkProtocol.checkVersion(version)
         } catch {
             throw FileError("\(displayName): \(error.localizedDescription)")
         }
         isWritable = writable
-        pairing(LinkIdentity.pairingCode(identity.fingerprint, channel.peerFingerprint))
+        let code = knowsPeer && peerKnowsUs ? nil : LinkIdentity.pairingCode(identity.fingerprint, fingerprint)
+        pairing(LinkPairingPrompt(code: code, certificateChanged: pairings.certificateChanged(fingerprint, name: target.name)))
         let decision = try wait(until: Date() + LinkProtocol.pairingTimeout, cancelling: operation, for: { take(0) })
         switch decision {
-        case .done?: forget(0)
+        case .done?:
+            pairings.remember(fingerprint, name: target.name)
+            forget(0)
         case .error(let text)?: throw FileError("\(displayName): \(text)")
         case nil: throw FileError("\(displayName): " + localized("Keine Bestätigung innerhalb von 60 Sekunden"))
         case .some: throw violated()

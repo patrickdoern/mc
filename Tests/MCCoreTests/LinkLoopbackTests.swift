@@ -24,7 +24,7 @@ private final class EventLog {
         condition.lock()
         defer { condition.unlock() }
         return events.compactMap { event in
-            guard case .request(let id, _, _) = event else { return nil }
+            guard case .request(let id, _, _, _) = event else { return nil }
             return id
         }
     }
@@ -45,13 +45,22 @@ private final class Harness {
     let shareName = "Freigabe"
     let big = Data((0..<(600 * 1024 + 123)).map { UInt8(truncatingIfNeeded: $0 * 31 + $0 / 7) })
     let events = EventLog()
-    private let serverLabel = "digital.doern.mc.link.test." + UUID().uuidString
-    private let clientLabel = "digital.doern.mc.link.test." + UUID().uuidString
-    let serverIdentity: LinkIdentity
-    let clientIdentity: LinkIdentity
+    private let suites = (0..<2).map { _ in "digital.doern.mc.tests." + UUID().uuidString }
+    private let defaults: [UserDefaults]
+    let serverPairings: LinkPairings
+    let clientPairings: LinkPairings
+    private var labels: [String] = []
+    private(set) var serverIdentity: LinkIdentity
+    private(set) var clientIdentity: LinkIdentity
+    private let allow: Bool?
+    private let always: Bool
+    private let writable: Bool
     private var server: LinkServer!
 
-    init(allow: Bool?, writable: Bool = false) throws {
+    init(allow: Bool?, always: Bool = false, writable: Bool = false) throws {
+        self.allow = allow
+        self.always = always
+        self.writable = writable
         let share = root.appendingPathComponent(shareName)
         let outside = root.appendingPathComponent("Außen")
         try FileManager.default.createDirectory(at: share.appendingPathComponent("sub"), withIntermediateDirectories: true)
@@ -60,23 +69,40 @@ private final class Harness {
         try big.write(to: share.appendingPathComponent("big.bin"))
         try Data("geheim".utf8).write(to: outside.appendingPathComponent("secret.txt"))
         try FileManager.default.createSymbolicLink(at: share.appendingPathComponent("outside"), withDestinationURL: outside)
-        serverIdentity = try LinkIdentity.load(label: serverLabel)
-        clientIdentity = try LinkIdentity.load(label: clientLabel)
-        server = LinkServer(name: "Server", folders: [share.path], writable: writable, identity: serverIdentity, loopback: true) { [weak self] event in
-            self?.events.record(event)
-            if case .request(let id, _, _) = event, let allow { self?.server.decide(id, allow: allow) }
-        }
-        try server.start()
-        guard events.wait(Self.isWaiting) else { throw FileError("Server lauscht nicht") }
+        defaults = try suites.map { try #require(UserDefaults(suiteName: $0)) }
+        serverPairings = LinkPairings(defaults: defaults[0])
+        clientPairings = LinkPairings(defaults: defaults[1])
+        serverIdentity = try Self.newIdentity(&labels)
+        clientIdentity = try Self.newIdentity(&labels)
+        try startServer()
     }
 
-    func connect(as name: String = "Client", operation: FileOperation = Harness.operation(), pairing: (String) -> Void = { _ in }) throws -> LinkFileSystem {
+    func connect(as name: String = "Client", operation: FileOperation = Harness.operation(), pairing: (LinkPairingPrompt) -> Void = { _ in }) throws -> LinkFileSystem {
         guard let port = server.port.flatMap(NWEndpoint.Port.init(rawValue:)) else { throw FileError("Kein Port") }
-        return try LinkFileSystem(target: LinkTarget(name: "Server"), endpoint: .hostPort(host: "127.0.0.1", port: port), name: name, identity: clientIdentity, operation: operation, pairing: pairing)
+        return try LinkFileSystem(target: LinkTarget(name: "Server"), endpoint: .hostPort(host: "127.0.0.1", port: port), name: name, identity: clientIdentity, pairings: clientPairings, operation: operation, pairing: pairing)
+    }
+
+    func prompt() throws -> LinkPairingPrompt {
+        var shown: LinkPairingPrompt?
+        let ends = events.count(Self.isWaiting) + 1
+        let system = try connect { shown = $0 }
+        system.disconnect()
+        guard events.wait(count: ends, Self.isWaiting) else { throw FileError("Server wartet nicht") }
+        return try #require(shown)
+    }
+
+    func replaceServerIdentity() throws {
+        server.stop()
+        serverIdentity = try Self.newIdentity(&labels)
+        try startServer()
+    }
+
+    func replaceClientIdentity() throws {
+        clientIdentity = try Self.newIdentity(&labels)
     }
 
     func decide(_ id: UUID, allow: Bool) {
-        server.decide(id, allow: allow)
+        server.decide(id, allow: allow, always: false)
     }
 
     func synchronize() {
@@ -89,9 +115,27 @@ private final class Harness {
 
     func finish() {
         server.stop()
-        LinkIdentity.remove(label: serverLabel)
-        LinkIdentity.remove(label: clientLabel)
+        labels.forEach(LinkIdentity.remove(label:))
+        zip(defaults, suites).forEach { $0.removePersistentDomain(forName: $1) }
         try? FileManager.default.removeItem(at: root)
+    }
+
+    private func startServer() throws {
+        let share = root.appendingPathComponent(shareName)
+        let waiting = events.count(Self.isWaiting) + 1
+        server = LinkServer(name: "Server", folders: [share.path], writable: writable, identity: serverIdentity, pairings: serverPairings, loopback: true) { [weak self] event in
+            guard let self else { return }
+            events.record(event)
+            if case .request(let id, _, _, _) = event, let allow { server.decide(id, allow: allow, always: always) }
+        }
+        try server.start()
+        guard events.wait(count: waiting, Self.isWaiting) else { throw FileError("Server lauscht nicht") }
+    }
+
+    private static func newIdentity(_ labels: inout [String]) throws -> LinkIdentity {
+        let label = "digital.doern.mc.link.test." + UUID().uuidString
+        labels.append(label)
+        return try LinkIdentity.load(label: label)
     }
 
     static func operation(_ options: TransferOptions = TransferOptions()) -> FileOperation {
@@ -134,11 +178,11 @@ private func failure(_ body: () throws -> Void) -> Error? {
     @Test func readsShareAfterPairing() throws {
         let harness = try Harness(allow: true)
         defer { harness.finish() }
-        var shownCode = ""
-        let system = try harness.connect { shownCode = $0 }
+        var shownCode: String?
+        let system = try harness.connect { shownCode = $0.code }
         let folder = "/" + harness.shareName
-        #expect(harness.events.wait { if case .connected("Client") = $0 { return true }; return false })
-        #expect(harness.events.count { if case .request(_, "Client", shownCode) = $0 { return true }; return false } == 1)
+        #expect(harness.events.wait { if case .connected(name: "Client", automatic: false) = $0 { return true }; return false })
+        #expect(harness.events.count { if case .request(_, "Client", shownCode, false) = $0 { return true }; return false } == 1)
         #expect(shownCode == LinkIdentity.pairingCode(harness.clientIdentity.fingerprint, harness.serverIdentity.fingerprint))
         #expect(system.displayName == "mc://Server")
         #expect(try system.list("/").map(\.name) == [harness.shareName])
@@ -273,6 +317,8 @@ private func failure(_ body: () throws -> Void) -> Error? {
         let error = failure { _ = try harness.connect() }
         #expect(error?.localizedDescription == "mc://Server: " + localized("Die Verbindung wurde abgelehnt"))
         #expect(harness.events.wait(count: 2, Harness.isWaiting))
+        #expect(harness.serverPairings.all.isEmpty)
+        #expect(harness.clientPairings.all.isEmpty)
     }
 
     @Test func rejectsSecondPeer() throws {
@@ -302,6 +348,8 @@ private func failure(_ body: () throws -> Void) -> Error? {
         #expect(done.wait(timeout: .now() + 10) == .success)
         #expect(pending is OperationAborted)
         #expect(harness.events.wait(Harness.isExpired))
+        #expect(harness.serverPairings.all.isEmpty)
+        #expect(harness.clientPairings.all.isEmpty)
     }
 
     @Test func lateDecisionDoesNotAdmitNextRequest() throws {
@@ -334,7 +382,73 @@ private func failure(_ body: () throws -> Void) -> Error? {
         harness.decide(ids[1], allow: true)
         #expect(secondDone.wait(timeout: .now() + 10) == .success)
         #expect(secondResult == nil)
-        #expect(harness.events.wait { if case .connected("Zweiter") = $0 { return true }; return false })
+        #expect(harness.events.wait { if case .connected(name: "Zweiter", automatic: false) = $0 { return true }; return false })
+    }
+
+    @Test func remembersPairingOnBothSidesAndSkipsCodeNextTime() throws {
+        let harness = try Harness(allow: true)
+        defer { harness.finish() }
+        let first = try harness.prompt()
+        #expect(first == LinkPairingPrompt(code: LinkIdentity.pairingCode(harness.clientIdentity.fingerprint, harness.serverIdentity.fingerprint), certificateChanged: false))
+        #expect(harness.serverPairings.all == [LinkPairing(fingerprint: harness.clientIdentity.fingerprint, name: "Client", alwaysAllow: false)])
+        #expect(harness.clientPairings.all == [LinkPairing(fingerprint: harness.serverIdentity.fingerprint, name: "Server", alwaysAllow: false)])
+        #expect(try harness.prompt() == LinkPairingPrompt(code: nil, certificateChanged: false))
+        #expect(harness.events.count { if case .request(_, "Client", first.code, false) = $0 { return true }; return false } == 1)
+        #expect(harness.events.count { if case .request(_, "Client", nil, false) = $0 { return true }; return false } == 1)
+        #expect(harness.events.count { if case .connected(name: "Client", automatic: false) = $0 { return true }; return false } == 2)
+    }
+
+    @Test func forgettingOnOneSideRequiresCodeOnBoth() throws {
+        let harness = try Harness(allow: true)
+        defer { harness.finish() }
+        _ = try harness.prompt()
+        harness.serverPairings.forget(harness.clientIdentity.fingerprint)
+        #expect(try harness.prompt().code != nil)
+        #expect(harness.events.count { if case .request(_, _, nil, _) = $0 { return true }; return false } == 0)
+        harness.clientPairings.forget(harness.serverIdentity.fingerprint)
+        #expect(try harness.prompt().code != nil)
+        #expect(harness.events.count { if case .request(_, _, nil, _) = $0 { return true }; return false } == 0)
+        #expect(harness.events.count(Harness.isRequest) == 3)
+        #expect(harness.serverPairings.isKnown(harness.clientIdentity.fingerprint))
+        #expect(harness.clientPairings.isKnown(harness.serverIdentity.fingerprint))
+    }
+
+    @Test func alwaysAllowAdmitsWithoutRequest() throws {
+        let harness = try Harness(allow: true, always: true)
+        defer { harness.finish() }
+        #expect(try harness.prompt().code != nil)
+        #expect(harness.serverPairings.alwaysAllows(harness.clientIdentity.fingerprint))
+        #expect(try harness.prompt().code == nil)
+        #expect(harness.events.count(Harness.isRequest) == 1)
+        #expect(harness.events.count { if case .connected(name: "Client", automatic: true) = $0 { return true }; return false } == 1)
+        harness.clientPairings.forget(harness.serverIdentity.fingerprint)
+        #expect(try harness.prompt().code != nil)
+        #expect(harness.events.count { if case .request(_, "Client", .some, false) = $0 { return true }; return false } == 2)
+        #expect(harness.events.count { if case .connected(name: "Client", automatic: true) = $0 { return true }; return false } == 1)
+    }
+
+    @Test func changedClientCertificateRequiresCode() throws {
+        let harness = try Harness(allow: true)
+        defer { harness.finish() }
+        let old = harness.clientIdentity.fingerprint
+        _ = try harness.prompt()
+        try harness.replaceClientIdentity()
+        #expect(try harness.prompt() == LinkPairingPrompt(code: LinkIdentity.pairingCode(harness.clientIdentity.fingerprint, harness.serverIdentity.fingerprint), certificateChanged: false))
+        #expect(harness.events.count { if case .request(_, "Client", .some, true) = $0 { return true }; return false } == 1)
+        #expect(harness.serverPairings.all == [LinkPairing(fingerprint: harness.clientIdentity.fingerprint, name: "Client", alwaysAllow: false)])
+        #expect(!harness.serverPairings.isKnown(old))
+    }
+
+    @Test func changedServerCertificateRequiresCode() throws {
+        let harness = try Harness(allow: true)
+        defer { harness.finish() }
+        let old = harness.serverIdentity.fingerprint
+        _ = try harness.prompt()
+        try harness.replaceServerIdentity()
+        #expect(try harness.prompt() == LinkPairingPrompt(code: LinkIdentity.pairingCode(harness.clientIdentity.fingerprint, harness.serverIdentity.fingerprint), certificateChanged: true))
+        #expect(harness.events.count { if case .request(_, "Client", .some, false) = $0 { return true }; return false } == 2)
+        #expect(harness.clientPairings.all == [LinkPairing(fingerprint: harness.serverIdentity.fingerprint, name: "Server", alwaysAllow: false)])
+        #expect(!harness.clientPairings.isKnown(old))
     }
 
     @Test func reportsLostConnection() throws {

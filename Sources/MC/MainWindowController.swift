@@ -246,10 +246,11 @@ final class MainWindowController: NSWindowController {
             let connection = Box<LinkFileSystem>()
             let job = Box<OperationRunner.Job>()
             job.value = runner.run(title: localized("Verbinde mit %@ …", target.displayName as NSString), { [runner] operation in
-                connection.value = try LinkFileSystem(target: target, name: ownName, identity: LinkIdentity.load(), operation: operation) { code in
+                connection.value = try LinkFileSystem(target: target, name: ownName, identity: LinkIdentity.load(), operation: operation) { prompt in
                     DispatchQueue.main.async {
                         guard let running = job.value else { return }
-                        runner.showNotice(localized("Code: %@", code as NSString) + "\n\n" + localized("Bitte auf dem anderen Mac bestätigen"), for: running)
+                        let confirm = localized("Bitte auf dem anderen Mac bestätigen")
+                        runner.showNotice(prompt.code.map { localized("Code: %@", $0 as NSString) + "\n\n" + confirm } ?? confirm, for: running)
                     }
                 }
             }, completion: {

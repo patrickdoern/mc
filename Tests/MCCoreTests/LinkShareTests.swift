@@ -135,7 +135,7 @@ private func errorText(_ share: LinkShare, _ message: LinkMessage) -> String? {
             .finish(handle: 1),
             .abort(handle: 1),
             .trash("/Docs/a.txt"),
-            .hello(version: 1, name: "x", writable: true),
+            .hello(version: 1, name: "x", writable: true, knowsPeer: false),
             .done,
         ]
         for request in requests { #expect(errorText(share, request) == readOnly) }

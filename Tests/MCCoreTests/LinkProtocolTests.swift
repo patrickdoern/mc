@@ -39,8 +39,10 @@ private func header(length: UInt32, type: UInt8, requestID: UInt32 = 1) -> Data 
 
     @Test func roundTripsAllMessages() throws {
         let messages: [LinkMessage] = [
-            .hello(version: LinkProtocol.version, name: "Patricks MacBook", writable: false),
-            .hello(version: LinkProtocol.version, name: "Patricks iMac", writable: true),
+            .hello(version: LinkProtocol.version, name: "Patricks MacBook", writable: false, knowsPeer: false),
+            .hello(version: LinkProtocol.version, name: "Patricks iMac", writable: true, knowsPeer: false),
+            .hello(version: LinkProtocol.version, name: "Büro", writable: false, knowsPeer: true),
+            .hello(version: LinkProtocol.version, name: "Werkstatt", writable: true, knowsPeer: true),
             .list("/Docs"),
             .stat("/Docs/a"),
             .statFollowingLinks("/Docs/b"),
@@ -144,12 +146,23 @@ private func header(length: UInt32, type: UInt8, requestID: UInt32 = 1) -> Data 
         #expect(throws: LinkProtocolError.malformed) { try decodeAll(data) }
     }
 
-    @Test func helloCarriesWritePermission() throws {
-        let writable = LinkFrame(requestID: 0, message: .hello(version: 2, name: "B", writable: true)).encoded()
-        let readOnly = LinkFrame(requestID: 0, message: .hello(version: 2, name: "B", writable: false)).encoded()
-        #expect(writable.count == readOnly.count + 1)
-        #expect(try decodeAll(writable).first?.message == .hello(version: 2, name: "B", writable: true))
-        #expect(try decodeAll(readOnly).first?.message == .hello(version: 2, name: "B", writable: false))
+    @Test func helloCarriesFlagsByteOnlyWhenSet() throws {
+        let plain = LinkFrame(requestID: 0, message: .hello(version: 3, name: "B", writable: false, knowsPeer: false)).encoded()
+        for (writable, knowsPeer, flags): (Bool, Bool, UInt8) in [(true, false, 1), (false, true, 2), (true, true, 3)] {
+            let data = LinkFrame(requestID: 0, message: .hello(version: 3, name: "B", writable: writable, knowsPeer: knowsPeer)).encoded()
+            #expect(data.count == plain.count + 1)
+            #expect(data.last == flags)
+            #expect(try decodeAll(data).first?.message == .hello(version: 3, name: "B", writable: writable, knowsPeer: knowsPeer))
+        }
+        #expect(try decodeAll(plain).first?.message == .hello(version: 3, name: "B", writable: false, knowsPeer: false))
+    }
+
+    @Test func refusalHelloMatchesVersionOneFormat() throws {
+        var payload = LinkPayloadWriter()
+        payload.uint32(LinkProtocol.version)
+        payload.string("Neu")
+        let data = header(length: UInt32(payload.data.count), type: 1, requestID: 0) + payload.data
+        #expect(LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: "Neu", writable: false, knowsPeer: false)).encoded() == data)
     }
 
     @Test func decodesHelloOfVersionOne() throws {
@@ -157,15 +170,26 @@ private func header(length: UInt32, type: UInt8, requestID: UInt32 = 1) -> Data 
         payload.uint32(1)
         payload.string("Alt")
         let data = header(length: UInt32(payload.data.count), type: 1, requestID: 0) + payload.data
-        #expect(LinkFrame(requestID: 0, message: .hello(version: 1, name: "Alt", writable: false)).encoded() == data)
-        guard case .hello(let version, "Alt", false) = try decodeAll(data).first?.message else { Issue.record("no hello"); return }
+        guard case .hello(let version, "Alt", false, false) = try decodeAll(data).first?.message else { Issue.record("no hello"); return }
         #expect(throws: FileError.self) { try LinkProtocol.checkVersion(version) }
     }
 
+    @Test func decodesHelloOfVersionTwo() throws {
+        for writable in [false, true] {
+            var payload = LinkPayloadWriter()
+            payload.uint32(2)
+            payload.string("Alt")
+            if writable { payload.byte(1) }
+            let data = header(length: UInt32(payload.data.count), type: 1, requestID: 0) + payload.data
+            guard case .hello(let version, "Alt", writable, false) = try decodeAll(data).first?.message else { Issue.record("no hello"); return }
+            #expect(throws: FileError.self) { try LinkProtocol.checkVersion(version) }
+        }
+    }
+
     @Test func checksProtocolVersion() throws {
-        #expect(LinkProtocol.version == 2)
-        try LinkProtocol.checkVersion(2)
-        for version: UInt32 in [1, 3] {
+        #expect(LinkProtocol.version == 3)
+        try LinkProtocol.checkVersion(3)
+        for version: UInt32 in [1, 2, 4] {
             do {
                 try LinkProtocol.checkVersion(version)
                 Issue.record("version \(version) accepted")
