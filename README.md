@@ -4,7 +4,7 @@
 
 Nativer Norton-Commander-Klon für macOS (AppKit). Zwei Panels, schnelle Dateioperationen, SFTP, FTP/FTPS, SMB-Freigaben, Direktverbindung zwischen zwei Macs und ein mcedit-artiger Editor.
 
-[Download 1.6.14 (DMG, signiert und notarisiert)](https://github.com/patrickdoern/mc/releases/latest) · [Webseite](https://moonlight-commander.org)
+[Download 1.6.15 (DMG, signiert und notarisiert)](https://github.com/patrickdoern/mc/releases/latest) · [Webseite](https://moonlight-commander.org)
 
 ![Moonlight Commander mit zwei Dateipanels im Norton-Stil](website/screenshot.png)
 
