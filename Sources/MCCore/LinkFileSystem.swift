@@ -4,6 +4,7 @@ import Network
 public final class LinkFileSystem: TrashingFileSystem {
     public let identity: String
     public let displayName: String
+    public let target: LinkTarget
     public let homePath = "/"
     public private(set) var isWritable = false
     private let channel: LinkChannel
@@ -23,6 +24,7 @@ public final class LinkFileSystem: TrashingFileSystem {
     init(target: LinkTarget, endpoint: NWEndpoint, name: String, identity: LinkIdentity, operation: FileOperation, pairing: (String) -> Void) throws {
         self.identity = target.displayName
         displayName = target.displayName
+        self.target = target
         let queue = DispatchQueue(label: "digital.doern.mc.link.client")
         channel = LinkChannel(NWConnection(to: endpoint, using: LinkChannel.parameters(identity: identity, queue: queue)), queue: queue)
         channel.start(

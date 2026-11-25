@@ -12,15 +12,17 @@ final class ShareDialog {
 
     private let name: String
     private let folders: [String]
+    private let writable: Bool
     private var server: LinkServer?
     private var dialog: ClassicDialog?
     private var status = localized("Wartet auf Verbindung")
     private var request: Request?
     private var failure: Error?
 
-    private init(name: String, folders: [String]) {
+    private init(name: String, folders: [String], writable: Bool) {
         self.name = name
         self.folders = folders
+        self.writable = writable
     }
 
     static func run(adding model: PanelModel) {
@@ -31,7 +33,7 @@ final class ShareDialog {
         } catch {
             return Dialogs.show(error: error)
         }
-        let dialog = ShareDialog(name: setup.name, folders: setup.folders)
+        let dialog = ShareDialog(name: setup.name, folders: setup.folders, writable: setup.writable)
         dialog.share(identity: identity)
     }
 
@@ -39,14 +41,17 @@ final class ShareDialog {
         running?.server?.stop()
     }
 
-    private static func configure(adding model: PanelModel) -> (name: String, folders: [String])? {
+    private static func configure(adding model: PanelModel) -> (name: String, folders: [String], writable: Bool)? {
         var name = Settings.linkName
         var folders = Settings.linkFolders
         var selected = 0
+        var writable = false
         while true {
             let dialog = ClassicDialog(title: localized("Freigeben"), message: localized("Ein anderer Mac mit Moonlight Commander kann diese Ordner im lokalen Netz lesen, solange die Freigabe läuft."))
             let field = dialog.addText(label: localized("Anzeigename:"), value: name)
             let choice = folders.isEmpty ? nil : dialog.addChoice(label: localized("Ordner"), options: folders, selected: selected)
+            let check = dialog.addCheck(localized("Schreiben erlauben"), value: writable)
+            dialog.addNote(localized("Der andere Mac kann dann Dateien in diesen Ordnern ändern und löschen."))
             dialog.addButton(localized("Freigeben"), isDefault: true)
             dialog.addButton(localized("Hinzufügen"))
             if choice != nil { dialog.addButton(localized("Entfernen")) }
@@ -54,6 +59,7 @@ final class ShareDialog {
             let pressed = dialog.run()
             name = field.stringValue.trimmingCharacters(in: .whitespaces)
             selected = choice.map(dialog.choice) ?? 0
+            writable = dialog.isChecked(check)
             switch pressed {
             case 0:
                 if let problem = problem(name: name, folders: folders) {
@@ -62,7 +68,7 @@ final class ShareDialog {
                 }
                 Settings.linkName = name
                 Settings.linkFolders = folders
-                return (name, folders)
+                return (name, folders, writable)
             case 1:
                 if let problem = problem(adding: model) {
                     Dialogs.show(error: FileError(problem))
@@ -95,7 +101,7 @@ final class ShareDialog {
     }
 
     private func share(identity: LinkIdentity) {
-        let server = LinkServer(name: name, folders: folders, writable: false, identity: identity) { [weak self] event in
+        let server = LinkServer(name: name, folders: folders, writable: writable, identity: identity) { [weak self] event in
             DispatchQueue.main.async { self?.handle(event) }
         }
         do {
@@ -137,7 +143,7 @@ final class ShareDialog {
     }
 
     private var message: String {
-        ([localized("Freigegeben als „%@“:", name as NSString)] + folders.map { ($0 as NSString).abbreviatingWithTildeInPath } + ["", status]).joined(separator: "\n")
+        ([localized("Freigegeben als „%@“", name as NSString) + " " + (writable ? localized("(lesen und schreiben)") : localized("(nur lesen)")) + ":"] + folders.map { ($0 as NSString).abbreviatingWithTildeInPath } + ["", status]).joined(separator: "\n")
     }
 
     private func handle(_ event: LinkServer.Event) {

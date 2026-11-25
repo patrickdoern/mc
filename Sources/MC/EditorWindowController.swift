@@ -157,6 +157,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     @discardableResult
     private func save() -> Bool {
+        guard Dialogs.requireWritable(fileSystem) else { return false }
         let data = textView.string.data(using: encoding, allowLossyConversion: false) ?? Data(textView.string.utf8)
         do {
             try fileSystem.writeAllSafely(data, to: path, permissions: permissions)
@@ -319,7 +320,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @objc func saveBlock(_ sender: Any?) {
         let selection = textView.selectedRange()
         guard let range = selection.length > 0 ? selection : blockRange else { return NSSound.beep() }
-        guard let text = Dialogs.prompt(title: localized("Block sichern"), message: localized("Speichern als:"), value: PosixPath.parent(path) + "/", confirm: localized("Sichern")) else { return }
+        guard Dialogs.requireWritable(fileSystem), let text = Dialogs.prompt(title: localized("Block sichern"), message: localized("Speichern als:"), value: PosixPath.parent(path) + "/", confirm: localized("Sichern")) else { return }
         let block = (textView.string as NSString).substring(with: range)
         do {
             try fileSystem.writeAll(block.data(using: encoding) ?? Data(block.utf8), to: PosixPath.resolve(text, relativeTo: PosixPath.parent(path), home: fileSystem.homePath), permissions: permissions)

@@ -2,7 +2,7 @@ import AppKit
 
 final class ClassicDialog: NSView, NSTextFieldDelegate {
     private struct Item {
-        enum Kind { case text, check, choice, button, progress }
+        enum Kind { case text, check, choice, button, progress, note }
         let kind: Kind
         var title = ""
         var field: NSTextField?
@@ -68,6 +68,10 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     func addChoice(label: String, options: [String], selected: Int, onChange: ((String) -> Void)? = nil) -> Int {
         items.append(Item(kind: .choice, title: label, options: options, onChange: onChange, index: selected))
         return items.count - 1
+    }
+
+    func addNote(_ text: String) {
+        items.append(Item(kind: .note, title: text))
     }
 
     func addButton(_ title: String, isDefault: Bool = false, isCancel: Bool = false) {
@@ -174,13 +178,13 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         case .check: return "[\(item.checked ? "x" : " ")] \(item.title)"
         case .choice: return "\(item.title.hasSuffix(":") ? item.title : item.title + ":") < \(item.options.isEmpty ? "" : item.options[item.index]) >"
         case .button: return buttonText(item)
-        case .text, .progress: return item.title
+        case .text, .progress, .note: return item.title
         }
     }
 
     private func layoutDialog() {
         let longestMessage = message.components(separatedBy: "\n").map(\.count).max() ?? 0
-        let longestControl = items.filter { $0.kind != .button && $0.kind != .progress }.map { controlText($0).count }.max() ?? 0
+        let longestControl = items.filter { ![.button, .progress, .note].contains($0.kind) }.map { controlText($0).count }.max() ?? 0
         let columns = min(max(46, dialogTitle.count + 8, min(longestMessage, 76), longestControl + 2), 76)
         self.columns = columns
         let width = CGFloat(columns) * characterWidth + 2 * padding
@@ -212,6 +216,13 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
             case .progress:
                 frames[index] = NSRect(x: padding, y: y, width: width - 2 * padding, height: 62)
                 y += 70
+                index += 1
+            case .note:
+                for line in wrap(item.title, columns: columns) {
+                    labels.append((line, y))
+                    y += 19
+                }
+                y += 6
                 index += 1
             case .check, .choice:
                 frames[index] = NSRect(x: padding, y: y, width: CGFloat(controlText(item).count) * characterWidth, height: 20)
@@ -260,7 +271,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
             guard let rect = frames[index] else { continue }
             drawProgress(item, in: rect)
         }
-        for (index, item) in items.enumerated() where item.kind != .text && item.kind != .progress {
+        for (index, item) in items.enumerated() where ![.text, .progress, .note].contains(item.kind) {
             guard let rect = frames[index] else { continue }
             let focused = index == focus
             if focused {
@@ -305,7 +316,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     }
 
     private func moveFocus(by delta: Int) {
-        repeat { focus = (focus + delta + items.count) % items.count } while items[focus].kind == .progress
+        repeat { focus = (focus + delta + items.count) % items.count } while [.progress, .note].contains(items[focus].kind)
         applyFocus()
     }
 
@@ -329,7 +340,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         case .check:
             items[focus].checked.toggle()
             needsDisplay = true
-        case .progress:
+        case .progress, .note:
             break
         case .choice, .text:
             if let defaultButton = items.firstIndex(where: { $0.kind == .button && $0.isDefault }) { finish(button: defaultButton) }
@@ -372,7 +383,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
 
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
-        guard let index = frames.first(where: { items[$0.key].kind != .text && items[$0.key].kind != .progress && $0.value.contains(point) })?.key else { return }
+        guard let index = frames.first(where: { ![.text, .progress, .note].contains(items[$0.key].kind) && $0.value.contains(point) })?.key else { return }
         focus = index
         applyFocus()
         if items[index].kind == .choice { cycleChoice(1) } else { activate() }

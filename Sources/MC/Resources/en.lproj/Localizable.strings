@@ -307,6 +307,7 @@
 "„%@“ wird unwiderruflich gelöscht." = "“%@” will be permanently deleted.";
 "%ld Objekte wird unwiderruflich gelöscht." = "%ld items will be permanently deleted.";
 "In den Papierkorb legen?" = "Move to Trash?";
+"In den Papierkorb von %@ legen?" = "Move to the Trash of %@?";
 "Endgültig löschen?" = "Delete Permanently?";
 "In den Papierkorb" = "Trash";
 "Lösche …" = "Deleting …";
@@ -577,9 +578,12 @@
 "Freigabe beenden" = "Stop Sharing";
 "%@ möchte sich verbinden. Code: %@" = "%@ wants to connect. Code: %@";
 "Nur zulassen, wenn der andere Mac denselben Code zeigt." = "Only allow if the other Mac shows the same code.";
+"Schreiben erlauben" = "Allow writing";
+"Der andere Mac kann dann Dateien in diesen Ordnern ändern und löschen." = "The other Mac can then change and delete files in these folders.";
 "Zulassen" = "Allow";
 "Ablehnen" = "Deny";
-"Freigegeben als „%@“:" = "Shared as “%@”:";
+"Freigegeben als „%@“" = "Shared as “%@”";
+"(lesen und schreiben)" = "(read and write)";
 "Wartet auf Verbindung" = "Waiting for connection";
 "Verbunden mit %@" = "Connected to %@";
 "%@ liest %@" = "%@ is reading %@";

@@ -106,6 +106,12 @@ enum Dialogs {
         _ = dialog.run()
     }
 
+    static func requireWritable(_ systems: FileSystem...) -> Bool {
+        guard systems.contains(where: { ($0 as? LinkFileSystem)?.isWritable == false }) else { return true }
+        show(error: FileError(localized("Die Freigabe ist nur lesbar")))
+        return false
+    }
+
     static func info(title: String, message: String) {
         let dialog = ClassicDialog(title: title, message: message)
         dialog.addButton(localized("OK"), isDefault: true, isCancel: true)

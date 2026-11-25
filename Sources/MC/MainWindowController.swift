@@ -359,7 +359,7 @@ final class MainWindowController: NSWindowController {
         let source = activePanel.model
         let target = inPlace ? source : inactivePanel.model
         let names = source.selectedNames
-        guard !names.isEmpty else { return }
+        guard !names.isEmpty, move ? Dialogs.requireWritable(source.fileSystem, target.fileSystem) : Dialogs.requireWritable(target.fileSystem) else { return }
         let single = names.count == 1
         let verb: String
         let progress: String
@@ -451,8 +451,8 @@ final class MainWindowController: NSWindowController {
     private func delete(permanently: Bool) {
         let model = activePanel.model
         let names = model.selectedNames
-        guard !names.isEmpty else { return }
-        let trash = model.isLocal && !permanently && Settings.useTrash
+        guard !names.isEmpty, Dialogs.requireWritable(model.fileSystem) else { return }
+        let trash = model.fileSystem is TrashingFileSystem && !permanently && Settings.useTrash
         let single = names.count == 1
         let message: String
         if trash {
@@ -461,7 +461,7 @@ final class MainWindowController: NSWindowController {
             message = single ? localized("„%@“ wird unwiderruflich gelöscht.", names[0] as NSString) : localized("%ld Objekte wird unwiderruflich gelöscht.", names.count)
         }
         let confirmed = (trash && !Settings.confirmDelete) || Dialogs.confirm(
-            title: trash ? localized("In den Papierkorb legen?") : localized("Endgültig löschen?"),
+            title: trash ? trashTitle(for: model.fileSystem) : localized("Endgültig löschen?"),
             message: message,
             confirm: trash ? localized("In den Papierkorb") : localized("Löschen"),
             destructive: !trash
@@ -477,9 +477,14 @@ final class MainWindowController: NSWindowController {
         })
     }
 
+    private func trashTitle(for system: FileSystem) -> String {
+        guard let link = system as? LinkFileSystem else { return localized("In den Papierkorb legen?") }
+        return localized("In den Papierkorb von %@ legen?", link.target.name as NSString)
+    }
+
     @objc func makeDirectory(_ sender: Any?) {
         let model = activePanel.model
-        guard let text = Dialogs.prompt(title: localized("Neuer Ordner"), message: localized("Name des Ordners:"), confirm: localized("Anlegen")) else { return }
+        guard Dialogs.requireWritable(model.fileSystem), let text = Dialogs.prompt(title: localized("Neuer Ordner"), message: localized("Name des Ordners:"), confirm: localized("Anlegen")) else { return }
         let path = PosixPath.resolve(text, relativeTo: model.path, home: model.fileSystem.homePath)
         let system = model.fileSystem
         runner.run(title: localized("Lege Ordner an …"), { _ in
@@ -502,7 +507,7 @@ final class MainWindowController: NSWindowController {
 
     @objc func newFile(_ sender: Any?) {
         let model = activePanel.model
-        guard let name = Dialogs.prompt(title: localized("Neue Datei"), message: localized("Dateiname:"), confirm: localized("Bearbeiten")) else { return }
+        guard Dialogs.requireWritable(model.fileSystem), let name = Dialogs.prompt(title: localized("Neue Datei"), message: localized("Dateiname:"), confirm: localized("Bearbeiten")) else { return }
         openEditor(model: model, name: name, readOnly: false)
     }
 

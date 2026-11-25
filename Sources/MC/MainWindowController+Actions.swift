@@ -20,7 +20,7 @@ extension MainWindowController {
     @objc func changePermissions(_ sender: Any?) {
         let model = activePanel.model
         let names = model.selectedNames
-        guard !names.isEmpty, let entry = model.currentEntry else { return }
+        guard !names.isEmpty, let entry = model.currentEntry, Dialogs.requireWritable(model.fileSystem) else { return }
         guard let text = Dialogs.prompt(title: localized("Zugriffsrechte (chmod)"), message: localized("Oktal, z. B. 644 oder 755:"), value: String(entry.permissions & 0o777, radix: 8), confirm: localized("Ändern")) else { return }
         guard let mode = UInt16(text, radix: 8) else { return Dialogs.show(error: FileError(localized("Keine gültige Oktalzahl: %@", text as NSString))) }
         let system = model.fileSystem
