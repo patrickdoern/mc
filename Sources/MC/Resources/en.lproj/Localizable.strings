@@ -552,3 +552,4 @@
 "Die Gegenstelle hat eine andere Version von Moonlight Commander" = "The other side has a different version of Moonlight Commander";
 "Die Freigabe ist nur lesbar" = "The share is read-only";
 "Außerhalb der Freigabe" = "Outside the share";
+"Die Identität für die Direktverbindung lässt sich nicht im Schlüsselbund anlegen (Fehler %ld)" = "The identity for the direct connection cannot be created in the keychain (error %ld)";
