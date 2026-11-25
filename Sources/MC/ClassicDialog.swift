@@ -176,15 +176,25 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     private func controlText(_ item: Item) -> String {
         switch item.kind {
         case .check: return "[\(item.checked ? "x" : " ")] \(item.title)"
-        case .choice: return "\(item.title.hasSuffix(":") ? item.title : item.title + ":") < \(item.options.isEmpty ? "" : item.options[item.index]) >"
+        case .choice: return choiceText(item, option: item.options.isEmpty ? "" : item.options[item.index])
         case .button: return buttonText(item)
         case .text, .progress, .note: return item.title
         }
     }
 
+    private func choiceText(_ item: Item, option: String) -> String {
+        "\(item.title.hasSuffix(":") ? item.title : item.title + ":") < \(option) >"
+    }
+
+    /// Längster Text, den das Element annehmen kann; bei einer Auswahl zählt jede Option, damit der Dialog beim Blättern nicht springt.
+    private func widestControlText(_ item: Item) -> Int {
+        guard item.kind == .choice, !item.options.isEmpty else { return controlText(item).count }
+        return item.options.map { choiceText(item, option: $0).count }.max() ?? 0
+    }
+
     private func layoutDialog() {
         let longestMessage = message.components(separatedBy: "\n").map(\.count).max() ?? 0
-        let longestControl = items.filter { ![.button, .progress, .note].contains($0.kind) }.map { controlText($0).count }.max() ?? 0
+        let longestControl = items.filter { ![.button, .progress, .note].contains($0.kind) }.map(widestControlText).max() ?? 0
         let columns = min(max(46, dialogTitle.count + 8, min(longestMessage, 76), longestControl + 2), 76)
         self.columns = columns
         let width = CGFloat(columns) * characterWidth + 2 * padding
@@ -353,6 +363,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         guard count > 0 else { return }
         items[focus].index = (items[focus].index + delta + count) % count
         items[focus].onChange?(items[focus].options[items[focus].index])
+        frames[focus]?.size.width = CGFloat(controlText(items[focus]).count) * characterWidth
         needsDisplay = true
     }
 
