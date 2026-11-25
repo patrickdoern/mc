@@ -1,7 +1,7 @@
 import Foundation
 
 public enum LinkProtocol {
-    public static let version: UInt32 = 1
+    public static let version: UInt32 = 2
     public static let maximumPayload = 1024 * 1024
     public static let maximumBlock = 256 * 1024
     public static let serviceType = "_mc-link._tcp"
@@ -20,7 +20,7 @@ public enum LinkProtocolError: Error, Equatable {
 }
 
 public enum LinkMessage: Equatable {
-    case hello(version: UInt32, name: String)
+    case hello(version: UInt32, name: String, writable: Bool)
     case list(String)
     case stat(String)
     case statFollowingLinks(String)
@@ -36,6 +36,10 @@ public enum LinkMessage: Equatable {
     case setModified(String, Date)
     case setPermissions(String, UInt16)
     case openWrite(String, permissions: UInt16)
+    case write(handle: UInt32, data: Data)
+    case finish(handle: UInt32)
+    case abort(handle: UInt32)
+    case trash(String)
     case entries([FileEntry], more: Bool)
     case entry(FileEntry)
     case text(String)
@@ -43,6 +47,11 @@ public enum LinkMessage: Equatable {
     case data(Data)
     case done
     case error(String)
+
+    var isError: Bool {
+        guard case .error = self else { return false }
+        return true
+    }
 
     public static func entryBatches(_ entries: [FileEntry]) -> [LinkMessage] {
         var batches: [LinkMessage] = []
@@ -80,6 +89,10 @@ private enum LinkMessageType: UInt8 {
     case setModified
     case setPermissions
     case openWrite
+    case write
+    case finish
+    case abort
+    case trash
     case entries = 64
     case entry
     case text
@@ -102,10 +115,11 @@ public struct LinkFrame: Equatable {
         var payload = LinkPayloadWriter()
         let type: LinkMessageType
         switch message {
-        case .hello(let version, let name):
+        case .hello(let version, let name, let writable):
             type = .hello
             payload.uint32(version)
             payload.string(name)
+            if writable { payload.byte(1) }
         case .list(let path):
             type = .list
             payload.string(path)
@@ -157,6 +171,19 @@ public struct LinkFrame: Equatable {
             type = .openWrite
             payload.string(path)
             payload.uint16(permissions)
+        case .write(let handle, let data):
+            type = .write
+            payload.uint32(handle)
+            payload.data.append(data)
+        case .finish(let handle):
+            type = .finish
+            payload.uint32(handle)
+        case .abort(let handle):
+            type = .abort
+            payload.uint32(handle)
+        case .trash(let path):
+            type = .trash
+            payload.string(path)
         case .entries(let entries, let more):
             type = .entries
             payload.byte(more ? 1 : 0)
@@ -192,7 +219,7 @@ public struct LinkFrame: Equatable {
         var reader = LinkPayloadReader(payload)
         let message: LinkMessage
         switch type {
-        case .hello: message = .hello(version: try reader.uint32(), name: try reader.string())
+        case .hello: message = .hello(version: try reader.uint32(), name: try reader.string(), writable: try reader.isAtEnd ? false : reader.byte() == 1)
         case .list: message = .list(try reader.string())
         case .stat: message = .stat(try reader.string())
         case .statFollowingLinks: message = .statFollowingLinks(try reader.string())
@@ -208,6 +235,14 @@ public struct LinkFrame: Equatable {
         case .setModified: message = .setModified(try reader.string(), try reader.date())
         case .setPermissions: message = .setPermissions(try reader.string(), try reader.uint16())
         case .openWrite: message = .openWrite(try reader.string(), permissions: try reader.uint16())
+        case .write:
+            let handle = try reader.uint32()
+            let data = reader.rest()
+            guard data.count <= LinkProtocol.maximumBlock else { throw LinkProtocolError.malformed }
+            message = .write(handle: handle, data: data)
+        case .finish: message = .finish(handle: try reader.uint32())
+        case .abort: message = .abort(handle: try reader.uint32())
+        case .trash: message = .trash(try reader.string())
         case .entries:
             let more = try reader.byte() != 0
             let count = try reader.uint32()
@@ -353,13 +388,15 @@ struct LinkPayloadReader {
         )
     }
 
+    var isAtEnd: Bool { offset == bytes.count }
+
     mutating func rest() -> Data {
         defer { offset = bytes.count }
         return Data(bytes[offset...])
     }
 
     func finish() throws {
-        guard offset == bytes.count else { throw LinkProtocolError.malformed }
+        guard isAtEnd else { throw LinkProtocolError.malformed }
     }
 
     private mutating func integer(_ count: Int) throws -> UInt64 {

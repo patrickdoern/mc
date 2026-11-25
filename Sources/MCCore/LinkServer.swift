@@ -8,6 +8,9 @@ public final class LinkServer {
         case requestExpired
         case connected(String)
         case reading(name: String, path: String)
+        case writing(name: String, path: String)
+        case deleting(name: String, path: String)
+        case changing(name: String, path: String)
         case incompatible(String)
         case failed(Error)
     }
@@ -26,6 +29,7 @@ public final class LinkServer {
 
     private let name: String
     private let folders: [String]
+    private let writable: Bool
     private let identity: LinkIdentity
     private let loopback: Bool
     private let onEvent: (Event) -> Void
@@ -35,9 +39,10 @@ public final class LinkServer {
     private var partner: Peer?
     private var stopped = false
 
-    public init(name: String, folders: [String], identity: LinkIdentity, loopback: Bool = false, onEvent: @escaping (Event) -> Void) {
+    public init(name: String, folders: [String], writable: Bool, identity: LinkIdentity, loopback: Bool = false, onEvent: @escaping (Event) -> Void) {
         self.name = name
         self.folders = folders
+        self.writable = writable
         self.identity = identity
         self.loopback = loopback
         self.onEvent = onEvent
@@ -75,7 +80,7 @@ public final class LinkServer {
             guard let peer = partner, peer.id == id, peer.share == nil else { return }
             peer.timeout?.cancel()
             if allow {
-                peer.share = LinkShare(folders: folders)
+                peer.share = LinkShare(folders: folders, writable: writable)
                 peer.channel.send([LinkFrame(requestID: 0, message: .done)])
                 report(.connected(peer.name))
             } else {
@@ -90,7 +95,10 @@ public final class LinkServer {
         queue.sync {
             stopped = true
             listener?.cancel()
-            peers.forEach { $0.channel.cancel() }
+            peers.forEach { peer in
+                peer.share?.end()
+                peer.channel.cancel()
+            }
             partner = nil
         }
     }
@@ -122,18 +130,20 @@ public final class LinkServer {
 
     private func receive(_ frame: LinkFrame, from peer: Peer) {
         if let share = peer.share {
-            if case .openRead(let path) = frame.message { report(.reading(name: peer.name, path: path)) }
-            return peer.channel.send(share.answer(frame))
+            let answer = share.answer(frame)
+            if let event = Self.event(for: frame.message, from: peer.name), !answer.contains(where: { $0.message.isError }) { report(event) }
+            return peer.channel.send(answer)
         }
-        guard peer.name.isEmpty, case .hello(let version, let name) = frame.message else { return peer.channel.cancel() }
+        guard peer.name.isEmpty, case .hello(let version, let name, _) = frame.message else { return peer.channel.cancel() }
         peer.name = name
-        let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name))
         do {
             try LinkProtocol.checkVersion(version)
         } catch {
             report(.incompatible(name))
+            let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name, writable: false))
             return peer.channel.close(after: [hello, LinkFrame(requestID: 0, message: .error(error.localizedDescription))])
         }
+        let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name, writable: writable))
         if let partner {
             let reason = partner.share == nil ? localized("Eine andere Verbindungsanfrage ist noch offen") : localized("Bereits mit %@ verbunden", partner.name as NSString)
             return peer.channel.close(after: [hello, LinkFrame(requestID: 0, message: .error(reason))])
@@ -141,6 +151,16 @@ public final class LinkServer {
         partner = peer
         peer.channel.send([hello])
         report(.request(id: peer.id, name: name, code: LinkIdentity.pairingCode(identity.fingerprint, peer.channel.peerFingerprint)))
+    }
+
+    private static func event(for message: LinkMessage, from name: String) -> Event? {
+        switch message {
+        case .openRead(let path): return .reading(name: name, path: path)
+        case .openWrite(let path, _): return .writing(name: name, path: path)
+        case .removeFile(let path), .removeDirectory(let path), .trash(let path): return .deleting(name: name, path: path)
+        case .rename(let path, _), .makeDirectory(let path), .makeSymlink(let path, _), .setModified(let path, _), .setPermissions(let path, _): return .changing(name: name, path: path)
+        default: return nil
+        }
     }
 
     private func expire(_ peer: Peer) {
@@ -153,6 +173,7 @@ public final class LinkServer {
 
     private func end(_ peer: Peer) {
         peer.timeout?.cancel()
+        peer.share?.end()
         peers.removeAll { $0 === peer }
         guard peer === partner else { return }
         partner = nil

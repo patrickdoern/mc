@@ -19,12 +19,20 @@ public final class LinkShare {
         let local: String
     }
 
+    private struct WrittenFile {
+        let writer: FileWriter
+        let virtual: String
+        let local: String
+    }
+
     private let fileSystem = LocalFileSystem.shared
     private let folders: [Folder]
+    private let writable: Bool
     private var openFiles: [UInt32: OpenFile] = [:]
+    private var writtenFiles: [UInt32: WrittenFile] = [:]
     private var nextHandle: UInt32 = 1
 
-    public init(folders paths: [String]) {
+    public init(folders paths: [String], writable: Bool) {
         var folders: [Folder] = []
         for path in paths {
             let resolved = LocalFileSystem.shared.canonicalPath(path) ?? PosixPath.normalize(path)
@@ -38,6 +46,7 @@ public final class LinkShare {
             folders.append(Folder(name: name, path: resolved))
         }
         self.folders = folders
+        self.writable = writable
     }
 
     public func answer(_ frame: LinkFrame) -> [LinkFrame] {
@@ -48,6 +57,13 @@ public final class LinkShare {
             messages = [.error(error.localizedDescription)]
         }
         return messages.map { LinkFrame(requestID: frame.requestID, message: $0) }
+    }
+
+    public func end() {
+        writtenFiles.values.forEach { $0.writer.abort() }
+        writtenFiles = [:]
+        openFiles.values.forEach { $0.reader.close() }
+        openFiles = [:]
     }
 
     private func result(for message: LinkMessage) throws -> [LinkMessage] {
@@ -61,8 +77,31 @@ public final class LinkShare {
         case .close(let handle):
             openFiles.removeValue(forKey: handle)?.reader.close()
             return [.done]
-        default: throw FileError(localized("Die Freigabe ist nur lesbar"))
+        default:
+            guard writable else { throw FileError(localized("Die Freigabe ist nur lesbar")) }
+            return try change(message)
         }
+    }
+
+    private func change(_ message: LinkMessage) throws -> [LinkMessage] {
+        switch message {
+        case .makeDirectory(let path): try changeEntry(path) { try fileSystem.makeDirectory($0) }
+        case .removeFile(let path): try changeEntry(path) { try fileSystem.removeFile($0) }
+        case .removeDirectory(let path): try changeEntry(path) { try fileSystem.removeDirectory($0) }
+        case .trash(let path): try changeEntry(path) { try fileSystem.trash($0) }
+        case .rename(let from, let to): try rename(from, to)
+        case .makeSymlink(let path, let target): try makeSymlink(path, target: target)
+        case .setModified(let path, let date): try changeTarget(path) { try fileSystem.setModified($0, date) }
+        case .setPermissions(let path, let mode): try changeTarget(path) { try fileSystem.setPermissions($0, mode & 0o777) }
+        case .openWrite(let path, let permissions): return [.handle(try openWrite(path, permissions: permissions))]
+        case .write(let handle, let data): try write(handle, data)
+        case .finish(let handle):
+            guard let file = writtenFiles.removeValue(forKey: handle) else { throw FileError(String(cString: strerror(EBADF))) }
+            try mapping(file.virtual, file.local) { try file.writer.finish() }
+        case .abort(let handle): writtenFiles.removeValue(forKey: handle)?.writer.abort()
+        default: throw FileError(String(cString: strerror(ENOTSUP)))
+        }
+        return [.done]
     }
 
     private func list(_ path: String) throws -> [FileEntry] {
@@ -114,7 +153,64 @@ public final class LinkShare {
         return Data(buffer[0..<count])
     }
 
+    private func rename(_ from: String, _ to: String) throws {
+        let source = try changeable(from)
+        let target = try changeable(to)
+        guard source.folder.name == target.folder.name else { throw outside() }
+        let sourceLocal = try unfollowed(source)
+        let targetLocal = try unfollowed(target)
+        try mapping(target.virtual, targetLocal) { try mapping(source.virtual, sourceLocal) { try fileSystem.rename(sourceLocal, targetLocal) } }
+    }
+
+    private func makeSymlink(_ path: String, target: String) throws {
+        let location = try changeable(path)
+        let local = try unfollowed(location)
+        guard !target.hasPrefix("/"), Self.isInside(PosixPath.normalize(PosixPath.join(PosixPath.parent(local), target)), location.folder.path) else { throw outside() }
+        try mapping(location.virtual, local) { try fileSystem.makeSymlink(local, target: target) }
+    }
+
+    private func openWrite(_ path: String, permissions: UInt16) throws -> UInt32 {
+        let location = try changeable(path)
+        let entry = try unfollowed(location)
+        let local = (try? fileSystem.stat(entry)) == nil ? entry : try followed(location)
+        let writer = try mapping(location.virtual, local) { try fileSystem.openWriter(local, permissions: permissions, followingLinks: false) }
+        let handle = nextHandle
+        nextHandle += 1
+        writtenFiles[handle] = WrittenFile(writer: writer, virtual: location.virtual, local: local)
+        return handle
+    }
+
+    private func write(_ handle: UInt32, _ data: Data) throws {
+        guard let file = writtenFiles[handle] else { throw FileError(String(cString: strerror(EBADF))) }
+        try mapping(file.virtual, file.local) { try data.withUnsafeBytes { try file.writer.write($0) } }
+    }
+
+    private func changeEntry(_ path: String, _ body: (String) throws -> Void) throws {
+        let location = try changeable(path)
+        let local = try unfollowed(location)
+        try mapping(location.virtual, local) { try body(local) }
+    }
+
+    private func changeTarget(_ path: String, _ body: (String) throws -> Void) throws {
+        let location = try changeable(path)
+        let real = try followed(location)
+        guard real != location.folder.path else { throw unchangeable() }
+        try mapping(location.virtual, real) { try body(real) }
+    }
+
+    private func changeable(_ path: String) throws -> Location {
+        let name = path.split(separator: "/").last
+        guard name != "." && name != ".." else { throw FileError(path: path, errno: EINVAL) }
+        let parts = try parts(path)
+        guard parts.count > 1, let location = try location(parts) else { throw unchangeable() }
+        return location
+    }
+
     private func location(_ path: String) throws -> Location? {
+        try location(parts(path))
+    }
+
+    private func parts(_ path: String) throws -> [Substring] {
         var parts: [Substring] = []
         for part in path.split(separator: "/") {
             if part == "." { continue }
@@ -124,6 +220,10 @@ public final class LinkShare {
                 parts.append(part)
             }
         }
+        return parts
+    }
+
+    private func location(_ parts: [Substring]) throws -> Location? {
         guard let first = parts.first else { return nil }
         let virtual = "/" + parts.joined(separator: "/")
         guard let folder = folders.first(where: { $0.name == first }) else { throw FileError(path: virtual, errno: ENOENT) }
@@ -162,6 +262,10 @@ public final class LinkShare {
 
     private func outside() -> FileError {
         FileError(localized("Außerhalb der Freigabe"))
+    }
+
+    private func unchangeable() -> FileError {
+        FileError(localized("Freigegebene Ordner lassen sich nicht ändern"))
     }
 
     private static let rootEntry = FileEntry(name: "", isDirectory: true, permissions: 0o555)

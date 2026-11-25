@@ -51,7 +51,7 @@ private final class Harness {
     let clientIdentity: LinkIdentity
     private var server: LinkServer!
 
-    init(allow: Bool?) throws {
+    init(allow: Bool?, writable: Bool = false) throws {
         let share = root.appendingPathComponent(shareName)
         let outside = root.appendingPathComponent("Außen")
         try FileManager.default.createDirectory(at: share.appendingPathComponent("sub"), withIntermediateDirectories: true)
@@ -62,7 +62,7 @@ private final class Harness {
         try FileManager.default.createSymbolicLink(at: share.appendingPathComponent("outside"), withDestinationURL: outside)
         serverIdentity = try LinkIdentity.load(label: serverLabel)
         clientIdentity = try LinkIdentity.load(label: clientLabel)
-        server = LinkServer(name: "Server", folders: [share.path], identity: serverIdentity, loopback: true) { [weak self] event in
+        server = LinkServer(name: "Server", folders: [share.path], writable: writable, identity: serverIdentity, loopback: true) { [weak self] event in
             self?.events.record(event)
             if case .request(let id, _, _) = event, let allow { self?.server.decide(id, allow: allow) }
         }
@@ -163,6 +163,23 @@ private func failure(_ body: () throws -> Void) -> Error? {
         #expect(failure { _ = try system.readAll(folder + "/outside/secret.txt") }?.localizedDescription == outside)
         #expect(failure { _ = try system.list("/..") }?.localizedDescription == outside)
         #expect(try system.list(folder).count == 4)
+    }
+
+    @Test func changesWritableShare() throws {
+        let harness = try Harness(allow: true, writable: true)
+        defer { harness.finish() }
+        let system = try harness.connect()
+        let folder = "/" + harness.shareName
+        try system.makeDirectory(folder + "/neu")
+        try system.rename(folder + "/small.txt", folder + "/neu/small.txt")
+        try system.removeFile(folder + "/neu/small.txt")
+        #expect(try system.list(folder + "/neu").isEmpty)
+        #expect(failure { try system.makeDirectory(folder + "/outside/neu") }?.localizedDescription == localized("Außerhalb der Freigabe"))
+        #expect(failure { try system.removeDirectory(folder) }?.localizedDescription == localized("Freigegebene Ordner lassen sich nicht ändern"))
+        #expect(harness.events.wait { if case .changing(name: "Client", path: folder + "/neu") = $0 { return true }; return false })
+        #expect(harness.events.wait { if case .deleting(name: "Client", path: folder + "/neu/small.txt") = $0 { return true }; return false })
+        #expect(harness.events.count { if case .changing(_, folder + "/outside/neu") = $0 { return true }; return false } == 0)
+        #expect(harness.events.count { if case .deleting(_, folder) = $0 { return true }; return false } == 0)
     }
 
     @Test func reportsRefusalByServer() throws {

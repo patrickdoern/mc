@@ -551,6 +551,7 @@
 "Die Gegenstelle hat eine andere Version von Moonlight Commander" = "The other side has a different version of Moonlight Commander";
 "Die Freigabe ist nur lesbar" = "The share is read-only";
 "Außerhalb der Freigabe" = "Outside the share";
+"Freigegebene Ordner lassen sich nicht ändern" = "Shared folders cannot be changed";
 "Die Identität für die Direktverbindung lässt sich nicht im Schlüsselbund anlegen (Fehler %ld)" = "The identity for the direct connection cannot be created in the keychain (error %ld)";
 "Die Verbindung wurde abgelehnt" = "The connection was refused";
 "Eine andere Verbindungsanfrage ist noch offen" = "Another connection request is still pending";
@@ -582,6 +583,9 @@
 "Wartet auf Verbindung" = "Waiting for connection";
 "Verbunden mit %@" = "Connected to %@";
 "%@ liest %@" = "%@ is reading %@";
+"%@ schreibt %@" = "%@ is writing %@";
+"%@ löscht %@" = "%@ is deleting %@";
+"%@ ändert %@" = "%@ is changing %@";
 "Die Freigabe konnte nicht gestartet werden: %@" = "Sharing could not be started: %@";
 "Erlaube Moonlight Commander den Zugriff unter Systemeinstellungen → Datenschutz & Sicherheit → Lokales Netzwerk." = "Allow Moonlight Commander access in System Settings → Privacy & Security → Local Network.";
 "Befehl → Freigeben … lässt einen anderen Mac mit Moonlight Commander Ordner lesen, er findet sie mit ⌘K als mc://Name." = "Command → Share … lets another Mac with Moonlight Commander read folders; it finds them with ⌘K as mc://Name.";

@@ -39,7 +39,8 @@ private func header(length: UInt32, type: UInt8, requestID: UInt32 = 1) -> Data 
 
     @Test func roundTripsAllMessages() throws {
         let messages: [LinkMessage] = [
-            .hello(version: LinkProtocol.version, name: "Patricks MacBook"),
+            .hello(version: LinkProtocol.version, name: "Patricks MacBook", writable: false),
+            .hello(version: LinkProtocol.version, name: "Patricks iMac", writable: true),
             .list("/Docs"),
             .stat("/Docs/a"),
             .statFollowingLinks("/Docs/b"),
@@ -55,6 +56,12 @@ private func header(length: UInt32, type: UInt8, requestID: UInt32 = 1) -> Data 
             .setModified("/Docs/a", Date(timeIntervalSince1970: 1.25)),
             .setPermissions("/Docs/a", 0o600),
             .openWrite("/Docs/a", permissions: 0o644),
+            .write(handle: 4, data: Data([9, 8, 7])),
+            .write(handle: 4, data: Data(count: LinkProtocol.maximumBlock)),
+            .write(handle: 4, data: Data()),
+            .finish(handle: 4),
+            .abort(handle: 5),
+            .trash("/Docs/alt"),
             .entries([entry, FileEntry(name: "Ordner", isDirectory: true)], more: true),
             .entries([], more: false),
             .entry(entry),
@@ -132,13 +139,39 @@ private func header(length: UInt32, type: UInt8, requestID: UInt32 = 1) -> Data 
         #expect(LinkMessage.entryBatches([]) == [.entries([], more: false)])
     }
 
+    @Test func rejectsWriteBlockAboveMaximum() {
+        let data = LinkFrame(requestID: 1, message: .write(handle: 1, data: Data(count: LinkProtocol.maximumBlock + 1))).encoded()
+        #expect(throws: LinkProtocolError.malformed) { try decodeAll(data) }
+    }
+
+    @Test func helloCarriesWritePermission() throws {
+        let writable = LinkFrame(requestID: 0, message: .hello(version: 2, name: "B", writable: true)).encoded()
+        let readOnly = LinkFrame(requestID: 0, message: .hello(version: 2, name: "B", writable: false)).encoded()
+        #expect(writable.count == readOnly.count + 1)
+        #expect(try decodeAll(writable).first?.message == .hello(version: 2, name: "B", writable: true))
+        #expect(try decodeAll(readOnly).first?.message == .hello(version: 2, name: "B", writable: false))
+    }
+
+    @Test func decodesHelloOfVersionOne() throws {
+        var payload = LinkPayloadWriter()
+        payload.uint32(1)
+        payload.string("Alt")
+        let data = header(length: UInt32(payload.data.count), type: 1, requestID: 0) + payload.data
+        #expect(LinkFrame(requestID: 0, message: .hello(version: 1, name: "Alt", writable: false)).encoded() == data)
+        guard case .hello(let version, "Alt", false) = try decodeAll(data).first?.message else { Issue.record("no hello"); return }
+        #expect(throws: FileError.self) { try LinkProtocol.checkVersion(version) }
+    }
+
     @Test func checksProtocolVersion() throws {
-        try LinkProtocol.checkVersion(1)
-        do {
-            try LinkProtocol.checkVersion(2)
-            Issue.record("version 2 accepted")
-        } catch {
-            #expect(error.localizedDescription == localized("Die Gegenstelle hat eine andere Version von Moonlight Commander"))
+        #expect(LinkProtocol.version == 2)
+        try LinkProtocol.checkVersion(2)
+        for version: UInt32 in [1, 3] {
+            do {
+                try LinkProtocol.checkVersion(version)
+                Issue.record("version \(version) accepted")
+            } catch {
+                #expect(error.localizedDescription == localized("Die Gegenstelle hat eine andere Version von Moonlight Commander"))
+            }
         }
     }
 }

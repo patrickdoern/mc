@@ -95,7 +95,7 @@ final class ShareDialog {
     }
 
     private func share(identity: LinkIdentity) {
-        let server = LinkServer(name: name, folders: folders, identity: identity) { [weak self] event in
+        let server = LinkServer(name: name, folders: folders, writable: false, identity: identity) { [weak self] event in
             DispatchQueue.main.async { self?.handle(event) }
         }
         do {
@@ -155,6 +155,12 @@ final class ShareDialog {
             show(localized("Verbunden mit %@", peer as NSString))
         case .reading(let peer, let path):
             show(localized("%@ liest %@", peer as NSString, PosixPath.name(path) as NSString))
+        case .writing(let peer, let path):
+            show(localized("%@ schreibt %@", peer as NSString, PosixPath.name(path) as NSString))
+        case .deleting(let peer, let path):
+            show(localized("%@ löscht %@", peer as NSString, PosixPath.name(path) as NSString))
+        case .changing(let peer, let path):
+            show(localized("%@ ändert %@", peer as NSString, PosixPath.name(path) as NSString))
         case .incompatible(let peer):
             show(peer + ": " + localized("Die Gegenstelle hat eine andere Version von Moonlight Commander"))
         case .failed(let error):

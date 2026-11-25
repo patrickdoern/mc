@@ -102,7 +102,11 @@ public final class LocalFileSystem: FileSystem {
     }
 
     public func openWriter(_ path: String, permissions: UInt16) throws -> FileWriter {
-        let descriptor = open(path, O_WRONLY | O_CREAT | O_TRUNC, mode_t(permissions & 0o777))
+        try openWriter(path, permissions: permissions, followingLinks: true)
+    }
+
+    func openWriter(_ path: String, permissions: UInt16, followingLinks: Bool) throws -> FileWriter {
+        let descriptor = open(path, O_WRONLY | O_CREAT | O_TRUNC | (followingLinks ? 0 : O_NOFOLLOW), mode_t(permissions & 0o777))
         guard descriptor >= 0 else { throw FileError(path: path, errno: errno) }
         return LocalFile(descriptor: descriptor, path: path)
     }

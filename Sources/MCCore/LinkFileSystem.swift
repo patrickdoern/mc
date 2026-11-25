@@ -51,9 +51,9 @@ public final class LinkFileSystem: FileSystem {
 
     private func pair(name: String, identity: LinkIdentity, operation: FileOperation, pairing: (String) -> Void) throws {
         guard try wait(until: Date() + Self.connectTimeout, cancelling: operation, for: { isReady ? true : nil }) != nil else { throw unreachable }
-        channel.send([LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: name))])
+        channel.send([LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: name, writable: false))])
         guard let hello = try wait(until: Date() + Self.connectTimeout, cancelling: operation, for: { take(0) }) else { throw unreachable }
-        guard case .hello(let version, _) = hello else { throw violated() }
+        guard case .hello(let version, _, _) = hello else { throw violated() }
         do {
             try LinkProtocol.checkVersion(version)
         } catch {
