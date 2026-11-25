@@ -116,6 +116,16 @@ enum Settings {
         get { defaults.stringArray(forKey: "hotlist") ?? [] }
         set { defaults.set(newValue, forKey: "hotlist") }
     }
+
+    static var linkName: String {
+        get { defaults.string(forKey: "linkName") ?? Host.current().localizedName ?? ProcessInfo.processInfo.hostName }
+        set { defaults.set(newValue, forKey: "linkName") }
+    }
+
+    static var linkFolders: [String] {
+        get { defaults.stringArray(forKey: "linkFolders") ?? [NSHomeDirectory()] }
+        set { defaults.set(newValue, forKey: "linkFolders") }
+    }
 }
 
 enum Shell {

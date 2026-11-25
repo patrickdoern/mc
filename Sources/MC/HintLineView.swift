@@ -9,6 +9,7 @@ final class HintLineView: NSView {
         localized("Ctrl-S startet die Schnellsuche im Panel."),
         localized("⌘L springt zu einem beliebigen Pfad."),
         localized("⌘K verbindet per SFTP, FTP (ftp://…) oder SMB (smb://…) mit einem Server."),
+        localized("Befehl → Freigeben … lässt einen anderen Mac mit Moonlight Commander Ordner lesen, er findet sie mit ⌘K als mc://Name."),
         localized("⌘D öffnet die Verzeichnis-Hotlist, die Ziffern 1–9 springen direkt."),
         localized("Ctrl-O blendet das Terminal ein und aus, auf einem SFTP-Panel öffnet es eine ssh-Sitzung."),
         localized("⌘Y zeigt die Datei in der Übersicht (Quick Look)."),

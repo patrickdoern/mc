@@ -228,13 +228,37 @@ final class MainWindowController: NSWindowController {
     @objc func connect(_ sender: Any?) {
         let history = { UserDefaults.standard.stringArray(forKey: Self.connectionHistoryKey) ?? [] }
         let forget = { (entry: String) in UserDefaults.standard.set(history().filter { $0 != entry }, forKey: Self.connectionHistoryKey) }
-        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias, ftp://… / ftps://… für FTP oder smb://server/freigabe für SMB:"), value: history().first ?? "", confirm: localized("Verbinden"), history: history(), onRemove: forget) else { return }
+        let ownName = Settings.linkName
+        let discover = { (update: @escaping ([String]) -> Void) -> () -> Void in
+            let browser = LinkBrowser { names in update(names.filter { $0 != ownName }.map { LinkTarget(name: $0).displayName }) }
+            browser.start()
+            return browser.stop
+        }
+        guard let text = Dialogs.prompt(title: localized("Verbindung"), message: localized("user@host[:port][/pfad], SSH-Alias, ftp://… / ftps://… für FTP, smb://server/freigabe für SMB oder mc://Name für einen Mac mit Freigabe:"), value: history().first ?? "", confirm: localized("Verbinden"), history: history(), onRemove: forget, discover: discover) else { return }
         let panel = activePanel
         let model = panel.model
         let interaction = interaction
         let other = inactivePanel
         let showList = { for shown in [panel, other] where shown.mode == .info || shown.mode == .quickView { shown.setMode(.list) } }
         let remember = { UserDefaults.standard.set(([text] + history().filter { $0 != text }).prefix(10).map { $0 }, forKey: Self.connectionHistoryKey) }
+        if LinkTarget.isLink(text) {
+            guard let target = LinkTarget.parse(text) else { return Dialogs.show(error: FileError(localized("Ungültige Adresse: %@", text as NSString))) }
+            let connection = Box<LinkFileSystem>()
+            let job = Box<OperationRunner.Job>()
+            job.value = runner.run(title: localized("Verbinde mit %@ …", target.displayName as NSString), { [runner] operation in
+                connection.value = try LinkFileSystem(target: target, name: ownName, identity: LinkIdentity.load(), operation: operation) { code in
+                    DispatchQueue.main.async {
+                        guard let running = job.value else { return }
+                        runner.showNotice(localized("Code: %@", code as NSString) + "\n\n" + localized("Bitte auf dem anderen Mac bestätigen"), for: running)
+                    }
+                }
+            }, completion: {
+                guard let system = connection.value else { return }
+                showList()
+                model.navigate(to: system.homePath, on: system)
+            })
+            return
+        }
         if FTPTarget.isFTP(text) {
             guard let target = FTPTarget.parse(text) else { return Dialogs.show(error: FileError(localized("Ungültige FTP-Adresse: %@", text as NSString))) }
             let connection = Box<FTPFileSystem>()
@@ -725,6 +749,10 @@ final class MainWindowController: NSWindowController {
         let model = activePanel.model
         guard quickLook.isVisible, model.isLocal, let entry = model.currentEntry, !model.isParentRow(model.cursor), !entry.isDirectory else { return }
         quickLook.update(URL(fileURLWithPath: model.fullPath(of: entry.name)))
+    }
+
+    func disconnectLinks() {
+        panels.compactMap { $0.model.fileSystem as? LinkFileSystem }.forEach { $0.disconnect() }
     }
 
     func reloadPanels() {

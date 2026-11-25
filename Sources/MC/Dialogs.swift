@@ -2,21 +2,37 @@ import AppKit
 import MCCore
 
 enum Dialogs {
-    static func prompt(title: String, message: String, value: String = "", confirm: String = localized("OK"), history: [String] = [], onRemove: ((String) -> Void)? = nil) -> String? {
+    static func prompt(title: String, message: String, value: String = "", confirm: String = localized("OK"), history: [String] = [], onRemove: ((String) -> Void)? = nil, discover: ((@escaping ([String]) -> Void) -> () -> Void)? = nil) -> String? {
         var history = history
         var value = value
+        var found: [String] = []
+        var shown: (dialog: ClassicDialog, choice: Int)?
+        let stopDiscovery = discover? { names in
+            found = names
+            shown.map { $0.dialog.setOptions($0.choice, history + found) }
+        }
+        defer { stopDiscovery?() }
         while true {
             let dialog = ClassicDialog(title: title, message: message)
             let field = dialog.addText(value: value)
-            let choice = history.isEmpty ? nil : dialog.addChoice(label: localized("Verlauf"), options: history, selected: history.firstIndex(of: value) ?? 0) { field.stringValue = $0 }
+            let options = history + found
+            let choice = options.isEmpty && discover == nil ? nil : dialog.addChoice(label: localized("Verlauf"), options: options, selected: options.firstIndex(of: value) ?? 0) { field.stringValue = $0 }
             dialog.addButton(confirm, isDefault: true)
             dialog.addButton(localized("Abbrechen"), isCancel: true)
-            if onRemove != nil, choice != nil { dialog.addButton(localized("Aus Verlauf entfernen")) }
+            if onRemove != nil, !history.isEmpty { dialog.addButton(localized("Aus Verlauf entfernen")) }
+            shown = choice.map { (dialog, $0) }
             let pressed = dialog.run()
+            shown = nil
             if pressed == 2, let onRemove, let choice {
-                let removed = history.remove(at: dialog.choice(choice))
+                let index = dialog.choice(choice)
+                value = field.stringValue
+                guard index < history.count else {
+                    NSSound.beep()
+                    continue
+                }
+                let removed = history.remove(at: index)
                 onRemove(removed)
-                value = field.stringValue == removed ? history.first ?? "" : field.stringValue
+                if value == removed { value = history.first ?? "" }
                 continue
             }
             guard pressed == 0 else { return nil }

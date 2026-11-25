@@ -60,6 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         mainWindow?.saveState()
+        ShareDialog.stopRunning()
+        mainWindow?.disconnectLinks()
         SMBMounts.shared.releaseAll(waiting: 2)
         guard relaunchRequested else { return }
         let process = Process()

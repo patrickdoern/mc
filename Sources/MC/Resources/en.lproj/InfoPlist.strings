@@ -1,2 +1,3 @@
 "Textdatei" = "Text File";
 "Ordner" = "Folder";
+"NSLocalNetworkUsageDescription" = "Moonlight Commander searches the local network for Macs sharing folders with Moonlight Commander and accepts connections while you share folders.";

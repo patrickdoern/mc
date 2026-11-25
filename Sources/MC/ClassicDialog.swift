@@ -17,7 +17,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     }
 
     private let dialogTitle: String
-    private let message: String
+    private var message: String
     private let colors: Theme.DialogColors
     private var items: [Item] = []
     private var focus = 0
@@ -86,6 +86,33 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
         needsDisplay = true
     }
 
+    func setMessage(_ text: String) {
+        message = text
+        relayout()
+    }
+
+    func setOptions(_ itemIndex: Int, _ options: [String]) {
+        let item = items[itemIndex]
+        let selected = item.options.indices.contains(item.index) ? item.options[item.index] : nil
+        items[itemIndex].options = options
+        items[itemIndex].index = selected.flatMap(options.firstIndex(of:)) ?? 0
+        relayout()
+    }
+
+    func interrupt() {
+        guard let panel = window as? ClassicPanel, NSApp.modalWindow === panel else { return }
+        result = nil
+        NSApp.abortModal()
+    }
+
+    private func relayout() {
+        layoutDialog()
+        needsDisplay = true
+        guard let panel = window as? ClassicPanel else { return }
+        let old = panel.frame
+        panel.setFrame(NSRect(x: old.midX - frame.width / 2, y: old.maxY - frame.height, width: frame.width, height: frame.height), display: true)
+    }
+
     func presentSheet(on window: NSWindow, onButton: @escaping (Int?) -> Void) {
         layoutDialog()
         self.onButton = onButton
@@ -145,7 +172,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     private func controlText(_ item: Item) -> String {
         switch item.kind {
         case .check: return "[\(item.checked ? "x" : " ")] \(item.title)"
-        case .choice: return "\(item.title.hasSuffix(":") ? item.title : item.title + ":") < \(item.options[item.index]) >"
+        case .choice: return "\(item.title.hasSuffix(":") ? item.title : item.title + ":") < \(item.options.isEmpty ? "" : item.options[item.index]) >"
         case .button: return buttonText(item)
         case .text, .progress: return item.title
         }
@@ -312,6 +339,7 @@ final class ClassicDialog: NSView, NSTextFieldDelegate {
     private func cycleChoice(_ delta: Int) {
         guard items[focus].kind == .choice else { return }
         let count = items[focus].options.count
+        guard count > 0 else { return }
         items[focus].index = (items[focus].index + delta + count) % count
         items[focus].onChange?(items[focus].options[items[focus].index])
         needsDisplay = true

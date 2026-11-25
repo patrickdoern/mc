@@ -26,7 +26,8 @@ final class OperationRunner {
 
     var backgroundJobs: [Job] { jobs.filter(\.isBackground) }
 
-    func run(title: String, options: TransferOptions = TransferOptions(), _ work: @escaping (FileOperation) throws -> Void, completion: @escaping () -> Void) {
+    @discardableResult
+    func run(title: String, options: TransferOptions = TransferOptions(), _ work: @escaping (FileOperation) throws -> Void, completion: @escaping () -> Void) -> Job {
         let sheet = ProgressSheet(title: title)
         var job: Job?
         let operation = FileOperation(handlers: OperationHandlers(
@@ -64,6 +65,14 @@ final class OperationRunner {
                 completion()
             }
         }
+        return created
+    }
+
+    func showNotice(_ message: String, for job: Job) {
+        guard jobs.contains(where: { $0 === job }) else { return }
+        job.isBackground = false
+        job.sheet.showNotice(message, on: window)
+        publishStatus()
     }
 
     private func publishStatus() {
@@ -79,10 +88,13 @@ final class OperationRunner {
 private final class ProgressSheet {
     var onCancel: (() -> Void)?
     var onBackground: (() -> Void)?
-    private let dialog: ClassicDialog
+    private let title: String
+    private var dialog: ClassicDialog
+    private var isNotice = false
     private var presented = false
 
     init(title: String) {
+        self.title = title
         dialog = ClassicDialog(title: title)
         dialog.addProgress()
         dialog.addButton(localized("Im Hintergrund"), isDefault: true)
@@ -90,10 +102,20 @@ private final class ProgressSheet {
     }
 
     func present(on window: NSWindow) {
+        guard !presented else { return }
         presented = true
         dialog.presentSheet(on: window) { [weak self] button in
-            if button == 0 { self?.onBackground?() } else { self?.onCancel?() }
+            guard let self else { return }
+            if button == 0, !isNotice { onBackground?() } else { onCancel?() }
         }
+    }
+
+    func showNotice(_ message: String, on window: NSWindow) {
+        dismiss(from: window)
+        dialog = ClassicDialog(title: title, message: message)
+        dialog.addButton(localized("Abbrechen"), isDefault: true, isCancel: true)
+        isNotice = true
+        present(on: window)
     }
 
     func dismiss(from window: NSWindow?) {

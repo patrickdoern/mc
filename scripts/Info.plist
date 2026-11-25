@@ -72,6 +72,12 @@
             </array>
         </dict>
     </array>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Moonlight Commander sucht im lokalen Netz nach freigegebenen Macs mit Moonlight Commander und nimmt Verbindungen an, solange du Ordner freigibst.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_mc-link._tcp</string>
+    </array>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSHighResolutionCapable</key>

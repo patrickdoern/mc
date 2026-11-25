@@ -277,10 +277,17 @@ extension MainWindowController {
         for (side, panel) in zip([localized("Links"), localized("Rechts")], panelViews) {
             let model = panel.model
             guard let name = model.isLocal ? SMBMounts.displayName(containing: model.path) : model.fileSystem.displayName else { continue }
-            menu.addItem(ClosureMenuItem(localized("%@: %@ schließen", side as NSString, name as NSString)) { model.navigate(to: NSHomeDirectory(), on: LocalFileSystem.shared) })
+            menu.addItem(ClosureMenuItem(localized("%@: %@ schließen", side as NSString, name as NSString)) {
+                (model.fileSystem as? LinkFileSystem)?.disconnect()
+                model.navigate(to: NSHomeDirectory(), on: LocalFileSystem.shared)
+            })
         }
         if menu.items.isEmpty { menu.addItem(NSMenuItem(title: localized("Keine aktiven Verbindungen"), action: nil, keyEquivalent: "")) }
         popUp(menu, title: localized("Aktive Verbindungen"))
+    }
+
+    @objc func shareFolders(_ sender: Any?) {
+        ShareDialog.run(adding: activePanel.model)
     }
 
     @objc func showSavedPasswords(_ sender: Any?) {
