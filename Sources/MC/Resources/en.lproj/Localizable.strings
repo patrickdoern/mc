@@ -549,3 +549,6 @@
 "Zertifikat von %@ geändert" = "Certificate of %@ Changed";
 "Unbekanntes Zertifikat von %@" = "Unknown Certificate of %@";
 "Diesem Zertifikat vertrauen und es für künftige Verbindungen speichern?" = "Trust this certificate and save it for future connections?";
+"Die Gegenstelle hat eine andere Version von Moonlight Commander" = "The other side has a different version of Moonlight Commander";
+"Die Freigabe ist nur lesbar" = "The share is read-only";
+"Außerhalb der Freigabe" = "Outside the share";
