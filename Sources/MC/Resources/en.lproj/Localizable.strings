@@ -10,7 +10,6 @@
 "Moonlight Commander ausblenden" = "Hide Moonlight Commander";
 "Andere ausblenden" = "Hide Others";
 "Moonlight Commander beenden" = "Quit Moonlight Commander";
-"Verbinden (SFTP/FTP/SMB) …" = "Connect (SFTP/FTP/SMB) …";
 "Gehe zu Pfad …" = "Go to Path …";
 "Home-Ordner" = "Home Folder";
 "Quick Look" = "Quick Look";
@@ -481,7 +480,7 @@
 "Tastenbelegung" = "Key Bindings";
 "Tab Panel wechseln · Enter öffnen · Backspace/⌘↑ eine Ebene hoch" = "Tab switch panel · Enter open · Backspace/⌘↑ up one level";
 "Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren" = "Space/Ins/⇧↑↓ mark · + − mark by pattern · * invert marks";
-"Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K Netzwerkverbindung (SFTP, ftp://, ftps://, smb://)" = "Ctrl-S quick search · ⌘L go to path · ⇧⌘H Home · ⌘K network connection (SFTP, ftp://, ftps://, smb://)";
+"Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K Netzwerkverbindung (SFTP, ftp://, ftps://, smb://, mc://)" = "Ctrl-S quick search · ⌘L go to path · ⇧⌘H Home · ⌘K network connection (SFTP, ftp://, ftps://, smb://, mc://)";
 "F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren (⇧F5 in Archiv packen) · F6 Verschieben (⇧F6 Umbenennen)" = "F3 View · F4 Edit (⇧F4 new file) · F5 Copy (⇧F5 pack into archive) · F6 Move (⇧F6 Rename)";
 "F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden" = "F2 User menu · F7 Make folder · F8 Delete (⇧F8 permanently) · F9 Menus · F10 Quit";
 "Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf" = "Typing writes to the command line · Tab completes · Enter runs in terminal · ⌘Enter inserts file name · Ctrl-P/N history";

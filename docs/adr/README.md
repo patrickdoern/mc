@@ -21,3 +21,4 @@ Entscheidungen, die nicht aus dem Code ablesbar sind. Ein akzeptiertes ADR wird 
 | [0015](0015-ftp-anmeldung-nur-mit-tls-oder-zustimmung.md) | FTP läuft über das System-libcurl; Anmeldungen mit Passwort laufen nur über TLS oder nach ausdrücklicher Zustimmung im Klartext | Accepted |
 | [0016](0016-ftp-zertifikate-beim-ersten-verbinden-bestaetigen.md) | FTP-Zertifikate ohne bekannte Zertifizierungsstelle werden beim ersten Verbinden bestätigt und gespeichert | Accepted |
 | [0017](0017-smb-ueber-netfs-einhaengen.md) | SMB-Freigaben werden über NetFS eingehängt und als lokale Panels gezeigt | Accepted |
+| [0018](0018-direktverbindung-ueber-eigenes-protokoll.md) | Zwei Moonlight Commander verbinden sich im lokalen Netz direkt über ein eigenes Protokoll mit TLS 1.3 und Kopplung per Codevergleich | Accepted |
