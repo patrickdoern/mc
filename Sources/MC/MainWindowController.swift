@@ -16,6 +16,7 @@ final class MainWindowController: NSWindowController {
     private let body = NSView()
     private var terminal: ShellTerminal?
     private var terminals: [String: ShellTerminal] = [:]
+    private var links: [LinkFileSystem] = []
     private let quickLook = QuickLook()
     private var keyBar: KeyBar?
     var activeFind: FindDialog?
@@ -84,7 +85,10 @@ final class MainWindowController: NSWindowController {
                 self.handle(command, from: panel)
             }
             panel.model.onFailure = { error in RunLoop.main.perform(inModes: [.common]) { Dialogs.show(error: error) } }
-            panel.model.onNavigate = { [weak self] in self?.releaseMounts() }
+            panel.model.onNavigate = { [weak self] in
+                self?.releaseMounts()
+                self?.releaseLinks()
+            }
             panel.peer = { [unowned self, unowned panel] in panels.first { $0 !== panel }!.model }
             let redraw = panel.model.onChange
             panel.model.onChange = { [weak self] in
@@ -254,8 +258,9 @@ final class MainWindowController: NSWindowController {
                         runner.showNotice((warning + request).joined(separator: "\n\n"), for: running)
                     }
                 }
-            }, completion: {
+            }, completion: { [weak self] in
                 guard let system = connection.value else { return }
+                self?.links.append(system)
                 remember(target.displayName)
                 showList()
                 model.navigate(to: system.homePath, on: system)
@@ -352,6 +357,14 @@ final class MainWindowController: NSWindowController {
 
     private func releaseMounts() {
         SMBMounts.shared.release(keeping: panels.map(\.model).filter(\.isLocal).map(\.path))
+    }
+
+    private func releaseLinks() {
+        guard runner.backgroundJobs.isEmpty else { return }
+        let used = panels.compactMap { $0.model.fileSystem as? LinkFileSystem }
+        let unused = links.filter { link in !used.contains { $0 === link } }
+        unused.forEach { $0.disconnect() }
+        links.removeAll { link in unused.contains { $0 === link } }
     }
 
     @objc func copyFiles(_ sender: Any?) { transfer(move: false, inPlace: false) }
@@ -760,7 +773,8 @@ final class MainWindowController: NSWindowController {
     }
 
     func disconnectLinks() {
-        panels.compactMap { $0.model.fileSystem as? LinkFileSystem }.forEach { $0.disconnect() }
+        links.forEach { $0.disconnect() }
+        links.removeAll()
     }
 
     func reloadPanels() {

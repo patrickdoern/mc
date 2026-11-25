@@ -325,10 +325,21 @@ private func failure(_ body: () throws -> Void) -> Error? {
         let harness = try Harness(allow: true)
         defer { harness.finish() }
         let first = try harness.connect()
+        try harness.replaceClientIdentity()
         let error = failure { _ = try harness.connect(as: "Zweiter") }
         #expect(error?.localizedDescription == "mc://Server: " + localized("Bereits mit %@ verbunden", "Client" as NSString))
         #expect(try first.list("/").count == 1)
         #expect(harness.events.count(Harness.isRequest) == 1)
+    }
+
+    @Test func sameMacReplacesItsOldConnection() throws {
+        let harness = try Harness(allow: true)
+        defer { harness.finish() }
+        let first = try harness.connect()
+        let second = try harness.connect()
+        #expect(try second.list("/").count == 1)
+        #expect(failure { _ = try first.list("/") } != nil)
+        #expect(first.isDisconnected)
     }
 
     @Test func rejectsSecondRequestAndCancelsPairing() throws {
@@ -342,6 +353,7 @@ private func failure(_ body: () throws -> Void) -> Error? {
             done.signal()
         }
         #expect(harness.events.wait(Harness.isRequest))
+        try harness.replaceClientIdentity()
         let error = failure { _ = try harness.connect(as: "Zweiter") }
         #expect(error?.localizedDescription == "mc://Server: " + localized("Eine andere Verbindungsanfrage ist noch offen"))
         operation.cancel()

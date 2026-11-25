@@ -148,6 +148,9 @@ public final class LinkServer {
         let fingerprint = peer.channel.peerFingerprint
         let knowsPeer = pairings.isKnown(fingerprint)
         let hello = LinkFrame(requestID: 0, message: .hello(version: LinkProtocol.version, name: self.name, writable: writable, knowsPeer: knowsPeer))
+        if let partner, partner.channel.peerFingerprint == fingerprint {
+            replace(partner)
+        }
         if let partner {
             let reason = partner.share == nil ? localized("Eine andere Verbindungsanfrage ist noch offen") : localized("Bereits mit %@ verbunden", partner.name as NSString)
             return peer.channel.close(after: [hello, LinkFrame(requestID: 0, message: .error(reason))])
@@ -186,6 +189,14 @@ public final class LinkServer {
         peer.channel.close(after: [LinkFrame(requestID: 0, message: .error(localized("Keine Bestätigung innerhalb von 60 Sekunden")))])
         report(.requestExpired)
         report(.waiting)
+    }
+
+    private func replace(_ peer: Peer) {
+        peer.timeout?.cancel()
+        peer.share?.end()
+        partner = nil
+        if peer.share == nil { report(.requestExpired) }
+        peer.channel.cancel()
     }
 
     private func end(_ peer: Peer) {
