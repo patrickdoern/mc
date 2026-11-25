@@ -1,6 +1,6 @@
 # 0013: Direktverbindung – Freigeben, finden, koppeln, lesen
 
-Status: Ready
+Status: Done
 Slice: 1/3
 
 ## Ziel
