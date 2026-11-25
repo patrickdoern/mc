@@ -22,3 +22,4 @@ Entscheidungen, die nicht aus dem Code ablesbar sind. Ein akzeptiertes ADR wird 
 | [0016](0016-ftp-zertifikate-beim-ersten-verbinden-bestaetigen.md) | FTP-Zertifikate ohne bekannte Zertifizierungsstelle werden beim ersten Verbinden bestätigt und gespeichert | Accepted |
 | [0017](0017-smb-ueber-netfs-einhaengen.md) | SMB-Freigaben werden über NetFS eingehängt und als lokale Panels gezeigt | Accepted |
 | [0018](0018-direktverbindung-ueber-eigenes-protokoll.md) | Zwei Moonlight Commander verbinden sich im lokalen Netz direkt über ein eigenes Protokoll mit TLS 1.3 und Kopplung per Codevergleich | Accepted |
+| [0019](0019-direktverbindung-gemerkte-kopplung.md) | Gekoppelte Macs werden am Zertifikats-Fingerabdruck wiedererkannt; der Codevergleich entfällt nur, wenn beide Seiten einander kennen | Accepted |

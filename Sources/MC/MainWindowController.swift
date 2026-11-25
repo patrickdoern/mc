@@ -777,6 +777,7 @@ final class MainWindowController: NSWindowController {
             localized("Leertaste/Einfg/⇧↑↓ markieren · + − Muster markieren · * Markierung umkehren"),
             localized("Ctrl-S Schnellsuche · ⌘L Gehe zu Pfad · ⇧⌘H Home · ⌘K Netzwerkverbindung (SFTP, ftp://, ftps://, smb://, mc://)"),
             localized("Befehl → Freigeben … lässt einen anderen Mac mit Moonlight Commander Ordner lesen, mit „Schreiben erlauben“ auch ändern; er findet sie mit ⌘K als mc://Name."),
+            localized("Befehl → Gekoppelte Macs … vergisst Kopplungen und nimmt „Immer zulassen“ zurück."),
             localized("F3 Anzeigen · F4 Bearbeiten (⇧F4 neue Datei) · F5 Kopieren (⇧F5 in Archiv packen) · F6 Verschieben (⇧F6 Umbenennen)"),
             localized("F2 Benutzermenü · F7 Ordner anlegen · F8 Löschen (⇧F8 endgültig) · F9 Menüs · F10 Beenden"),
             localized("Tippen schreibt in die Kommandozeile · Tab vervollständigt · Enter führt im Terminal aus · ⌘Enter fügt Dateinamen ein · Ctrl-P/N Verlauf"),
