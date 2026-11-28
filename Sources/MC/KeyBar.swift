@@ -16,6 +16,12 @@ final class KeyBar: NSView {
             stack.bottomAnchor.constraint(equalTo: bottomAnchor),
             heightAnchor.constraint(equalToConstant: 22),
         ])
+        NotificationCenter.default.addObserver(self, selector: #selector(themeDidChange), name: Theme.didChange, object: nil)
+    }
+
+    @objc private func themeDidChange(_ notification: Notification) {
+        needsDisplay = true
+        subviews.first?.subviews.forEach { $0.needsDisplay = true }
     }
 
     required init?(coder: NSCoder) { fatalError() }
