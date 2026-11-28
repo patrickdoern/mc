@@ -21,7 +21,7 @@ Building: `./scripts/build-libssh2.sh` builds OpenSSL and libssh2 once as static
 
 ## Command line
 
-`./scripts/install.sh` puts `mc` and `mcedit` into `~/.local/bin`; their messages appear in the system language (German or English):
+`./scripts/install.sh` puts `mc` and `mcedit` into `~/.local/bin` (an existing `mcedit` that does not come from Moonlight Commander is left alone); their messages appear in the system language (German or English):
 
 ```bash
 mc                    # open the current folder in the active panel
