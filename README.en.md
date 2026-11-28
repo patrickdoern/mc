@@ -82,7 +82,7 @@ Remote terminal: Ctrl-O on an SFTP panel opens an ssh session in the panel's fol
 - **File associations:** `~/.config/moonlight-commander/ext` defines per pattern what Enter (`open`), F3 (`view`) and F4 (`edit`) do; examples are in the file, after "Command → Edit File Associations".
 - **Viewer (F3):** F2 line wrap, F4 hex view, F5 go to line, F7 search (regex possible), F8 choose encoding, F9 preview/source.
 - **Markup preview:** Markdown (`.md`) and HTML (`.html`) appear formatted in the viewer (headings, lists, quotes, code, tables, links); F9 switches to the source. For HTML, scripts, stylesheets and images are not loaded (images appear as `[Bild]`).
-- **Editor (F4):** Regex search and replace with `$1`, choose encoding, insert file and save block (Edit menu).
+- **Editor (F4):** Regex search and replace with `$1`, choose encoding, insert file and save block (Edit menu). F9 shows Markdown and HTML as a preview, including unsaved changes; F9 or Esc returns to the same position.
 
 ## Menu bar (F9, arrow keys switch between menus, Enter selects, Esc closes)
 

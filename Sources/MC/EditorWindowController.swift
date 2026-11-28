@@ -25,6 +25,9 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private var sourceText: String
     private var isRendered = false
     private var wrapBeforePreview = false
+    private var selectionBeforePreview = NSRange(location: 0, length: 0)
+    private let documentUndoManager = UndoManager()
+    private let previewUndoManager = UndoManager()
 
     var hasUnsavedChanges: Bool { window?.isDocumentEdited ?? false }
 
@@ -37,7 +40,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         self.encoding = encoding
         self.permissions = permissions
         self.sourceText = text
-        markup = readOnly ? MarkupKind.kind(forFile: PosixPath.name(path)) : nil
+        markup = MarkupKind.kind(forFile: PosixPath.name(path))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 920, height: 660), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         super.init(window: window)
         window.delegate = self
@@ -56,8 +59,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         scroll.drawsBackground = true
         scroll.backgroundColor = Theme.background
         let keyBar = KeyBar(
-            labels: readOnly ? [localized("Hilfe"), localized("Umbruch"), localized("Ende"), "Hex", localized("Gehe zu"), "", localized("Suchen"), localized("Codierung"), markup == nil ? "" : localized("Vorschau"), localized("Ende")] : [localized("Hilfe"), localized("Sichern"), localized("Markieren"), localized("Ersetzen"), localized("Kopieren"), localized("Verschieben"), localized("Suchen"), localized("Löschen"), "", localized("Ende")],
-            shortLabels: readOnly ? [localized("Hilfe"), localized("Umbr"), localized("Ende"), "Hex", localized("Gehe"), "", localized("Suche"), localized("Codg"), markup == nil ? "" : localized("Vorsch"), localized("Ende")] : [localized("Hilfe"), localized("Sichrn"), localized("Markr"), localized("Ersetz"), localized("Kopie"), localized("Versch"), localized("Suche"), localized("Lösch"), "", localized("Ende")]
+            labels: readOnly ? [localized("Hilfe"), localized("Umbruch"), localized("Ende"), "Hex", localized("Gehe zu"), "", localized("Suchen"), localized("Codierung"), markup == nil ? "" : localized("Vorschau"), localized("Ende")] : [localized("Hilfe"), localized("Sichern"), localized("Markieren"), localized("Ersetzen"), localized("Kopieren"), localized("Verschieben"), localized("Suchen"), localized("Löschen"), markup == nil ? "" : localized("Vorschau"), localized("Ende")],
+            shortLabels: readOnly ? [localized("Hilfe"), localized("Umbr"), localized("Ende"), "Hex", localized("Gehe"), "", localized("Suche"), localized("Codg"), markup == nil ? "" : localized("Vorsch"), localized("Ende")] : [localized("Hilfe"), localized("Sichrn"), localized("Markr"), localized("Ersetz"), localized("Kopie"), localized("Versch"), localized("Suche"), localized("Lösch"), markup == nil ? "" : localized("Vorsch"), localized("Ende")]
         ) { [weak self] number in
             self?.perform(functionKey: number, shifted: false)
         }
@@ -66,7 +69,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         stack.spacing = 0
         window.contentView = stack
         window.makeFirstResponder(textView)
-        if markup != nil { showPreview() }
+        if readOnly, markup != nil { showPreview() }
         textView.setSelectedRange(NSRange(location: 0, length: 0))
     }
 
@@ -85,7 +88,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         textView.extraTrailingWidth = 24
         textView.onFunctionKey = { [weak self] number, shifted in self?.perform(functionKey: number, shifted: shifted) ?? false }
         textView.onDeleteLine = { [weak self] in self?.deleteLine(nil) }
-        textView.onEscape = { [weak self] in self?.window?.performClose(nil) }
+        textView.onEscape = { [weak self] in
+            guard let self else { return }
+            if isRendered, !readOnly { showSource() } else { window?.performClose(nil) }
+        }
         NotificationCenter.default.addObserver(self, selector: #selector(themeDidChange), name: Theme.didChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(textDidChange), name: NSText.didChangeNotification, object: textView)
     }
@@ -113,6 +119,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     @discardableResult
     private func perform(functionKey number: Int, shifted: Bool) -> Bool {
+        if isRendered, !readOnly, ![1, 7, 9, 10].contains(number) {
+            NSSound.beep()
+            return true
+        }
         switch (number, shifted) {
         case (1, _): showHelp()
         case (2, _) where readOnly: toggleWrap(nil)
@@ -128,7 +138,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         case (7, true): findNext(nil)
         case (8, _) where readOnly: chooseEncoding(nil)
         case (8, _): deleteBlock()
-        case (9, _) where readOnly && markup != nil: togglePreview(nil)
+        case (9, _) where markup != nil: togglePreview(nil)
         case (10, _): window?.performClose(nil)
         default: return false
         }
@@ -147,6 +157,10 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
+    func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? {
+        isRendered ? previewUndoManager : documentUndoManager
+    }
+
     func windowWillClose(_ notification: Notification) {
         onClose?(self)
     }
@@ -158,7 +172,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @discardableResult
     private func save() -> Bool {
         guard Dialogs.requireWritable(fileSystem) else { return false }
-        let data = textView.string.data(using: encoding, allowLossyConversion: false) ?? Data(textView.string.utf8)
+        let text = isRendered ? sourceText : textView.string
+        let data = text.data(using: encoding, allowLossyConversion: false) ?? Data(text.utf8)
         do {
             try fileSystem.writeAllSafely(data, to: path, permissions: permissions)
         } catch {
@@ -203,7 +218,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func replaceText(_ sender: Any?) {
-        guard !readOnly, !isHex, let input = Dialogs.searchForm(
+        guard !readOnly, !isHex, !isRendered, let input = Dialogs.searchForm(
             title: localized("Ersetzen"),
             fields: [(localized("Suchen:"), lastSearch), (localized("Ersetzen durch:"), lastReplacement)],
             checks: [(localized("Regulärer Ausdruck ($1 für Gruppen)"), searchUsesRegex), (localized("Groß-/Kleinschreibung beachten"), searchIsCaseSensitive), (localized("Alle ersetzen"), true)],
@@ -247,14 +262,20 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func togglePreview(_ sender: Any?) {
-        guard readOnly, markup != nil, !isHex else { return }
+        guard markup != nil, !isHex else { return }
         if isRendered { showSource() } else { showPreview() }
     }
 
     private func showPreview() {
-        guard let markup, let rendered = MarkupRenderer.render(sourceText, kind: markup) else { return }
-        if !isRendered { wrapBeforePreview = wraps }
+        guard let markup else { return }
+        if !isRendered, !readOnly { sourceText = textView.string }
+        guard let rendered = MarkupRenderer.render(sourceText, kind: markup) else { return }
+        if !isRendered {
+            wrapBeforePreview = wraps
+            selectionBeforePreview = textView.selectedRange()
+        }
         isRendered = true
+        textView.isEditable = false
         setWrap(true)
         textView.textStorage?.setAttributedString(rendered)
         textView.setSelectedRange(NSRange(location: 0, length: 0))
@@ -269,9 +290,15 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         textView.textStorage?.setAttributedString(NSAttributedString(string: sourceText))
         textView.typingAttributes = [.font: Theme.font, .foregroundColor: Theme.editorText]
         textView.applyEditorStyle()
+        textView.isEditable = !readOnly
         applyHighlighting()
-        textView.setSelectedRange(NSRange(location: 0, length: 0))
-        textView.scrollToBeginningOfDocument(nil)
+        if readOnly {
+            textView.setSelectedRange(NSRange(location: 0, length: 0))
+            textView.scrollToBeginningOfDocument(nil)
+        } else {
+            textView.setSelectedRange(selectionBeforePreview)
+            textView.scrollRangeToVisible(selectionBeforePreview)
+        }
         window?.title = PosixPath.name(path) + (readOnly ? " " + localized("(nur lesen)") : "")
     }
 
@@ -308,7 +335,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func insertFile(_ sender: Any?) {
-        guard !readOnly, let text = Dialogs.prompt(title: localized("Datei einfügen"), message: localized("Pfad der Datei:"), value: PosixPath.parent(path) + "/", confirm: localized("Einfügen")) else { return }
+        guard !readOnly, !isRendered, let text = Dialogs.prompt(title: localized("Datei einfügen"), message: localized("Pfad der Datei:"), value: PosixPath.parent(path) + "/", confirm: localized("Einfügen")) else { return }
         do {
             let data = try fileSystem.readAll(PosixPath.resolve(text, relativeTo: PosixPath.parent(path), home: fileSystem.homePath))
             textView.insertText(Self.decode(data).0, replacementRange: textView.selectedRange())
@@ -318,6 +345,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func saveBlock(_ sender: Any?) {
+        guard !isRendered else { return NSSound.beep() }
         let selection = textView.selectedRange()
         guard let range = selection.length > 0 ? selection : blockRange else { return NSSound.beep() }
         guard Dialogs.requireWritable(fileSystem), let text = Dialogs.prompt(title: localized("Block sichern"), message: localized("Speichern als:"), value: PosixPath.parent(path) + "/", confirm: localized("Sichern")) else { return }
@@ -343,7 +371,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc func deleteLine(_ sender: Any?) {
-        guard !readOnly else { return }
+        guard !readOnly, !isRendered else { return }
         let range = (textView.string as NSString).lineRange(for: textView.selectedRange())
         textView.insertText("", replacementRange: range)
     }
@@ -387,7 +415,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private func showHelp() {
         let lines = readOnly
             ? [localized("F2 Zeilenumbruch"), localized("F3/F10/Esc Ende"), localized("F4 Hex-Ansicht"), localized("F5 Gehe zu Zeile"), localized("F7 Suchen (⇧F7 weiter)"), localized("F8 Codierung wählen"), localized("F9 Vorschau/Quelltext (Markdown, HTML)")]
-            : [localized("F2 Sichern"), localized("F3 Block markieren (Anfang/Ende)"), localized("F4 Ersetzen (auch Regex)"), localized("F5 Block kopieren"), localized("F6 Block verschieben"), localized("F7 Suchen (⇧F7 weiter)"), localized("F8 Block löschen"), localized("Ctrl-Y Zeile löschen"), localized("F10/Esc Ende"), localized("Menü Bearbeiten: Datei einfügen, Block sichern, Codierung")]
+            : [localized("F2 Sichern"), localized("F3 Block markieren (Anfang/Ende)"), localized("F4 Ersetzen (auch Regex)"), localized("F5 Block kopieren"), localized("F6 Block verschieben"), localized("F7 Suchen (⇧F7 weiter)"), localized("F8 Block löschen"), localized("Ctrl-Y Zeile löschen")] + (markup == nil ? [] : [localized("F9 Vorschau/Quelltext (Markdown, HTML)")]) + [localized("F10/Esc Ende"), localized("Menü Bearbeiten: Datei einfügen, Block sichern, Codierung")]
         Dialogs.info(title: readOnly ? localized("Viewer-Tasten") : localized("Editor-Tasten"), message: lines.joined(separator: " · "))
     }
 }
