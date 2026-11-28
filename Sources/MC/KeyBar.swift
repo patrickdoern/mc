@@ -1,9 +1,11 @@
 import AppKit
 
 final class KeyBar: NSView {
+    private let buttons: [KeyBarButton]
+
     init(labels: [String], shortLabels: [String], onPress: @escaping (Int) -> Void) {
+        buttons = labels.indices.map { index in KeyBarButton(number: index + 1, label: labels[index], shortLabel: shortLabels[index]) { onPress(index + 1) } }
         super.init(frame: .zero)
-        let buttons = labels.indices.map { index in KeyBarButton(number: index + 1, label: labels[index], shortLabel: shortLabels[index]) { onPress(index + 1) } }
         let stack = NSStackView(views: buttons)
         stack.distribution = .fillEqually
         stack.spacing = 1
@@ -21,7 +23,12 @@ final class KeyBar: NSView {
 
     @objc private func themeDidChange(_ notification: Notification) {
         needsDisplay = true
-        subviews.first?.subviews.forEach { $0.needsDisplay = true }
+        buttons.forEach { $0.needsDisplay = true }
+    }
+
+    func setLabel(_ number: Int, label: String, shortLabel: String) {
+        buttons[number - 1].label = label
+        buttons[number - 1].shortLabel = shortLabel
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -34,8 +41,8 @@ final class KeyBar: NSView {
 
 private final class KeyBarButton: NSView {
     private let number: Int
-    private let label: String
-    private let shortLabel: String
+    var label: String { didSet { needsDisplay = true } }
+    var shortLabel: String { didSet { needsDisplay = true } }
     private let action: () -> Void
 
     init(number: Int, label: String, shortLabel: String, action: @escaping () -> Void) {

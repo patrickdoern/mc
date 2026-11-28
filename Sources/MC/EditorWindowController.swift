@@ -16,6 +16,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private var searchIsCaseSensitive = false
     private let permissions: UInt16
     private let textView = EditorTextView()
+    private var keyBar: KeyBar?
     private var blockRange: NSRange?
     private var blockAnchor: Int?
     private var lastSearch = ""
@@ -64,6 +65,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         ) { [weak self] number in
             self?.perform(functionKey: number, shifted: false)
         }
+        self.keyBar = keyBar
         let stack = NSStackView(views: [scroll, keyBar])
         stack.orientation = .vertical
         stack.spacing = 0
@@ -281,6 +283,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         textView.scrollToBeginningOfDocument(nil)
         window?.title = PosixPath.name(path) + " " + localized("(Vorschau)")
+        keyBar?.setLabel(9, label: localized("Quelltext"), shortLabel: localized("Quellt"))
     }
 
     private func showSource() {
@@ -300,6 +303,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             textView.scrollRangeToVisible(selectionBeforePreview)
         }
         window?.title = PosixPath.name(path) + (readOnly ? " " + localized("(nur lesen)") : "")
+        keyBar?.setLabel(9, label: localized("Vorschau"), shortLabel: localized("Vorsch"))
     }
 
     @objc func toggleHex(_ sender: Any?) {
